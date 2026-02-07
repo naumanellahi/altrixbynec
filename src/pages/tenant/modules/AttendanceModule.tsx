@@ -42,8 +42,14 @@ export function AttendanceModule() {
   const [rows, setRows] = useState<{ student_id: string; name: string; status: string }[]>([]);
   const [saving, setSaving] = useState(false);
 
+  // Stable keys to avoid re-running effect when offline data arrays get new references
+  const offlineSectionsKey = JSON.stringify(offlineSections.data.map(s => s.id));
+  const offlineClassesKey = JSON.stringify(offlineClasses.data.map(c => c.id));
+  const offlineAssignmentsKey = JSON.stringify(offlineTeacherAssignments.data.map(a => a.classSectionId));
+
   useEffect(() => {
     if (perms.loading) return;
+    let cancelled = false;
     const load = async () => {
       if (!schoolId || !user?.id) return;
 
@@ -52,17 +58,15 @@ export function AttendanceModule() {
         const classMap = new Map(offlineClasses.data.map(c => [c.id, c.name]));
 
         if (perms.canManageStudents) {
-          // Admins/Principals: see all sections
           const assignedSections = offlineSections.data.map(s => ({
             class_section_id: s.id,
             section_name: s.name,
             class_name: classMap.get(s.classId) ?? "Class",
           }));
-          setSections(assignedSections);
+          if (!cancelled) setSections(assignedSections);
           return;
         }
 
-        // Teachers: only assigned sections
         const myAssignments = offlineTeacherAssignments.data.filter(a => a.teacherUserId === user.id);
         const mySecIds = new Set(myAssignments.map(a => a.classSectionId));
         const assignedSections = offlineSections.data
@@ -72,7 +76,7 @@ export function AttendanceModule() {
             section_name: s.name,
             class_name: classMap.get(s.classId) ?? "Class",
           }));
-        setSections(assignedSections);
+        if (!cancelled) setSections(assignedSections);
         return;
       }
 
@@ -90,7 +94,7 @@ export function AttendanceModule() {
             .eq("school_id", schoolId),
         ]);
         const byClass = new Map((cls ?? []).map((c: any) => [c.id, c.name]));
-        setSections(
+        if (!cancelled) setSections(
           (sec ?? []).map((s: any) => ({
             class_section_id: s.id,
             section_name: s.name,
@@ -107,7 +111,7 @@ export function AttendanceModule() {
         .eq("teacher_user_id", user.id);
       const ids = [...new Set((ta ?? []).map((x: any) => x.class_section_id as string))];
       if (ids.length === 0) {
-        setSections([]);
+        if (!cancelled) setSections([]);
         return;
       }
 
@@ -123,7 +127,7 @@ export function AttendanceModule() {
           .eq("school_id", schoolId),
       ]);
       const byClass = new Map((cls ?? []).map((c: any) => [c.id, c.name]));
-      setSections(
+      if (!cancelled) setSections(
         (sec ?? []).map((s: any) => ({
           class_section_id: s.id,
           section_name: s.name,
@@ -132,7 +136,8 @@ export function AttendanceModule() {
       );
     };
     void load();
-  }, [schoolId, user?.id, perms.loading, perms.canManageStudents, offlineSections.data, offlineClasses.data, offlineTeacherAssignments.data]);
+    return () => { cancelled = true; };
+  }, [schoolId, user?.id, perms.loading, perms.canManageStudents, offlineSectionsKey, offlineClassesKey, offlineAssignmentsKey]);
 
   const start = async () => {
     if (!schoolId) return;
