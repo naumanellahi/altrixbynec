@@ -1,0 +1,52 @@
+project_id = "hlpwltagcbuyflxcwcat"
+
+[functions.eduverse-admin-create-school]
+verify_jwt = false
+
+[functions.eduverse-admin-create-user]
+verify_jwt = false
+
+[functions.eduverse-admin-impersonate]
+verify_jwt = false
+
+[functions.eduverse-admin-unlock-bootstrap]
+verify_jwt = false
+
+[functions.eduverse-bootstrap]
+verify_jwt = false
+
+[functions.eduverse-bulk-staff-import]
+verify_jwt = false
+
+[functions.eduverse-invite]
+verify_jwt = false
+
+[functions.eduverse-recover-master]
+verify_jwt = false
+
+[functions.eduverse-staff-governance]
+verify_jwt = false
+
+[functions.owner-ai-advisor]
+verify_jwt = false
+
+[functions.process-scheduled-messages]
+verify_jwt = false
+
+[functions.ai-student-analyzer]
+verify_jwt = false
+
+[functions.ai-timetable-generator]
+verify_jwt = false
+
+[functions.ai-reputation-analyzer]
+verify_jwt = false
+
+[functions.ai-teacher-analyzer]
+verify_jwt = false
+
+[functions.ai-early-warning]
+verify_jwt = false
+
+[functions.ai-parent-update-generator]
+verify_jwt = false

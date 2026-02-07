@@ -1,0 +1,548 @@
+import { useEffect, useState, useMemo } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { CheckCircle, Clock, FileText, Send, Eye, Paperclip, AlertTriangle, WifiOff } from "lucide-react";
+import { FileUploadArea } from "@/components/assignments/FileUploadArea";
+import { AttachmentsList } from "@/components/assignments/AttachmentsList";
+import { useOfflineAssignments, useOfflineHomework, useOfflineEnrollments } from "@/hooks/useOfflineData";
+import { OfflineDataBanner } from "@/components/offline/OfflineDataBanner";
+
+type Assignment = { 
+  id: string; 
+  title: string; 
+  description: string | null;
+  due_date: string | null; 
+  status: string;
+  max_marks: number;
+  assignment_type: string;
+  late_penalty_percent_per_day: number;
+  max_late_penalty_percent: number;
+  allow_late_submissions: boolean;
+};
+
+type Submission = {
+  id: string;
+  assignment_id: string;
+  submission_text: string | null;
+  attachment_urls: string[] | null;
+  submitted_at: string;
+  status: string;
+  marks_obtained: number | null;
+  feedback: string | null;
+  days_late: number;
+  penalty_applied: number;
+  marks_before_penalty: number | null;
+};
+
+type Homework = { id: string; title: string; due_date: string; status: string };
+
+const BUCKET_NAME = "assignment-submissions";
+
+export function StudentAssignmentsModule({ myStudent, schoolId }: { myStudent: any; schoolId: string }) {
+  const [submissions, setSubmissions] = useState<Map<string, Submission>>(new Map());
+  
+  // Use offline-first data hooks
+  const { 
+    data: cachedAssignments, 
+    loading: assignmentsLoading, 
+    isOffline, 
+    isUsingCache: assignmentsFromCache 
+  } = useOfflineAssignments(schoolId);
+  
+  const { 
+    data: cachedHomework, 
+    loading: homeworkLoading, 
+    isUsingCache: homeworkFromCache 
+  } = useOfflineHomework(schoolId);
+
+  const {
+    data: cachedEnrollments,
+    isUsingCache: enrollmentsFromCache,
+  } = useOfflineEnrollments(schoolId);
+
+  const mySectionIds = useMemo(() => {
+    if (myStudent.status !== "ready") return [] as string[];
+    return cachedEnrollments
+      .filter((e) => e.studentId === myStudent.studentId)
+      .map((e) => e.classSectionId);
+  }, [cachedEnrollments, myStudent]);
+
+  // Convert cached data to display format
+  const assignments = useMemo(() => {
+    const allowed = new Set(mySectionIds);
+    return cachedAssignments
+      .filter((a) => !allowed.size || allowed.has(a.classSectionId))
+      .map(a => ({
+      id: a.id,
+      title: a.title,
+      description: a.description,
+      due_date: a.dueDate,
+      status: a.status,
+      max_marks: a.maxMarks,
+      assignment_type: 'assignment',
+      late_penalty_percent_per_day: 5,
+      max_late_penalty_percent: 50,
+      allow_late_submissions: true,
+    })) as Assignment[];
+  }, [cachedAssignments, mySectionIds]);
+
+  const homework = useMemo(() => {
+    const allowed = new Set(mySectionIds);
+    return cachedHomework
+      .filter((h) => !allowed.size || allowed.has(h.classSectionId))
+      .map(h => ({
+      id: h.id,
+      title: h.title,
+      due_date: h.dueDate || '',
+      status: h.status,
+    })) as Homework[];
+  }, [cachedHomework, mySectionIds]);
+  
+  // Submit dialog state
+  const [submitOpen, setSubmitOpen] = useState(false);
+  const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
+  const [submissionText, setSubmissionText] = useState("");
+  const [uploadedFiles, setUploadedFiles] = useState<{ name: string; path: string }[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  
+  // View result dialog
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewSubmission, setViewSubmission] = useState<Submission | null>(null);
+
+  // Fetch submissions (only when online)
+  useEffect(() => {
+    if (myStudent.status !== "ready" || isOffline) return;
+    
+    (async () => {
+      const { data: subs } = await supabase
+        .from("assignment_submissions")
+        .select("id,assignment_id,submission_text,attachment_urls,submitted_at,status,marks_obtained,feedback,days_late,penalty_applied,marks_before_penalty")
+        .eq("school_id", schoolId)
+        .eq("student_id", myStudent.studentId);
+      
+      const subMap = new Map<string, Submission>();
+      (subs ?? []).forEach((s: any) => subMap.set(s.assignment_id, s as Submission));
+      setSubmissions(subMap);
+    })();
+  }, [myStudent.status, myStudent.studentId, schoolId, isOffline]);
+
+  const openSubmitDialog = (assignment: Assignment) => {
+    if (isOffline) {
+      toast.error("Cannot submit assignments while offline");
+      return;
+    }
+    const existing = submissions.get(assignment.id);
+    setSelectedAssignment(assignment);
+    setSubmissionText(existing?.submission_text || "");
+    const existingFiles = (existing?.attachment_urls || []).map((path) => ({
+      name: path.split("/").pop() || path,
+      path,
+    }));
+    setUploadedFiles(existingFiles);
+    setSubmitOpen(true);
+  };
+
+  const handleUploadFile = async (file: File): Promise<string | null> => {
+    if (!selectedAssignment || myStudent.status !== "ready") return null;
+
+    const ext = file.name.split(".").pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const filePath = `${myStudent.studentId}/${selectedAssignment.id}/${fileName}`;
+
+    setUploading(true);
+    const { error } = await supabase.storage
+      .from(BUCKET_NAME)
+      .upload(filePath, file, { upsert: false });
+
+    setUploading(false);
+
+    if (error) {
+      toast.error(`Upload failed: ${error.message}`);
+      return null;
+    }
+
+    return filePath;
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedAssignment || myStudent.status !== "ready") return;
+    
+    if (!submissionText.trim() && uploadedFiles.length === 0) {
+      toast.error("Please add text or attach files");
+      return;
+    }
+    
+    let daysLate = 0;
+    const isLate = selectedAssignment.due_date && new Date(selectedAssignment.due_date) < new Date();
+    
+    if (isLate && selectedAssignment.due_date) {
+      const dueDate = new Date(selectedAssignment.due_date);
+      const now = new Date();
+      const diffTime = now.getTime() - dueDate.getTime();
+      daysLate = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+    
+    setSubmitting(true);
+    const existing = submissions.get(selectedAssignment.id);
+    const attachmentUrls = uploadedFiles.map((f) => f.path);
+    
+    if (existing) {
+      const { error } = await supabase
+        .from("assignment_submissions")
+        .update({
+          submission_text: submissionText,
+          attachment_urls: attachmentUrls.length > 0 ? attachmentUrls : null,
+          status: isLate ? "late" : "submitted",
+          submitted_at: new Date().toISOString(),
+          days_late: daysLate,
+        })
+        .eq("id", existing.id);
+      
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Submission updated!");
+        setSubmitOpen(false);
+      }
+    } else {
+      const { error } = await supabase
+        .from("assignment_submissions")
+        .insert({
+          school_id: schoolId,
+          assignment_id: selectedAssignment.id,
+          student_id: myStudent.studentId,
+          submission_text: submissionText,
+          attachment_urls: attachmentUrls.length > 0 ? attachmentUrls : null,
+          status: isLate ? "late" : "submitted",
+          days_late: daysLate,
+        });
+      
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Assignment submitted!");
+        setSubmitOpen(false);
+      }
+    }
+    setSubmitting(false);
+  };
+
+  const openViewDialog = (assignment: Assignment) => {
+    const sub = submissions.get(assignment.id);
+    if (sub) {
+      setViewSubmission(sub);
+      setSelectedAssignment(assignment);
+      setViewOpen(true);
+    }
+  };
+
+  const getSubmissionStatus = (assignment: Assignment) => {
+    const sub = submissions.get(assignment.id);
+    if (!sub) return { label: "Not Submitted", variant: "outline" as const, icon: Clock };
+    if (sub.status === "graded") return { label: `Graded: ${sub.marks_obtained}/${assignment.max_marks}`, variant: "default" as const, icon: CheckCircle };
+    if (sub.status === "late") return { label: "Submitted Late", variant: "secondary" as const, icon: Send };
+    return { label: "Submitted", variant: "secondary" as const, icon: CheckCircle };
+  };
+
+  const isOverdue = (dueDate: string | null) => {
+    if (!dueDate) return false;
+    return new Date(dueDate) < new Date();
+  };
+
+  const hasAttachments = (assignment: Assignment) => {
+    const sub = submissions.get(assignment.id);
+    return sub?.attachment_urls && sub.attachment_urls.length > 0;
+  };
+
+  const loading = assignmentsLoading || homeworkLoading;
+  const isUsingCache = assignmentsFromCache || homeworkFromCache || enrollmentsFromCache;
+
+  if (loading && !isUsingCache) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <OfflineDataBanner isOffline={isOffline} isUsingCache={isUsingCache} />
+      
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">Assignments & homework</p>
+      </div>
+
+      <Tabs defaultValue="assignments">
+        <TabsList>
+          <TabsTrigger value="assignments">Assignments</TabsTrigger>
+          <TabsTrigger value="homework">Homework</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="assignments" className="mt-4 space-y-3">
+          {assignments.length === 0 ? (
+            <Card>
+              <CardContent className="py-8 text-center text-muted-foreground">
+                {isOffline ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <WifiOff className="h-8 w-8" />
+                    <p>No cached assignments available</p>
+                  </div>
+                ) : (
+                  "No assignments found."
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            assignments.map((a) => {
+              const status = getSubmissionStatus(a);
+              const sub = submissions.get(a.id);
+              const overdue = isOverdue(a.due_date) && !sub;
+              
+              return (
+                <Card key={a.id} className={overdue ? "border-destructive/50" : ""}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="text-base">{a.title}</CardTitle>
+                          <Badge variant="outline" className="text-xs capitalize">
+                            {a.assignment_type}
+                          </Badge>
+                          {hasAttachments(a) && (
+                            <Paperclip className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </div>
+                        {a.description && (
+                          <CardDescription className="mt-1">{a.description}</CardDescription>
+                        )}
+                      </div>
+                      <Badge variant={status.variant} className="flex items-center gap-1">
+                        <status.icon className="h-3 w-3" />
+                        {status.label}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-muted-foreground">
+                        <span>Max: {a.max_marks} marks</span>
+                        {a.due_date && (
+                          <span className={overdue ? "text-destructive ml-3" : "ml-3"}>
+                            Due: {new Date(a.due_date).toLocaleDateString()}
+                            {overdue && " (Overdue)"}
+                          </span>
+                        )}
+                      </div>
+                      {!isOffline && (
+                        <div className="flex gap-2">
+                          {sub?.status === "graded" && (
+                            <Button size="sm" variant="outline" onClick={() => openViewDialog(a)}>
+                              <Eye className="h-4 w-4 mr-1" /> View Result
+                            </Button>
+                          )}
+                          {sub?.status !== "graded" && (
+                            <Button size="sm" onClick={() => openSubmitDialog(a)}>
+                              <Send className="h-4 w-4 mr-1" /> {sub ? "Update" : "Submit"}
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
+        </TabsContent>
+        
+        <TabsContent value="homework" className="mt-4">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Title</TableHead>
+                <TableHead>Due</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {homework.map((h) => (
+                <TableRow key={h.id}>
+                  <TableCell className="font-medium">{h.title}</TableCell>
+                  <TableCell className="text-muted-foreground">{new Date(h.due_date).toLocaleDateString()}</TableCell>
+                  <TableCell className="text-muted-foreground">{h.status}</TableCell>
+                </TableRow>
+              ))}
+              {homework.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-sm text-muted-foreground">
+                    {isOffline ? "No cached homework available." : "No homework found."}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TabsContent>
+      </Tabs>
+
+      {/* Submit Assignment Dialog */}
+      <Dialog open={submitOpen} onOpenChange={setSubmitOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Submit Assignment</DialogTitle>
+            <DialogDescription>
+              {selectedAssignment?.title}
+              {selectedAssignment?.due_date && (
+                <span className="block mt-1">
+                  Due: {new Date(selectedAssignment.due_date).toLocaleDateString()}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {selectedAssignment?.due_date && new Date(selectedAssignment.due_date) < new Date() && (
+              (() => {
+                const dueDate = new Date(selectedAssignment.due_date);
+                const now = new Date();
+                const daysLate = Math.ceil((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+                const penaltyPercent = Math.min(
+                  daysLate * selectedAssignment.late_penalty_percent_per_day,
+                  selectedAssignment.max_late_penalty_percent
+                );
+                return (
+                  <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950">
+                    <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="font-medium text-amber-800 dark:text-amber-200">
+                        Late Submission ({daysLate} day{daysLate !== 1 ? "s" : ""} overdue)
+                      </p>
+                      {selectedAssignment.late_penalty_percent_per_day > 0 ? (
+                        <p className="text-amber-700 dark:text-amber-300 mt-0.5">
+                          A {penaltyPercent}% penalty will be applied to your grade.
+                        </p>
+                      ) : (
+                        <p className="text-amber-700 dark:text-amber-300 mt-0.5">
+                          No late penalty configured for this assignment.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()
+            )}
+            
+            <div>
+              <label className="text-sm font-medium">Your Answer / Work</label>
+              <Textarea
+                value={submissionText}
+                onChange={(e) => setSubmissionText(e.target.value)}
+                placeholder="Enter your answer or paste your work here..."
+                rows={6}
+                className="mt-2"
+              />
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium mb-2 block">Attachments</label>
+              <FileUploadArea
+                files={uploadedFiles}
+                onFilesChange={setUploadedFiles}
+                onUpload={handleUploadFile}
+                uploading={uploading}
+                disabled={submitting}
+                maxFiles={5}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSubmitOpen(false)}>Cancel</Button>
+            <Button 
+              onClick={handleSubmit} 
+              disabled={submitting || uploading || (!submissionText.trim() && uploadedFiles.length === 0)}
+            >
+              {submitting ? "Submitting..." : "Submit"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Result Dialog */}
+      <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Assignment Result</DialogTitle>
+            <DialogDescription>{selectedAssignment?.title}</DialogDescription>
+          </DialogHeader>
+          {viewSubmission && (
+            <div className="space-y-4 py-4">
+              {viewSubmission.penalty_applied > 0 && viewSubmission.marks_before_penalty !== null && (
+                <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950">
+                  <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+                  <div className="text-sm">
+                    <p className="font-medium text-amber-800 dark:text-amber-200">
+                      Late Penalty Applied
+                    </p>
+                    <p className="text-amber-700 dark:text-amber-300 mt-0.5">
+                      Original: {viewSubmission.marks_before_penalty}/{selectedAssignment?.max_marks} → 
+                      After {viewSubmission.penalty_applied}% penalty: {viewSubmission.marks_obtained}/{selectedAssignment?.max_marks}
+                    </p>
+                    <p className="text-amber-600 dark:text-amber-400 text-xs mt-1">
+                      Submitted {viewSubmission.days_late} day{viewSubmission.days_late !== 1 ? "s" : ""} late
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Your Mark</p>
+                  <p className="text-2xl font-bold">
+                    {viewSubmission.marks_obtained ?? "—"} / {selectedAssignment?.max_marks}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Submitted</p>
+                  <p className="font-medium">{new Date(viewSubmission.submitted_at).toLocaleString()}</p>
+                </div>
+              </div>
+              
+              {viewSubmission.feedback && (
+                <div>
+                  <p className="text-sm font-medium mb-1">Teacher Feedback</p>
+                  <div className="rounded-lg bg-muted p-3 text-sm">{viewSubmission.feedback}</div>
+                </div>
+              )}
+              
+              {viewSubmission.submission_text && (
+                <div>
+                  <p className="text-sm font-medium mb-1">Your Submission</p>
+                  <div className="rounded-lg border p-3 text-sm whitespace-pre-wrap max-h-40 overflow-auto">
+                    {viewSubmission.submission_text}
+                  </div>
+                </div>
+              )}
+              
+              {viewSubmission.attachment_urls && viewSubmission.attachment_urls.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium mb-1">Attachments</p>
+                  <AttachmentsList attachmentUrls={viewSubmission.attachment_urls} />
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setViewOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
