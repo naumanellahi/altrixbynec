@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { TeacherPerformanceReport } from "./TeacherPerformanceReport";
 import {
   BookOpen,
   CalendarDays,
@@ -419,9 +420,10 @@ export function PrincipalTeachersTab({ schoolId }: PrincipalTeachersTabProps) {
               </div>
             ) : (
               <Tabs defaultValue="overview" className="space-y-3 sm:space-y-4">
-                <TabsList className="w-full grid grid-cols-2 sm:w-auto sm:inline-flex">
+                <TabsList className="w-full grid grid-cols-3 sm:w-auto sm:inline-flex">
                   <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
                   <TabsTrigger value="timetable" className="text-xs sm:text-sm">Timetable</TabsTrigger>
+                  <TabsTrigger value="performance" className="text-xs sm:text-sm">Performance</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-3 sm:space-y-4">
@@ -546,6 +548,14 @@ export function PrincipalTeachersTab({ schoolId }: PrincipalTeachersTabProps) {
                       </div>
                     </ScrollArea>
                   </div>
+                </TabsContent>
+
+                <TabsContent value="performance" className="space-y-3 sm:space-y-4">
+                  <TeacherPerformanceReport
+                    schoolId={schoolId}
+                    teacherUserId={selectedTeacher.user_id}
+                    teacherName={selectedTeacher.display_name || selectedTeacher.email.split("@")[0]}
+                  />
                 </TabsContent>
               </Tabs>
             )}
