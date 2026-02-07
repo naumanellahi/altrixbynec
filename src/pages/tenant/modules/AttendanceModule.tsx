@@ -43,6 +43,7 @@ export function AttendanceModule() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    if (perms.loading) return;
     const load = async () => {
       if (!schoolId || !user?.id) return;
 
@@ -77,14 +78,17 @@ export function AttendanceModule() {
 
       // Online: fetch from backend
       if (perms.canManageStudents) {
-        const { data: sec } = await supabase
-          .from("class_sections")
-          .select("id,name,class_id")
-          .eq("school_id", schoolId);
-        const { data: cls } = await supabase
-          .from("academic_classes")
-          .select("id,name")
-          .eq("school_id", schoolId);
+        const [{ data: sec }, { data: cls }] = await Promise.all([
+          supabase
+            .from("class_sections")
+            .select("id,name,class_id")
+            .eq("school_id", schoolId)
+            .order("name"),
+          supabase
+            .from("academic_classes")
+            .select("id,name")
+            .eq("school_id", schoolId),
+        ]);
         const byClass = new Map((cls ?? []).map((c: any) => [c.id, c.name]));
         setSections(
           (sec ?? []).map((s: any) => ({
@@ -97,23 +101,27 @@ export function AttendanceModule() {
       }
 
       const { data: ta } = await supabase
-        .from("teacher_assignments")
+        .from("teacher_subject_assignments")
         .select("class_section_id")
         .eq("school_id", schoolId)
         .eq("teacher_user_id", user.id);
-      const ids = (ta ?? []).map((x: any) => x.class_section_id as string);
+      const ids = [...new Set((ta ?? []).map((x: any) => x.class_section_id as string))];
       if (ids.length === 0) {
         setSections([]);
         return;
       }
 
-      const { data: sec } = await supabase
-        .from("class_sections")
-        .select("id,name,class_id")
-        .in("id", ids);
-      const { data: cls } = await supabase
-        .from("academic_classes")
-        .select("id,name");
+      const [{ data: sec }, { data: cls }] = await Promise.all([
+        supabase
+          .from("class_sections")
+          .select("id,name,class_id")
+          .eq("school_id", schoolId)
+          .in("id", ids),
+        supabase
+          .from("academic_classes")
+          .select("id,name")
+          .eq("school_id", schoolId),
+      ]);
       const byClass = new Map((cls ?? []).map((c: any) => [c.id, c.name]));
       setSections(
         (sec ?? []).map((s: any) => ({
@@ -124,7 +132,7 @@ export function AttendanceModule() {
       );
     };
     void load();
-  }, [schoolId, user?.id, offlineSections.data, offlineClasses.data, offlineTeacherAssignments.data, perms.canManageStudents]);
+  }, [schoolId, user?.id, perms.loading, perms.canManageStudents, offlineSections.data, offlineClasses.data, offlineTeacherAssignments.data]);
 
   const start = async () => {
     if (!schoolId) return;
