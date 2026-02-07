@@ -468,7 +468,7 @@ export function TimetableBuilderModule() {
                 <SelectValue placeholder="Choose section" />
               </SelectTrigger>
               <SelectContent>
-                {sections.map((s) => (
+              {sections.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
                     {sectionLabelById.get(s.id) ?? s.name}
                   </SelectItem>

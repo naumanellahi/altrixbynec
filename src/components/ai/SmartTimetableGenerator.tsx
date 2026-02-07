@@ -315,13 +315,13 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
         </div>
 
         <div className="flex items-center gap-3">
-          <Select value={selectedSection || ""} onValueChange={setSelectedSection}>
+          <Select value={selectedSection || "__all"} onValueChange={(v) => setSelectedSection(v === "__all" ? null : v)}>
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="All Sections" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Sections</SelectItem>
-              {sections?.map((section) => (
+              <SelectItem value="__all">All Sections</SelectItem>
+              {sections?.filter((s) => !!s.id).map((section) => (
                 <SelectItem key={section.id} value={section.id}>
                   {(section.academic_classes as any)?.name} - {section.name}
                 </SelectItem>
