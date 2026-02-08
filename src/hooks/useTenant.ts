@@ -126,10 +126,10 @@ export function useTenant(schoolSlug: string | undefined) {
         }
         
         // Cache the fresh data
-        const tenantData = { id: (data as any).id, slug: (data as any).slug, name: (data as any).name };
+        const tenantData = { id: data.id, slug: data.slug, name: data.name };
         cacheTenant(normalizedSlug, tenantData);
         
-        setState({ status: "ready", school: tenantData, schoolId: (data as any).id, error: null });
+        setState({ status: "ready", school: tenantData, schoolId: data.id, error: null });
       });
 
     return () => {

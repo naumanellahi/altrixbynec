@@ -99,13 +99,13 @@ export function useTenantOptimized(schoolSlug: string | undefined): TenantResult
       const { data: branding } = await supabase
         .from("school_branding")
         .select("accent_hue,accent_saturation,accent_lightness,radius_scale")
-        .eq("school_id", (schoolData as any).id)
+        .eq("school_id", schoolData.id)
         .maybeSingle();
 
       const tenantData: TenantData = {
-        id: (schoolData as any).id,
-        slug: (schoolData as any).slug,
-        name: (schoolData as any).name,
+        id: schoolData.id,
+        slug: schoolData.slug,
+        name: schoolData.name,
         branding: branding || null,
       };
 
