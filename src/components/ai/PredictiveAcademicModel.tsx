@@ -18,15 +18,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Cell,
-} from "recharts";
 
 interface Props {
   studentId: string;
@@ -42,7 +33,7 @@ export function PredictiveAcademicModel({ studentId, schoolId }: Props) {
         .select("*")
         .eq("student_id", studentId)
         .eq("school_id", schoolId)
-        .order("prediction_date", { ascending: false })
+        .order("created_at", { ascending: false })
         .maybeSingle();
 
       if (error) throw error;
@@ -66,9 +57,12 @@ export function PredictiveAcademicModel({ studentId, schoolId }: Props) {
     enabled: !!studentId,
   });
 
+  // Extract subject predictions from factors JSON if available
   const subjectData = useMemo(() => {
-    if (!prediction?.subject_predictions) return [];
-    const subjects = prediction.subject_predictions as Record<string, { predicted: number; current: number }>;
+    if (!prediction?.factors) return [];
+    const factors = prediction.factors as Record<string, unknown>;
+    const subjects = factors?.subject_predictions as Record<string, { predicted: number; current: number }> | undefined;
+    if (!subjects) return [];
     return Object.entries(subjects).map(([name, data]) => ({
       name: name.length > 8 ? name.slice(0, 8) + "…" : name,
       fullName: name,
@@ -76,18 +70,12 @@ export function PredictiveAcademicModel({ studentId, schoolId }: Props) {
       current: data.current || 0,
       growth: (data.predicted || 0) - (data.current || 0),
     }));
-  }, [prediction?.subject_predictions]);
+  }, [prediction?.factors]);
 
   const getRiskColor = (risk: number) => {
     if (risk >= 60) return "text-red-600 bg-red-500/10";
     if (risk >= 30) return "text-amber-600 bg-amber-500/10";
     return "text-emerald-600 bg-emerald-500/10";
-  };
-
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return "hsl(var(--chart-2))";
-    if (score >= 60) return "hsl(var(--chart-4))";
-    return "hsl(var(--chart-1))";
   };
 
   if (isLoading) {
@@ -113,6 +101,10 @@ export function PredictiveAcademicModel({ studentId, schoolId }: Props) {
     );
   }
 
+  // Extract additional data from factors JSON
+  const factors = (prediction.factors || {}) as Record<string, unknown>;
+  const suggestedFocusAreas = (factors.suggested_focus_areas || []) as string[];
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -130,31 +122,24 @@ export function PredictiveAcademicModel({ studentId, schoolId }: Props) {
 
       {/* Main Predictions */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="shadow-sm">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <GraduationCap className="h-5 w-5 text-primary" />
-                <Badge className={getRiskColor(100 - (prediction.predicted_final_grade || 0))}>
-                  {prediction.grade_confidence || 0}% confident
+                <Badge className={getRiskColor(100 - (prediction.confidence || 0))}>
+                  {prediction.confidence || 0}% confident
                 </Badge>
               </div>
               <p className="mt-3 text-3xl font-bold">
-                {prediction.predicted_final_grade || 0}%
+                {prediction.predicted_grade || "—"}
               </p>
-              <p className="text-xs text-muted-foreground">Predicted Final Grade</p>
+              <p className="text-xs text-muted-foreground">Predicted Grade</p>
             </CardContent>
           </Card>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <Card className="shadow-sm">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -164,19 +149,12 @@ export function PredictiveAcademicModel({ studentId, schoolId }: Props) {
                 {prediction.promotion_probability || 0}%
               </p>
               <p className="text-xs text-muted-foreground">Promotion Probability</p>
-              <Progress 
-                value={prediction.promotion_probability || 0} 
-                className="mt-2 h-1.5" 
-              />
+              <Progress value={prediction.promotion_probability || 0} className="mt-2 h-1.5" />
             </CardContent>
           </Card>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <Card className="shadow-sm">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -192,97 +170,23 @@ export function PredictiveAcademicModel({ studentId, schoolId }: Props) {
           </Card>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
           <Card className="shadow-sm">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <TrendingUp className="h-5 w-5 text-blue-500" />
               </div>
               <p className="mt-3 text-3xl font-bold">
-                {prediction.improvement_probability || 0}%
+                {prediction.confidence || 0}%
               </p>
-              <p className="text-xs text-muted-foreground">Improvement Chance</p>
+              <p className="text-xs text-muted-foreground">Confidence</p>
             </CardContent>
           </Card>
         </motion.div>
       </div>
 
-      {/* Subject Predictions Chart */}
-      {subjectData.length > 0 && (
-        <Card className="shadow-elevated">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <BarChart3 className="h-4 w-4 text-primary" />
-              Subject-wise Predictions
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[280px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={subjectData}>
-                  <XAxis
-                    dataKey="name"
-                    tickLine={false}
-                    axisLine={false}
-                    tick={{ fontSize: 10 }}
-                  />
-                  <YAxis
-                    domain={[0, 100]}
-                    tickLine={false}
-                    axisLine={false}
-                    tick={{ fontSize: 10 }}
-                    width={30}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
-                      fontSize: "12px",
-                    }}
-                    formatter={(value: number, name: string) => [
-                      `${value}%`,
-                      name === "current" ? "Current" : "Predicted",
-                    ]}
-                    labelFormatter={(label) => {
-                      const item = subjectData.find(d => d.name === label);
-                      return item?.fullName || label;
-                    }}
-                  />
-                  <Bar 
-                    dataKey="current" 
-                    fill="hsl(var(--muted-foreground))" 
-                    radius={[4, 4, 0, 0]} 
-                    name="current"
-                  />
-                  <Bar dataKey="predicted" radius={[4, 4, 0, 0]} name="predicted">
-                    {subjectData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={getScoreColor(entry.predicted)} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="mt-3 flex items-center justify-center gap-6 text-xs">
-              <span className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded bg-muted-foreground" />
-                Current
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded bg-primary" />
-                Predicted
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Focus Areas */}
-      {prediction.suggested_focus_areas && (prediction.suggested_focus_areas as string[]).length > 0 && (
+      {suggestedFocusAreas.length > 0 && (
         <Card className="shadow-sm border-primary/20 bg-primary/5">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -292,7 +196,7 @@ export function PredictiveAcademicModel({ studentId, schoolId }: Props) {
           </CardHeader>
           <CardContent>
             <ul className="space-y-2">
-              {(prediction.suggested_focus_areas as string[]).map((area, idx) => (
+              {suggestedFocusAreas.map((area, idx) => (
                 <li key={idx} className="flex items-start gap-2 text-sm">
                   <BookOpen className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                   {area}

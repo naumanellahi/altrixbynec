@@ -88,7 +88,7 @@ export function TeacherPerformanceAnalyzer({ schoolId }: Props) {
     return performanceData.slice(0, 10).map(p => ({
       name: (p.profiles as any)?.display_name?.split(' ')[0] || 'Teacher',
       score: p.overall_score || 0,
-      tier: p.performance_tier || 'bronze',
+      tier: (p as any).performance_tier || 'bronze',
     }));
   }, [performanceData]);
 
@@ -241,7 +241,7 @@ export function TeacherPerformanceAnalyzer({ schoolId }: Props) {
       {/* Teacher Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {performanceData.slice(0, 6).map((teacher, idx) => {
-          const tier = teacher.performance_tier as keyof typeof TIER_CONFIG || 'bronze';
+          const tier = ((teacher as any).performance_tier as keyof typeof TIER_CONFIG) || 'bronze';
           const config = TIER_CONFIG[tier] || TIER_CONFIG.bronze;
           const TierIcon = config.icon;
 
@@ -271,7 +271,7 @@ export function TeacherPerformanceAnalyzer({ schoolId }: Props) {
                         </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {format(parseISO(teacher.analysis_month + "-01"), "MMMM yyyy")}
+                        {(teacher as any).analysis_month ? format(parseISO((teacher as any).analysis_month + "-01"), "MMMM yyyy") : "Recent"}
                       </p>
                     </div>
                   </div>
@@ -293,14 +293,14 @@ export function TeacherPerformanceAnalyzer({ schoolId }: Props) {
                     </div>
                     <div className="rounded-lg bg-surface-2 p-2">
                       <p className="text-muted-foreground">Impact</p>
-                      <p className="font-semibold">{teacher.student_improvement_score || 0}%</p>
+                      <p className="font-semibold">{(teacher as any).student_improvement_score || 0}%</p>
                     </div>
                   </div>
 
                   {/* Improvement Areas */}
-                  {teacher.improvement_areas && (teacher.improvement_areas as string[]).length > 0 && (
+                  {(teacher as any).improvement_areas && ((teacher as any).improvement_areas as string[]).length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-1">
-                      {(teacher.improvement_areas as string[]).slice(0, 2).map((area, i) => (
+                      {((teacher as any).improvement_areas as string[]).slice(0, 2).map((area, i) => (
                         <Badge key={i} variant="outline" className="text-[10px]">
                           {area}
                         </Badge>
@@ -338,7 +338,7 @@ export function TeacherPerformanceAnalyzer({ schoolId }: Props) {
                 Top Insights
               </h4>
               {performanceData.slice(0, 3).flatMap(t => 
-                (t.ai_insights as string[] || []).slice(0, 1)
+                ((t as any).ai_insights as string[] || []).slice(0, 1)
               ).map((insight, idx) => (
                 <p key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
                   <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
