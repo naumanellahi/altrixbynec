@@ -76,9 +76,9 @@ export function useMyChildren(schoolId: string | null) {
         if (classesError) throw classesError;
 
         // Build lookup maps
-        const classMap = new Map(classes?.map((c) => [c.id, c.name]) || []);
+        const classMap = new Map((classes as any[])?.map((c: any) => [c.id, c.name]) || []);
         const sectionMap = new Map(
-          sections?.map((s) => [s.id, { name: s.name, class_id: s.class_id }]) || []
+          (sections as any[])?.map((s: any) => [s.id, { name: s.name, class_id: s.class_id }]) || []
         );
         const enrollmentMap = new Map(
           enrollments?.map((e) => [e.student_id, e.class_section_id]) || []

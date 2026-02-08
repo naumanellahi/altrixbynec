@@ -150,11 +150,11 @@ export function TeacherReportsModule() {
     // Build reports
     const studentReports: StudentReport[] = (students || []).map((student) => {
       // Assignments
-      const studentResults = resultsData?.filter((r) => r.student_id === student.id) || [];
-      const assignmentMap = new Map(assignmentData?.map((a) => [a.id, a]) || []);
+      const studentResults = (resultsData as any[])?.filter((r: any) => r.student_id === student.id) || [];
+      const assignmentMap = new Map((assignmentData as any[])?.map((a: any) => [a.id, a]) || []);
 
-      const assignments = studentResults.map((r) => {
-        const assignment = assignmentMap.get(r.assignment_id);
+      const assignments = studentResults.map((r: any) => {
+        const assignment = assignmentMap.get(r.assignment_id) as any;
         return {
           title: assignment?.title || "Unknown",
           marks: r.marks_obtained,

@@ -471,9 +471,9 @@ async function prefetchAttendanceData(schoolId: string, cancelled: boolean, onPr
           .eq('school_id', schoolId)
           .in('session_id', sessionIds);
         if (entries) {
-          const sessionMap = new Map(data.map(s => [s.id, s]));
-          const cachedEntries: CachedAttendance[] = entries.map(e => {
-            const session = sessionMap.get(e.session_id);
+          const sessionMap = new Map((data as any[]).map((s: any) => [s.id, s]));
+          const cachedEntries: CachedAttendance[] = (entries as any[]).map((e: any) => {
+            const session = sessionMap.get(e.session_id) as any;
             return {
               id: e.id, schoolId: e.school_id, studentId: e.student_id,
               sessionId: e.session_id, sessionDate: session?.session_date || '',

@@ -129,9 +129,9 @@ export function TeacherPerformanceReport({ schoolId, teacherUserId, teacherName 
       ]);
 
       const classMap = new Map((classes ?? []).map((c: any) => [c.id, c.name]));
-      const sectionMap = new Map((sections ?? []).map((s: any) => [s.id, { name: s.name, className: classMap.get(s.class_id) ?? "Class" }]));
+      const sectionMap = new Map<string, { name: string; className: string }>((sections ?? []).map((s: any) => [s.id, { name: s.name, className: classMap.get(s.class_id) ?? "Class" }]));
 
-      const getSectionLabel = (secId: string) => sectionMap.get(secId) ?? { name: "Section", className: "Class" };
+      const getSectionLabel = (secId: string): { name: string; className: string } => sectionMap.get(secId) ?? { name: "Section", className: "Class" };
 
       // 1. Attendance sessions created by this teacher in date range
       const { data: sessData } = await supabase
