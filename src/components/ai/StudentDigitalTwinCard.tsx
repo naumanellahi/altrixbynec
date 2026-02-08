@@ -50,7 +50,7 @@ export function StudentDigitalTwinCard({ studentId, schoolId, compact = false }:
   const { data: profile, isLoading } = useQuery({
     queryKey: ["ai_student_profile", studentId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("ai_student_profiles")
         .select("*")
         .eq("student_id", studentId)

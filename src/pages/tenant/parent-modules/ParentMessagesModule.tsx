@@ -52,7 +52,7 @@ const ParentMessagesModule = ({ child, schoolId }: ParentMessagesModuleProps) =>
 
     setLoading(true);
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("parent_messages")
       .select("*")
       .eq("student_id", child.student_id)
@@ -63,7 +63,7 @@ const ParentMessagesModule = ({ child, schoolId }: ParentMessagesModuleProps) =>
     if (error) {
       console.error("Failed to fetch messages:", error);
     } else {
-      setMessages(data || []);
+      setMessages((data || []) as Message[]);
     }
 
     setLoading(false);

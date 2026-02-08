@@ -123,24 +123,24 @@ export function TeacherHome() {
       }
 
       // Get assigned sections for this teacher
-      const { data: assignments } = await supabase
+      const { data: assignments } = await (supabase as any)
         .from("teacher_assignments")
         .select("class_section_id")
         .eq("school_id", schoolId)
         .eq("teacher_user_id", user.id);
 
-      const assignedSectionIds = [...new Set(assignments?.map((a) => a.class_section_id) || [])];
+      const assignedSectionIds = [...new Set((assignments as any[])?.map((a: any) => a.class_section_id as string) || [])] as string[];
       setSectionIds(assignedSectionIds);
       const assignedSections = assignedSectionIds.length;
 
       // Get total students in assigned sections
       let totalStudents = 0;
       if (assignedSectionIds.length > 0) {
-        const { count } = await supabase
+        const { count } = await (supabase as any)
           .from("student_enrollments")
           .select("id", { count: "exact", head: true })
           .eq("school_id", schoolId)
-          .in("class_section_id", assignedSectionIds);
+          .in("class_section_id", assignedSectionIds as string[]);
         totalStudents = count || 0;
       }
 
@@ -161,12 +161,12 @@ export function TeacherHome() {
       // Get today's attendance sessions - only for THIS teacher's sections
       let todayAttendanceCount = 0;
       if (assignedSectionIds.length > 0) {
-        const { count } = await supabase
+        const { count } = await (supabase as any)
           .from("attendance_sessions")
           .select("id", { count: "exact", head: true })
           .eq("school_id", schoolId)
           .eq("session_date", today)
-          .in("class_section_id", assignedSectionIds);
+          .in("class_section_id", assignedSectionIds as string[]);
         todayAttendanceCount = count || 0;
       }
 

@@ -127,7 +127,7 @@ export function TeacherReportsModule() {
 
     // Get all results
     const assignmentIds = assignmentData?.map((a) => a.id) || [];
-    const { data: resultsData } = await supabase
+    const { data: resultsData } = await (supabase as any)
       .from("student_results")
       .select("student_id, assignment_id, marks_obtained, grade")
       .in("assignment_id", assignmentIds);

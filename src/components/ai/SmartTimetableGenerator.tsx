@@ -95,7 +95,7 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
   const { data: suggestions, isLoading: loadingSuggestions } = useQuery({
     queryKey: ["ai_timetable_suggestions", schoolId, selectedSection],
     queryFn: async () => {
-      let query = supabase
+      let query = (supabase as any)
         .from("ai_timetable_suggestions")
         .select("*")
         .eq("school_id", schoolId)
@@ -193,7 +193,7 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
     mutationFn: async (suggestionId: string) => {
       const { data: { user } } = await supabase.auth.getUser();
       
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("ai_timetable_suggestions")
         .update({
           status: "approved",

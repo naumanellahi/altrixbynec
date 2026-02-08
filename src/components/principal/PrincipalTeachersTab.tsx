@@ -144,8 +144,8 @@ export function PrincipalTeachersTab({ schoolId }: PrincipalTeachersTabProps) {
         supabase.from("academic_classes").select("id, name").eq("school_id", schoolId).order("name"),
         supabase.from("class_sections").select("id, name, class_id").eq("school_id", schoolId),
         supabase.from("subjects").select("id, name, code").eq("school_id", schoolId),
-        supabase.from("teacher_assignments").select("teacher_user_id, class_section_id").eq("school_id", schoolId),
-        supabase.from("teacher_subject_assignments").select("teacher_user_id, class_section_id, subject_id").eq("school_id", schoolId),
+        (supabase as any).from("teacher_assignments").select("teacher_user_id, class_section_id").eq("school_id", schoolId),
+        (supabase as any).from("teacher_subject_assignments").select("teacher_user_id, class_section_id, subject_id").eq("school_id", schoolId),
         supabase.from("timetable_entries").select("id, subject_name, day_of_week, period_id, room, teacher_user_id, class_section_id").eq("school_id", schoolId),
         supabase.from("timetable_periods").select("id, label, sort_order, start_time, end_time, is_break").eq("school_id", schoolId).order("sort_order"),
       ]);

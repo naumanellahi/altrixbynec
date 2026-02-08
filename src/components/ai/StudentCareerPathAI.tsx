@@ -36,7 +36,7 @@ export function StudentCareerPathAI({ studentId, schoolId }: Props) {
   const { data: career, isLoading } = useQuery({
     queryKey: ["ai_career_suggestions", studentId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("ai_career_suggestions")
         .select("*")
         .eq("student_id", studentId)
@@ -44,7 +44,7 @@ export function StudentCareerPathAI({ studentId, schoolId }: Props) {
         .maybeSingle();
 
       if (error) throw error;
-      return data;
+      return data as any;
     },
     enabled: !!studentId && !!schoolId,
   });

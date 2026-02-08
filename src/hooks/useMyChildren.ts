@@ -46,7 +46,7 @@ export function useMyChildren(schoolId: string | null) {
         if (studentsError) throw studentsError;
 
         // Fetch active enrollments
-        const { data: enrollments, error: enrollmentsError } = await supabase
+        const { data: enrollments, error: enrollmentsError } = await (supabase as any)
           .from("student_enrollments")
           .select("student_id, class_section_id")
           .in("student_id", studentIds)
@@ -56,18 +56,18 @@ export function useMyChildren(schoolId: string | null) {
         if (enrollmentsError) throw enrollmentsError;
 
         // Get unique section IDs
-        const sectionIds = [...new Set(enrollments?.map((e) => e.class_section_id) || [])];
+        const sectionIds = [...new Set((enrollments as any[])?.map((e: any) => e.class_section_id) || [])];
 
         // Fetch sections
         const { data: sections, error: sectionsError } = await supabase
           .from("class_sections")
           .select("id, name, class_id")
-          .in("id", sectionIds);
+          .in("id", sectionIds as string[]);
 
         if (sectionsError) throw sectionsError;
 
         // Fetch classes
-        const classIds = [...new Set(sections?.map((s) => s.class_id) || [])];
+        const classIds = [...new Set((sections as any[])?.map((s: any) => s.class_id) || [])];
         const { data: classes, error: classesError } = await supabase
           .from("academic_classes")
           .select("id, name")
@@ -76,12 +76,12 @@ export function useMyChildren(schoolId: string | null) {
         if (classesError) throw classesError;
 
         // Build lookup maps
-        const classMap = new Map(classes?.map((c) => [c.id, c.name]) || []);
-        const sectionMap = new Map(
-          sections?.map((s) => [s.id, { name: s.name, class_id: s.class_id }]) || []
+        const classMap = new Map((classes as any[])?.map((c: any) => [c.id, c.name]) || []);
+        const sectionMap = new Map<string, { name: string; class_id: string }>(
+          (sections as any[])?.map((s: any) => [s.id, { name: s.name, class_id: s.class_id }]) || []
         );
         const enrollmentMap = new Map(
-          enrollments?.map((e) => [e.student_id, e.class_section_id]) || []
+          (enrollments as any[])?.map((e: any) => [e.student_id, e.class_section_id]) || []
         );
 
         // Build final child info
