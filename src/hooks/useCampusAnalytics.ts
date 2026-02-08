@@ -35,31 +35,31 @@ export function useCampusAnalytics(schoolId: string | null, campuses: Campus[]) 
           paymentsRes,
           marksRes,
         ] = await Promise.all([
-          supabase
+          (supabase as any)
             .from("students")
             .select("id", { count: "exact", head: true })
             .eq("school_id", schoolId)
-            .eq("campus_id" as any, campus.id),
-          supabase
-            .from("staff_campus_assignments" as any)
+            .eq("campus_id", campus.id),
+          (supabase as any)
+            .from("staff_campus_assignments")
             .select("id", { count: "exact", head: true })
             .eq("campus_id", campus.id),
-          supabase
+          (supabase as any)
             .from("class_sections")
             .select("id", { count: "exact", head: true })
             .eq("school_id", schoolId)
-            .eq("campus_id" as any, campus.id),
-          supabase
+            .eq("campus_id", campus.id),
+          (supabase as any)
             .from("attendance_entries")
             .select("status")
             .eq("school_id", schoolId)
             .gte("created_at", d7Ago),
-          supabase
+          (supabase as any)
             .from("finance_payments")
             .select("amount")
             .eq("school_id", schoolId)
             .gte("paid_at", monthStart),
-          supabase
+          (supabase as any)
             .from("student_marks")
             .select("marks")
             .eq("school_id", schoolId)
