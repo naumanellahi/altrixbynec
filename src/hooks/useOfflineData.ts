@@ -1,7 +1,7 @@
 // Universal Offline Data Hook
 // Provides cached data retrieval for all modules when offline
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import * as offlineDb from '@/lib/offline-db';
 
 type DataLoader<T> = () => Promise<T>;
@@ -32,6 +32,12 @@ export function useOfflineData<T>(
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [isUsingCache, setIsUsingCache] = useState(false);
 
+  // Use refs to avoid infinite re-render loops from unstable callbacks
+  const onlineLoaderRef = useRef(onlineLoader);
+  const offlineLoaderRef = useRef(offlineLoader);
+  onlineLoaderRef.current = onlineLoader;
+  offlineLoaderRef.current = offlineLoader;
+
   // Track online/offline status
   useEffect(() => {
     const handleOnline = () => setIsOffline(false);
@@ -56,20 +62,17 @@ export function useOfflineData<T>(
 
     try {
       if (navigator.onLine) {
-        // Try online first
-        const result = await onlineLoader();
+        const result = await onlineLoaderRef.current();
         setData(result);
         setIsUsingCache(false);
       } else {
-        // Offline - use cache
-        const cached = await offlineLoader();
+        const cached = await offlineLoaderRef.current();
         setData(cached);
         setIsUsingCache(true);
       }
     } catch (error) {
-      // If online fetch fails, try cache
       try {
-        const cached = await offlineLoader();
+        const cached = await offlineLoaderRef.current();
         if (cached && (Array.isArray(cached) ? cached.length > 0 : Object.keys(cached as object).length > 0)) {
           setData(cached);
           setIsUsingCache(true);
@@ -80,7 +83,7 @@ export function useOfflineData<T>(
     } finally {
       setLoading(false);
     }
-  }, [enabled, onlineLoader, offlineLoader]);
+  }, [enabled]);
 
   useEffect(() => {
     void loadData();
