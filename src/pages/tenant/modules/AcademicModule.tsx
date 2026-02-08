@@ -432,6 +432,20 @@ export function AcademicModule() {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-4">
+          {/* Quick Actions */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const el = document.querySelector('[data-value="manage"]') as HTMLElement | null;
+                el?.click();
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" /> Add Class / Section
+            </Button>
+          </div>
+
           <div className="grid gap-4 lg:grid-cols-2">
             <ClassStructureCard
               classes={classes}
