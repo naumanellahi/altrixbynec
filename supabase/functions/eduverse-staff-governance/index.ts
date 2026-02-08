@@ -140,7 +140,6 @@ serve(async (req) => {
         school_id: school.id,
         user_id: targetUserId,
         role,
-        created_by: actorUserId,
       }));
       const { error: insErr } = await admin.from("user_roles").insert(rows);
       if (insErr) return json({ ok: false, error: insErr.message }, 400, traceId);

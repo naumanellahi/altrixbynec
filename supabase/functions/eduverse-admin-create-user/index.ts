@@ -112,20 +112,20 @@ serve(async (req) => {
     if (body.displayName?.trim()) {
       const { error: profErr } = await admin
         .from("profiles")
-        .upsert({ user_id: userId, display_name: body.displayName.trim() }, { onConflict: "user_id" });
+        .upsert({ id: userId, display_name: body.displayName.trim() }, { onConflict: "id" });
       if (profErr) return json({ ok: false, error: profErr.message }, 400, traceId);
     }
 
     // Membership + role + directory
     const { error: memErr } = await admin
       .from("school_memberships")
-      .upsert({ school_id: school.id, user_id: userId, status: "active", created_by: actorUserId }, { onConflict: "school_id,user_id" });
+      .upsert({ school_id: school.id, user_id: userId }, { onConflict: "school_id,user_id" });
     if (memErr) return json({ ok: false, error: memErr.message }, 400, traceId);
 
     const { error: roleErr } = await admin
       .from("user_roles")
       .upsert(
-        { school_id: school.id, user_id: userId, role: body.role, created_by: actorUserId },
+        { school_id: school.id, user_id: userId, role: body.role },
         { onConflict: "school_id,user_id,role" },
       );
     if (roleErr) return json({ ok: false, error: roleErr.message }, 400, traceId);

@@ -230,7 +230,7 @@ serve(async (req) => {
       const { error: memErr } = await admin
         .from("school_memberships")
         .upsert(
-          { school_id: school.id, user_id: userId, status: "active", created_by: actorUserId },
+          { school_id: school.id, user_id: userId },
           { onConflict: "school_id,user_id" },
         );
       if (memErr) {
@@ -251,7 +251,6 @@ serve(async (req) => {
         school_id: school.id,
         user_id: userId,
         role,
-        created_by: actorUserId,
       }));
       const { error: insErr } = await admin.from("user_roles").insert(roleRows);
       if (insErr) {
