@@ -37,16 +37,16 @@ export function PredictiveAcademicModel({ studentId, schoolId }: Props) {
   const { data: prediction, isLoading } = useQuery({
     queryKey: ["ai_academic_predictions", studentId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("ai_academic_predictions")
         .select("*")
         .eq("student_id", studentId)
         .eq("school_id", schoolId)
-        .order("prediction_date", { ascending: false })
+        .order("created_at", { ascending: false })
         .maybeSingle();
 
       if (error) throw error;
-      return data;
+      return data as any;
     },
     enabled: !!studentId && !!schoolId,
   });

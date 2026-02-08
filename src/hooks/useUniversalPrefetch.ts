@@ -465,7 +465,7 @@ async function prefetchAttendanceData(schoolId: string, cancelled: boolean, onPr
       // Then fetch entries for these sessions
       if (data.length > 0) {
         const sessionIds = data.map(s => s.id);
-        const { data: entries } = await supabase
+        const { data: entries } = await (supabase as any)
           .from('attendance_entries')
           .select('id, student_id, session_id, status, note, school_id')
           .eq('school_id', schoolId)

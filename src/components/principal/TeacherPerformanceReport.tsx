@@ -107,7 +107,7 @@ export function TeacherPerformanceReport({ schoolId, teacherUserId, teacherName 
 
     try {
       // Get teacher's assigned section IDs
-      const { data: assignments } = await supabase
+      const { data: assignments } = await (supabase as any)
         .from("teacher_subject_assignments")
         .select("class_section_id")
         .eq("school_id", schoolId)
@@ -124,14 +124,14 @@ export function TeacherPerformanceReport({ schoolId, teacherUserId, teacherName 
 
       // Fetch sections and classes for labels
       const [{ data: sections }, { data: classes }] = await Promise.all([
-        supabase.from("class_sections").select("id,name,class_id").eq("school_id", schoolId).in("id", sectionIds),
-        supabase.from("academic_classes").select("id,name").eq("school_id", schoolId),
+        (supabase as any).from("class_sections").select("id,name,class_id").eq("school_id", schoolId).in("id", sectionIds),
+        (supabase as any).from("academic_classes").select("id,name").eq("school_id", schoolId),
       ]);
 
-      const classMap = new Map((classes ?? []).map((c: any) => [c.id, c.name]));
-      const sectionMap = new Map((sections ?? []).map((s: any) => [s.id, { name: s.name, className: classMap.get(s.class_id) ?? "Class" }]));
+      const classMap = new Map<string, string>((classes ?? []).map((c: any) => [c.id, c.name]));
+      const sectionMap = new Map<string, { name: string; className: string }>((sections ?? []).map((s: any) => [s.id, { name: s.name, className: classMap.get(s.class_id) ?? "Class" }]));
 
-      const getSectionLabel = (secId: string) => sectionMap.get(secId) ?? { name: "Section", className: "Class" };
+      const getSectionLabel = (secId: string): { name: string; className: string } => sectionMap.get(secId) ?? { name: "Section", className: "Class" };
 
       // 1. Attendance sessions created by this teacher in date range
       const { data: sessData } = await supabase
@@ -181,7 +181,7 @@ export function TeacherPerformanceReport({ schoolId, teacherUserId, teacherName 
       setAttendanceSessions(attendanceRows);
 
       // 2. Homework created in date range
-      const { data: hwData } = await supabase
+      const { data: hwData } = await (supabase as any)
         .from("homework")
         .select("id,title,due_date,class_section_id,created_at")
         .eq("school_id", schoolId)
@@ -210,7 +210,7 @@ export function TeacherPerformanceReport({ schoolId, teacherUserId, teacherName 
 
       if (asnList.length > 0) {
         const asnIds = asnList.map((a: any) => a.id);
-        const { data: results } = await supabase
+        const { data: results } = await (supabase as any)
           .from("student_results")
           .select("assignment_id,marks_obtained")
           .in("assignment_id", asnIds);
@@ -243,11 +243,11 @@ export function TeacherPerformanceReport({ schoolId, teacherUserId, teacherName 
       setAssignmentList(assignmentRows);
 
       // 4. Assessments (grades) in date range for teacher's sections
-      const { data: assessData } = await supabase
+      const { data: assessData } = await (supabase as any)
         .from("academic_assessments")
         .select("id,title,assessment_date,class_section_id,max_marks,is_published")
         .eq("school_id", schoolId)
-        .in("class_section_id", sectionIds)
+        .in("class_section_id", sectionIds as string[])
         .gte("assessment_date", from)
         .lte("assessment_date", to)
         .order("assessment_date", { ascending: false });

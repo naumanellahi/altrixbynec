@@ -166,7 +166,7 @@ export function TeacherAssignmentsModule() {
       section_name: sectionMap.get(a.class_section_id) || "",
     }));
 
-    setAssignments(enrichedAssignments);
+    setAssignments(enrichedAssignments as any);
     setLoading(false);
   };
 
@@ -234,12 +234,12 @@ export function TeacherAssignmentsModule() {
       .in("id", studentIds);
 
     // Load existing results
-    const { data: existingResults } = await supabase
+    const { data: existingResults } = await (supabase as any)
       .from("student_results")
       .select("student_id, marks_obtained, grade, remarks")
       .eq("assignment_id", assignment.id);
 
-    const resultMap = new Map(existingResults?.map((r) => [r.student_id, r]) || []);
+    const resultMap = new Map((existingResults as any[])?.map((r: any) => [r.student_id, r]) || []);
 
     const studentResults: StudentResult[] = (students || []).map((s) => {
       const existing = resultMap.get(s.id);
@@ -283,7 +283,7 @@ export function TeacherAssignmentsModule() {
         graded_at: new Date().toISOString(),
       }));
 
-    const { error } = await supabase.from("student_results").upsert(payload, {
+    const { error } = await (supabase as any).from("student_results").upsert(payload, {
       onConflict: "school_id,student_id,assignment_id",
     });
 

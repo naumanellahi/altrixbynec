@@ -69,7 +69,7 @@ export function StudentQuickViewPopover({ studentId, schoolId, schoolSlug, child
       }
 
       // Fetch average grade - use separate queries
-      const { data: marksData } = await supabase
+      const { data: marksData } = await (supabase as any)
         .from("student_marks")
         .select("marks, assessment_id")
         .eq("student_id", studentId)
