@@ -35,7 +35,7 @@ serve(async (req) => {
 
     const body = (await req.json()) as BootstrapRequest;
 
-    const expected = Deno.env.get("EDUVERSE_BOOTSTRAP_SECRET") ?? Deno.env.get("EDUVERSE_MASTER_ADMIN_RECOVERY_SECRET") ?? "";
+    const expected = Deno.env.get("EDUVERSE_BOOTSTRAP_SECRET") ?? "";
     if (!expected || body.bootstrapSecret !== expected) {
       return json({ ok: false, error: "Invalid bootstrap secret." }, 401, traceId);
     }
@@ -104,7 +104,7 @@ serve(async (req) => {
     // 3) Profile
     const { error: profileErr } = await admin
       .from("profiles")
-      .upsert({ id: userId, display_name: body.displayName ?? "Super Admin" }, { onConflict: "id" });
+      .upsert({ user_id: userId, display_name: body.displayName ?? "Super Admin" }, { onConflict: "user_id" });
     if (profileErr) return json({ ok: false, error: profileErr.message }, 400, traceId);
 
     // Directory (for UI visibility)
@@ -124,15 +124,15 @@ serve(async (req) => {
     const { error: memErr } = await admin
       .from("school_memberships")
       .upsert(
-        { school_id: schoolRow.id, user_id: userId },
+        { school_id: schoolRow.id, user_id: userId, status: "active", created_by: userId },
         { onConflict: "school_id,user_id" },
       );
     if (memErr) return json({ ok: false, error: memErr.message }, 400, traceId);
 
     const { error: roleErr } = await admin.from("user_roles").insert([
-      { school_id: schoolRow.id, user_id: userId, role: "super_admin" },
-      { school_id: schoolRow.id, user_id: userId, role: "school_owner" },
-      { school_id: schoolRow.id, user_id: userId, role: "principal" },
+      { school_id: schoolRow.id, user_id: userId, role: "super_admin", created_by: userId },
+      { school_id: schoolRow.id, user_id: userId, role: "school_owner", created_by: userId },
+      { school_id: schoolRow.id, user_id: userId, role: "principal", created_by: userId },
     ]);
     if (roleErr) {
       // ignore duplicates if re-run

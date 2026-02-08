@@ -239,10 +239,10 @@ export function TeacherAssignmentsModule() {
       .select("student_id, marks_obtained, grade, remarks")
       .eq("assignment_id", assignment.id);
 
-    const resultMap = new Map((existingResults as any[])?.map((r: any) => [r.student_id, r]) || []);
+    const resultMap = new Map(existingResults?.map((r) => [r.student_id, r]) || []);
 
-    const studentResults: StudentResult[] = (students || []).map((s: any) => {
-      const existing = resultMap.get(s.id) as any;
+    const studentResults: StudentResult[] = (students || []).map((s) => {
+      const existing = resultMap.get(s.id);
       return {
         student_id: s.id,
         first_name: s.first_name,
@@ -327,10 +327,10 @@ export function TeacherAssignmentsModule() {
       .eq("school_id", tenant.schoolId)
       .eq("assignment_id", assignment.id);
 
-    const subMap = new Map((subs as any[] || []).map((s: any) => [s.student_id, s]));
+    const subMap = new Map((subs || []).map((s: any) => [s.student_id, s]));
     
     const enriched: Submission[] = (students || []).map((s: any) => {
-      const sub = subMap.get(s.id) as any;
+      const sub = subMap.get(s.id);
       return {
         id: sub?.id || "",
         student_id: s.id,

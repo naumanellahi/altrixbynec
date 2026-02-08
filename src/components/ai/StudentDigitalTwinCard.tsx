@@ -29,7 +29,7 @@ interface Props {
   compact?: boolean;
 }
 
-const learningStyleIcons: Record<string, typeof Eye> = {
+const learningStyleIcons = {
   visual: Eye,
   auditory: Ear,
   kinesthetic: Hand,
@@ -37,7 +37,7 @@ const learningStyleIcons: Record<string, typeof Eye> = {
   reading: BookOpen,
 };
 
-const learningStyleColors: Record<string, string> = {
+const learningStyleColors = {
   visual: "text-blue-500 bg-blue-500/10",
   auditory: "text-purple-500 bg-purple-500/10",
   kinesthetic: "text-orange-500 bg-orange-500/10",
@@ -78,23 +78,6 @@ export function StudentDigitalTwinCard({ studentId, schoolId, compact = false }:
     enabled: !!studentId,
   });
 
-  // Extract extended data from analysis_data JSON
-  const analysisData = useMemo(() => {
-    const raw = (profile?.analysis_data || {}) as Record<string, unknown>;
-    return {
-      emotionalTrend: raw.emotional_trend as string | undefined,
-      learningStyleConfidence: raw.learning_style_confidence as number | undefined,
-      learningSpeed: raw.learning_speed as string | undefined,
-      attentionSpanMinutes: raw.attention_span_minutes as number | undefined,
-      bestLearningTime: raw.best_learning_time as string | undefined,
-      focusDropDetected: raw.focus_drop_detected as boolean | undefined,
-      burnoutProbability: raw.burnout_probability as number | undefined,
-      dropoutRisk: raw.dropout_risk as number | undefined,
-      needsRemedialClasses: raw.needs_remedial_classes as boolean | undefined,
-      shouldBeAccelerated: raw.should_be_accelerated as boolean | undefined,
-    };
-  }, [profile?.analysis_data]);
-
   const riskLevel = useMemo(() => {
     if (!profile?.risk_score) return { level: "low", color: "text-emerald-600 bg-emerald-500/10" };
     if (profile.risk_score >= 70) return { level: "high", color: "text-red-600 bg-red-500/10" };
@@ -103,11 +86,11 @@ export function StudentDigitalTwinCard({ studentId, schoolId, compact = false }:
   }, [profile?.risk_score]);
 
   const emotionalTrendIcon = useMemo(() => {
-    const trend = analysisData.emotionalTrend;
+    const trend = profile?.emotional_trend;
     if (trend === "improving" || trend === "positive") return TrendingUp;
     if (trend === "declining" || trend === "negative") return TrendingDown;
     return Heart;
-  }, [analysisData.emotionalTrend]);
+  }, [profile?.emotional_trend]);
 
   const EmotionalIcon = emotionalTrendIcon;
 
@@ -159,10 +142,8 @@ export function StudentDigitalTwinCard({ studentId, schoolId, compact = false }:
     );
   }
 
-  const LearningIcon = learningStyleIcons[profile.learning_style as string] || Brain;
-  const learningColor = learningStyleColors[profile.learning_style as string] || "text-primary bg-primary/10";
-  const strengths = (profile.strengths || []) as string[];
-  const weaknesses = (profile.weaknesses || []) as string[];
+  const LearningIcon = learningStyleIcons[profile.learning_style as keyof typeof learningStyleIcons] || Brain;
+  const learningColor = learningStyleColors[profile.learning_style as keyof typeof learningStyleColors] || "text-primary bg-primary/10";
 
   if (compact) {
     return (
@@ -193,7 +174,11 @@ export function StudentDigitalTwinCard({ studentId, schoolId, compact = false }:
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
       <Card className="shadow-elevated overflow-hidden">
         <CardHeader className="pb-3 bg-gradient-to-br from-primary/5 to-transparent">
           <div className="flex items-start justify-between">
@@ -208,7 +193,9 @@ export function StudentDigitalTwinCard({ studentId, schoolId, compact = false }:
                 </p>
               </div>
             </div>
-            <Badge className={riskLevel.color}>Risk: {riskLevel.level}</Badge>
+            <Badge className={riskLevel.color}>
+              Risk: {riskLevel.level}
+            </Badge>
           </div>
         </CardHeader>
 
@@ -228,8 +215,10 @@ export function StudentDigitalTwinCard({ studentId, schoolId, compact = false }:
                 <p className="mt-1 text-sm font-semibold capitalize">
                   {profile.learning_style || "Not detected"}
                 </p>
-                {analysisData.learningStyleConfidence && (
-                  <p className="text-[10px] opacity-70">{analysisData.learningStyleConfidence}% confidence</p>
+                {profile.learning_style_confidence && (
+                  <p className="text-[10px] opacity-70">
+                    {profile.learning_style_confidence}% confidence
+                  </p>
                 )}
               </div>
 
@@ -239,7 +228,7 @@ export function StudentDigitalTwinCard({ studentId, schoolId, compact = false }:
                   <span className="text-xs font-medium">Learning Speed</span>
                 </div>
                 <p className="mt-1 text-sm font-semibold capitalize">
-                  {analysisData.learningSpeed || "Average"}
+                  {profile.learning_speed || "Average"}
                 </p>
               </div>
             </div>
@@ -254,15 +243,20 @@ export function StudentDigitalTwinCard({ studentId, schoolId, compact = false }:
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Attention Span</span>
-                <span className="font-medium">{analysisData.attentionSpanMinutes || 25} min</span>
+                <span className="font-medium">
+                  {profile.attention_span_minutes || 25} min
+                </span>
               </div>
-              <Progress value={Math.min(100, ((analysisData.attentionSpanMinutes || 25) / 45) * 100)} className="h-2" />
-              {analysisData.bestLearningTime && (
+              <Progress 
+                value={Math.min(100, ((profile.attention_span_minutes || 25) / 45) * 100)} 
+                className="h-2"
+              />
+              {profile.best_learning_time && (
                 <p className="text-xs text-muted-foreground">
-                  Best time: <span className="font-medium capitalize">{analysisData.bestLearningTime}</span>
+                  Best time: <span className="font-medium capitalize">{profile.best_learning_time}</span>
                 </p>
               )}
-              {analysisData.focusDropDetected && (
+              {profile.focus_drop_detected && (
                 <Badge variant="outline" className="text-amber-600 bg-amber-500/10 text-[10px]">
                   <AlertTriangle className="mr-1 h-3 w-3" />
                   Focus drop detected
@@ -281,9 +275,11 @@ export function StudentDigitalTwinCard({ studentId, schoolId, compact = false }:
               <div className="rounded-xl bg-emerald-500/10 p-3">
                 <p className="text-[10px] text-emerald-700 font-medium">Strong Subjects</p>
                 <div className="mt-1.5 flex flex-wrap gap-1">
-                  {strengths.length > 0 ? (
-                    strengths.slice(0, 3).map((s) => (
-                      <Badge key={s} variant="secondary" className="text-[10px]">{s}</Badge>
+                  {(profile.strong_subjects || []).length > 0 ? (
+                    (profile.strong_subjects as string[]).slice(0, 3).map((subject) => (
+                      <Badge key={subject} variant="secondary" className="text-[10px]">
+                        {subject}
+                      </Badge>
                     ))
                   ) : (
                     <span className="text-xs text-muted-foreground">Analyzing...</span>
@@ -293,9 +289,11 @@ export function StudentDigitalTwinCard({ studentId, schoolId, compact = false }:
               <div className="rounded-xl bg-red-500/10 p-3">
                 <p className="text-[10px] text-red-700 font-medium">Needs Focus</p>
                 <div className="mt-1.5 flex flex-wrap gap-1">
-                  {weaknesses.length > 0 ? (
-                    weaknesses.slice(0, 3).map((s) => (
-                      <Badge key={s} variant="secondary" className="text-[10px]">{s}</Badge>
+                  {(profile.weak_subjects || []).length > 0 ? (
+                    (profile.weak_subjects as string[]).slice(0, 3).map((subject) => (
+                      <Badge key={subject} variant="secondary" className="text-[10px]">
+                        {subject}
+                      </Badge>
                     ))
                   ) : (
                     <span className="text-xs text-muted-foreground">None detected</span>
@@ -314,36 +312,42 @@ export function StudentDigitalTwinCard({ studentId, schoolId, compact = false }:
             <div className="grid grid-cols-3 gap-2">
               <div className="rounded-xl bg-surface-2 p-3 text-center">
                 <EmotionalIcon className={`mx-auto h-5 w-5 ${
-                  analysisData.emotionalTrend === "positive" || analysisData.emotionalTrend === "improving"
+                  profile.emotional_trend === "positive" || profile.emotional_trend === "improving"
                     ? "text-emerald-500"
-                    : analysisData.emotionalTrend === "negative" || analysisData.emotionalTrend === "declining"
+                    : profile.emotional_trend === "negative" || profile.emotional_trend === "declining"
                     ? "text-red-500"
                     : "text-muted-foreground"
                 }`} />
                 <p className="mt-1 text-[10px] text-muted-foreground">Emotional</p>
-                <p className="text-xs font-medium capitalize">{analysisData.emotionalTrend || "Stable"}</p>
+                <p className="text-xs font-medium capitalize">
+                  {profile.emotional_trend || "Stable"}
+                </p>
               </div>
 
               <div className="rounded-xl bg-surface-2 p-3 text-center">
                 <Target className={`mx-auto h-5 w-5 ${
-                  (analysisData.burnoutProbability || 0) > 60 ? "text-red-500" : "text-emerald-500"
+                  (profile.burnout_probability || 0) > 60 ? "text-red-500" : "text-emerald-500"
                 }`} />
                 <p className="mt-1 text-[10px] text-muted-foreground">Burnout Risk</p>
-                <p className="text-xs font-medium">{analysisData.burnoutProbability || 0}%</p>
+                <p className="text-xs font-medium">
+                  {profile.burnout_probability || 0}%
+                </p>
               </div>
 
               <div className="rounded-xl bg-surface-2 p-3 text-center">
                 <AlertTriangle className={`mx-auto h-5 w-5 ${
-                  (analysisData.dropoutRisk || 0) > 40 ? "text-red-500" : "text-emerald-500"
+                  (profile.dropout_risk || 0) > 40 ? "text-red-500" : "text-emerald-500"
                 }`} />
                 <p className="mt-1 text-[10px] text-muted-foreground">Dropout</p>
-                <p className="text-xs font-medium">{analysisData.dropoutRisk || 0}%</p>
+                <p className="text-xs font-medium">
+                  {profile.dropout_risk || 0}%
+                </p>
               </div>
             </div>
           </div>
 
           {/* AI Recommendations */}
-          {(profile.needs_counseling || profile.needs_extra_support || analysisData.needsRemedialClasses || analysisData.shouldBeAccelerated) && (
+          {(profile.needs_counseling || profile.needs_extra_support || profile.needs_remedial_classes || profile.should_be_accelerated) && (
             <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-2">
               <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
                 <Brain className="h-4 w-4" />
@@ -362,13 +366,13 @@ export function StudentDigitalTwinCard({ studentId, schoolId, compact = false }:
                     Assign additional learning support
                   </li>
                 )}
-                {analysisData.needsRemedialClasses && (
+                {profile.needs_remedial_classes && (
                   <li className="flex items-center gap-2">
                     <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />
                     Enroll in remedial classes
                   </li>
                 )}
-                {analysisData.shouldBeAccelerated && (
+                {profile.should_be_accelerated && (
                   <li className="flex items-center gap-2">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                     Consider academic acceleration

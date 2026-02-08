@@ -106,20 +106,20 @@ serve(async (req) => {
     const displayName = body.principalDisplayName?.trim() || "Principal";
 
     await admin.from("profiles").upsert(
-      { id: principalUserId, display_name: displayName },
-      { onConflict: "id" },
+      { user_id: principalUserId, display_name: displayName },
+      { onConflict: "user_id" },
     );
 
     const { error: memErr } = await admin
       .from("school_memberships")
-      .upsert({ school_id: school.id, user_id: principalUserId }, { onConflict: "school_id,user_id" });
+      .upsert({ school_id: school.id, user_id: principalUserId, status: "active", created_by: actorUserId }, { onConflict: "school_id,user_id" });
     if (memErr) return json({ ok: false, error: memErr.message }, 400, traceId);
 
     // Principal role
     const { error: roleErr } = await admin
       .from("user_roles")
       .upsert(
-        { school_id: school.id, user_id: principalUserId, role: "principal" },
+        { school_id: school.id, user_id: principalUserId, role: "principal", created_by: actorUserId },
         { onConflict: "school_id,user_id,role" },
       );
     if (roleErr) return json({ ok: false, error: roleErr.message }, 400, traceId);

@@ -129,7 +129,7 @@ export function TeacherHome() {
         .eq("school_id", schoolId)
         .eq("teacher_user_id", user.id);
 
-      const assignedSectionIds = [...new Set((assignments as any[])?.map((a: any) => a.class_section_id) || [])] as string[];
+      const assignedSectionIds = [...new Set(assignments?.map((a) => a.class_section_id) || [])];
       setSectionIds(assignedSectionIds);
       const assignedSections = assignedSectionIds.length;
 

@@ -1,7 +1,7 @@
 // Universal Offline Data Hook
 // Provides cached data retrieval for all modules when offline
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import * as offlineDb from '@/lib/offline-db';
 
 type DataLoader<T> = () => Promise<T>;
@@ -31,18 +31,9 @@ export function useOfflineData<T>(
   const [loading, setLoading] = useState(true);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [isUsingCache, setIsUsingCache] = useState(false);
-  const loadedRef = useRef(false);
-  const mountedRef = useRef(true);
-
-  // Store loaders in refs to avoid re-triggering effects
-  const onlineLoaderRef = useRef(onlineLoader);
-  const offlineLoaderRef = useRef(offlineLoader);
-  onlineLoaderRef.current = onlineLoader;
-  offlineLoaderRef.current = offlineLoader;
 
   // Track online/offline status
   useEffect(() => {
-    mountedRef.current = true;
     const handleOnline = () => setIsOffline(false);
     const handleOffline = () => setIsOffline(true);
     
@@ -50,7 +41,6 @@ export function useOfflineData<T>(
     window.addEventListener('offline', handleOffline);
     
     return () => {
-      mountedRef.current = false;
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
@@ -66,22 +56,21 @@ export function useOfflineData<T>(
 
     try {
       if (navigator.onLine) {
-        const result = await onlineLoaderRef.current();
-        if (mountedRef.current) {
-          setData(result);
-          setIsUsingCache(false);
-        }
+        // Try online first
+        const result = await onlineLoader();
+        setData(result);
+        setIsUsingCache(false);
       } else {
-        const cached = await offlineLoaderRef.current();
-        if (mountedRef.current) {
-          setData(cached);
-          setIsUsingCache(true);
-        }
+        // Offline - use cache
+        const cached = await offlineLoader();
+        setData(cached);
+        setIsUsingCache(true);
       }
     } catch (error) {
+      // If online fetch fails, try cache
       try {
-        const cached = await offlineLoaderRef.current();
-        if (mountedRef.current && cached && (Array.isArray(cached) ? cached.length > 0 : Object.keys(cached as object).length > 0)) {
+        const cached = await offlineLoader();
+        if (cached && (Array.isArray(cached) ? cached.length > 0 : Object.keys(cached as object).length > 0)) {
           setData(cached);
           setIsUsingCache(true);
         }
@@ -89,24 +78,20 @@ export function useOfflineData<T>(
         // Keep default value
       }
     } finally {
-      if (mountedRef.current) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
-  }, [enabled]);
+  }, [enabled, onlineLoader, offlineLoader]);
 
-  // Initial load — only once when enabled changes
   useEffect(() => {
-    loadedRef.current = false;
-    void loadData().then(() => { loadedRef.current = true; });
+    void loadData();
   }, [loadData]);
 
-  // Reload when coming back online (but not on initial mount)
+  // Reload when coming back online
   useEffect(() => {
-    if (!isOffline && enabled && loadedRef.current) {
+    if (!isOffline && enabled) {
       void loadData();
     }
-  }, [isOffline]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOffline, enabled, loadData]);
 
   return {
     data,

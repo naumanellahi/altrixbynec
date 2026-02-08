@@ -92,16 +92,16 @@ export function StaffProfileDialog({
             phone: phone.trim() || null,
             updated_at: new Date().toISOString(),
           })
-          .eq("id", userId);
+          .eq("user_id", userId);
 
         if (error) throw error;
       } else {
         // Create new profile
         const { error } = await supabase.from("profiles").insert({
-          id: userId,
+          user_id: userId,
           display_name: name.trim() || null,
           phone: phone.trim() || null,
-        } as any);
+        });
 
         if (error) throw error;
       }

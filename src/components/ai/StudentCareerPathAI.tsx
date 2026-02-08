@@ -32,23 +32,11 @@ interface Props {
   schoolId: string;
 }
 
-interface CareerData {
-  id: string;
-  student_id: string;
-  school_id: string;
-  suggested_fields?: string[];
-  field_match_scores?: Record<string, number>;
-  detected_interests?: string[];
-  recommended_subjects?: string[];
-  university_readiness_score?: number;
-  created_at?: string;
-}
-
 export function StudentCareerPathAI({ studentId, schoolId }: Props) {
   const { data: career, isLoading } = useQuery({
     queryKey: ["ai_career_suggestions", studentId],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("ai_career_suggestions")
         .select("*")
         .eq("student_id", studentId)
@@ -56,7 +44,7 @@ export function StudentCareerPathAI({ studentId, schoolId }: Props) {
         .maybeSingle();
 
       if (error) throw error;
-      return data as CareerData | null;
+      return data;
     },
     enabled: !!studentId && !!schoolId,
   });
@@ -78,7 +66,7 @@ export function StudentCareerPathAI({ studentId, schoolId }: Props) {
 
   const radarData = useMemo(() => {
     if (!career?.field_match_scores) return [];
-    const scores = career.field_match_scores;
+    const scores = career.field_match_scores as Record<string, number>;
     return Object.entries(scores).slice(0, 6).map(([field, score]) => ({
       field: field.length > 12 ? field.slice(0, 12) + "…" : field,
       fullField: field,
@@ -109,7 +97,7 @@ export function StudentCareerPathAI({ studentId, schoolId }: Props) {
           <Briefcase className="mx-auto h-12 w-12 text-muted-foreground/50" />
           <h3 className="mt-4 font-display font-semibold">Career Insights Coming Soon</h3>
           <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
-            AI will analyze performance, interests, and behavior to suggest career paths
+            AI will analyze performance, interests, and behavior to suggest career paths 
             as more data is collected.
           </p>
         </CardContent>
@@ -133,7 +121,10 @@ export function StudentCareerPathAI({ studentId, schoolId }: Props) {
       </div>
 
       {/* University Readiness */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
         <Card className="shadow-elevated overflow-hidden">
           <div className="bg-gradient-to-br from-primary/10 to-transparent p-6">
             <div className="flex items-start justify-between">
@@ -155,13 +146,17 @@ export function StudentCareerPathAI({ studentId, schoolId }: Props) {
                 <GraduationCap className="h-8 w-8 text-primary" />
               </div>
             </div>
-            <Progress value={career.university_readiness_score || 0} className="mt-4 h-2" />
+            <Progress 
+              value={career.university_readiness_score || 0} 
+              className="mt-4 h-2" 
+            />
           </div>
         </Card>
       </motion.div>
 
       {/* Suggested Fields & Radar */}
       <div className="grid gap-6 lg:grid-cols-2">
+        {/* Suggested Career Fields */}
         <Card className="shadow-elevated">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -170,10 +165,10 @@ export function StudentCareerPathAI({ studentId, schoolId }: Props) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {career.suggested_fields && career.suggested_fields.length > 0 ? (
+            {career.suggested_fields && (career.suggested_fields as string[]).length > 0 ? (
               <div className="space-y-3">
-                {career.suggested_fields.map((field, idx) => {
-                  const score = career.field_match_scores?.[field] || 0;
+                {(career.suggested_fields as string[]).map((field, idx) => {
+                  const score = (career.field_match_scores as Record<string, number>)?.[field] || 0;
                   return (
                     <motion.div
                       key={field}
@@ -206,6 +201,7 @@ export function StudentCareerPathAI({ studentId, schoolId }: Props) {
           </CardContent>
         </Card>
 
+        {/* Field Match Radar */}
         {radarData.length > 0 && (
           <Card className="shadow-elevated">
             <CardHeader className="pb-2">
@@ -219,9 +215,22 @@ export function StudentCareerPathAI({ studentId, schoolId }: Props) {
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart data={radarData}>
                     <PolarGrid stroke="hsl(var(--border))" />
-                    <PolarAngleAxis dataKey="field" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
-                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 9 }} />
-                    <Radar name="Match Score" dataKey="score" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.3} />
+                    <PolarAngleAxis
+                      dataKey="field"
+                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                    />
+                    <PolarRadiusAxis
+                      angle={30}
+                      domain={[0, 100]}
+                      tick={{ fontSize: 9 }}
+                    />
+                    <Radar
+                      name="Match Score"
+                      dataKey="score"
+                      stroke="hsl(var(--primary))"
+                      fill="hsl(var(--primary))"
+                      fillOpacity={0.3}
+                    />
                   </RadarChart>
                 </ResponsiveContainer>
               </div>
@@ -231,7 +240,7 @@ export function StudentCareerPathAI({ studentId, schoolId }: Props) {
       </div>
 
       {/* Detected Interests */}
-      {career.detected_interests && career.detected_interests.length > 0 && (
+      {career.detected_interests && (career.detected_interests as string[]).length > 0 && (
         <Card className="shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-sm">
@@ -241,7 +250,7 @@ export function StudentCareerPathAI({ studentId, schoolId }: Props) {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {career.detected_interests.map((interest, idx) => (
+              {(career.detected_interests as string[]).map((interest, idx) => (
                 <Badge key={idx} variant="secondary" className="text-xs">
                   {interest}
                 </Badge>
@@ -252,7 +261,7 @@ export function StudentCareerPathAI({ studentId, schoolId }: Props) {
       )}
 
       {/* Recommended Subjects */}
-      {career.recommended_subjects && career.recommended_subjects.length > 0 && (
+      {career.recommended_subjects && (career.recommended_subjects as string[]).length > 0 && (
         <Card className="shadow-elevated border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -262,7 +271,7 @@ export function StudentCareerPathAI({ studentId, schoolId }: Props) {
           </CardHeader>
           <CardContent>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {career.recommended_subjects.map((subject, idx) => (
+              {(career.recommended_subjects as string[]).map((subject, idx) => (
                 <motion.div
                   key={subject}
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -283,8 +292,8 @@ export function StudentCareerPathAI({ studentId, schoolId }: Props) {
       <div className="flex items-start gap-3 rounded-xl border bg-muted/30 p-4 text-xs text-muted-foreground">
         <Brain className="h-4 w-4 shrink-0 mt-0.5" />
         <p>
-          These suggestions are based on AI analysis of academic performance, detected interests,
-          and behavioral patterns. They are meant to guide exploration and should be combined with
+          These suggestions are based on AI analysis of academic performance, detected interests, 
+          and behavioral patterns. They are meant to guide exploration and should be combined with 
           professional career counseling.
         </p>
       </div>
