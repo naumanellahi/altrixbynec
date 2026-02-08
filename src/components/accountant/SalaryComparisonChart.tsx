@@ -74,11 +74,11 @@ export function SalaryComparisonChart() {
 
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("user_id, display_name")
-        .in("user_id", userIds);
+        .select("id, display_name")
+        .in("id", userIds);
       if (profilesError) throw profilesError;
 
-      const profileMap = new Map((profiles || []).map((p) => [p.user_id, p.display_name || "Unknown"]));
+      const profileMap = new Map((profiles || []).map((p) => [p.id, p.display_name || "Unknown"]));
 
       return (roles || []).map((r) => ({
         user_id: r.user_id,

@@ -62,7 +62,7 @@ export function AICommandCenter({ schoolId }: Props) {
         // Student profiles with risk
         supabase
           .from("ai_student_profiles")
-          .select("risk_score, needs_counseling, needs_extra_support, dropout_risk")
+          .select("risk_score, needs_counseling, needs_extra_support")
           .eq("school_id", schoolId),
         // Active early warnings
         supabase
@@ -86,7 +86,7 @@ export function AICommandCenter({ schoolId }: Props) {
           .from("ai_school_reputation")
           .select("reputation_score, parent_satisfaction_index, nps_score")
           .eq("school_id", schoolId)
-          .order("report_month", { ascending: false })
+          .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle(),
         // Academic predictions
