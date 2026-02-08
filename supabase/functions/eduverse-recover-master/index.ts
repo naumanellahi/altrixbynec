@@ -85,7 +85,7 @@ serve(async (req) => {
     // Upsert profiles
     const { error: profileErr } = await supabaseAdmin
       .from("profiles")
-      .upsert({ user_id: userId, display_name: "Master Admin" }, { onConflict: "user_id" });
+      .upsert({ id: userId, display_name: "Master Admin" }, { onConflict: "id" });
 
     if (profileErr) {
       return new Response(
