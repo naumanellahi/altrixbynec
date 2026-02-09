@@ -65,6 +65,9 @@ const appliedBrandingCache = new Map<string, boolean>();
 function applyBranding(schoolId: string, branding: TenantData["branding"]) {
   if (!branding || appliedBrandingCache.get(schoolId)) return;
   
+  // Only apply if all color values are present and valid
+  if (branding.accent_hue == null || branding.accent_saturation == null || branding.accent_lightness == null) return;
+  
   const root = document.documentElement;
   root.style.setProperty("--brand", `${branding.accent_hue} ${branding.accent_saturation}% ${branding.accent_lightness}%`);
   root.style.setProperty("--radius", `${0.85 * (branding.radius_scale || 1)}rem`);

@@ -14,6 +14,7 @@ import {
   UserPlus,
   FileText,
   ClipboardList,
+  Palette,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +28,7 @@ import { AlertSettingsDialog } from "@/components/dashboard/AlertSettingsDialog"
 import { PrincipalTeachersTab } from "@/components/principal/PrincipalTeachersTab";
 import { PrincipalStudentsTab } from "@/components/principal/PrincipalStudentsTab";
 import { SendMessageDialog } from "@/components/principal/SendMessageDialog";
+import { BrandingSettingsDialog } from "@/components/principal/BrandingSettingsDialog";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -239,6 +241,7 @@ export function PrincipalHome() {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="text-base sm:text-lg">Quick Actions</CardTitle>
           <div className="flex items-center gap-2 shrink-0">
+            {schoolId && <BrandingSettingsDialog schoolId={schoolId} />}
             <AlertSettingsDialog schoolId={schoolId} onSettingsChanged={refreshAlerts} />
             <AlertsSummaryBadge criticalCount={criticalCount} warningCount={warningCount} />
           </div>
