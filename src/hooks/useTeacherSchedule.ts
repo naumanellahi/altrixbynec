@@ -253,14 +253,14 @@ export function useTeacherSchedule(
         
         let logsMap = new Map<string, PeriodLog>();
         if (entryIds.length > 0) {
-          const { data: logs } = await supabase
+          const { data: logs } = await (supabase as any)
             .from("teacher_period_logs")
             .select("id, timetable_entry_id, status, notes, topics_covered")
             .eq("teacher_user_id", userId)
             .eq("log_date", todayDate)
             .in("timetable_entry_id", entryIds);
 
-          (logs ?? []).forEach((log) => {
+          ((logs as any[]) ?? []).forEach((log: any) => {
             logsMap.set(log.timetable_entry_id, {
               id: log.id,
               timetableEntryId: log.timetable_entry_id,

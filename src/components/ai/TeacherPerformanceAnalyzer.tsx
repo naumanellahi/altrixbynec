@@ -51,7 +51,7 @@ export function TeacherPerformanceAnalyzer({ schoolId }: Props) {
   const { data: performanceData, isLoading } = useQuery({
     queryKey: ["ai_teacher_performance", schoolId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("ai_teacher_performance")
         .select(`
           *,
@@ -63,7 +63,7 @@ export function TeacherPerformanceAnalyzer({ schoolId }: Props) {
         .order("overall_score", { ascending: false });
 
       if (error) throw error;
-      return data;
+      return data as any[];
     },
     enabled: !!schoolId,
   });

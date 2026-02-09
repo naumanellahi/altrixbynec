@@ -27,7 +27,7 @@ export function useAlertSettings(schoolId: string | null) {
     queryFn: async () => {
       if (!schoolId) return null;
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("school_alert_settings")
         .select("*")
         .eq("school_id", schoolId)
@@ -60,7 +60,7 @@ export function useAlertSettings(schoolId: string | null) {
         support_ticket_hours: settings.support_ticket_hours ?? DEFAULT_SETTINGS.support_ticket_hours,
       };
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("school_alert_settings")
         .upsert(payload, { onConflict: "school_id" });
 

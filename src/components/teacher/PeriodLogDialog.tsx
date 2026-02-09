@@ -69,7 +69,7 @@ export function PeriodLogDialog({
 
     let error;
     if (existingLog) {
-      const result = await supabase
+      const result = await (supabase as any)
         .from("teacher_period_logs")
         .update({
           status,
@@ -80,7 +80,7 @@ export function PeriodLogDialog({
         .eq("id", existingLog.id);
       error = result.error;
     } else {
-      const result = await supabase.from("teacher_period_logs").insert(logData);
+      const result = await (supabase as any).from("teacher_period_logs").insert(logData);
       error = result.error;
     }
 

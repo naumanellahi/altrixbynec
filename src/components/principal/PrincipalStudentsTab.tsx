@@ -129,7 +129,7 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
         { data: enrollmentsData },
         { data: attendanceData },
       ] = await Promise.all([
-        supabase
+        (supabase as any)
           .from("students")
           .select("id, first_name, last_name, parent_name, student_code, date_of_birth, status, profile_id, created_at")
           .eq("school_id", schoolId)
@@ -144,7 +144,7 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
           .gte("created_at", sevenDaysAgo),
       ]);
 
-      setStudents((studentsData ?? []) as Student[]);
+      setStudents((studentsData ?? []) as unknown as Student[]);
       setClasses((classesData ?? []) as ClassRow[]);
       setSections((sectionsData ?? []) as SectionRow[]);
       setEnrollments((enrollmentsData ?? []) as Enrollment[]);

@@ -32,14 +32,14 @@ export function AtRiskStudentsCard({ schoolId, sectionIds }: Props) {
   const loadAtRiskStudents = async () => {
     setLoading(true);
     
-    const { data, error } = await supabase.rpc("get_at_risk_students", {
+    const { data, error } = await (supabase as any).rpc("get_at_risk_students", {
       _school_id: schoolId,
       _class_section_id: null,
     });
 
     if (!error && data) {
       // Filter by section if provided
-      let filtered = data as AtRiskStudent[];
+      let filtered = data as unknown as AtRiskStudent[];
       if (sectionIds && sectionIds.length > 0) {
         filtered = filtered.filter((s) => sectionIds.includes(s.class_section_id));
       }

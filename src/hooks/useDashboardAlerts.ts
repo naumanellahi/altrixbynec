@@ -43,18 +43,19 @@ export function useDashboardAlerts(schoolId: string | null) {
   const fetchSettings = useCallback(async () => {
     if (!schoolId) return DEFAULT_THRESHOLDS;
 
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from("school_alert_settings")
       .select("*")
       .eq("school_id", schoolId)
       .maybeSingle();
 
     if (data) {
+      const d = data as any;
       const newThresholds = {
-        attendanceWarning: data.attendance_warning_threshold ?? 75,
-        attendanceCritical: data.attendance_critical_threshold ?? 60,
-        pendingInvoices: data.pending_invoices_threshold ?? 10,
-        ticketHours: data.support_ticket_hours ?? 24,
+        attendanceWarning: d.attendance_warning_threshold ?? 75,
+        attendanceCritical: d.attendance_critical_threshold ?? 60,
+        pendingInvoices: d.pending_invoices_threshold ?? 10,
+        ticketHours: d.support_ticket_hours ?? 24,
       };
       setThresholds(newThresholds);
       return newThresholds;

@@ -19,7 +19,7 @@ export function useMyStudentId(schoolId: string | null) {
     setState({ status: "loading", studentId: null, error: null });
 
     (async () => {
-      const { data, error } = await supabase.rpc("my_student_id", { _school_id: schoolId });
+      const { data, error } = await (supabase as any).rpc("my_student_id", { _school_id: schoolId });
       if (cancelled) return;
       if (error) {
         setState({ status: "error", studentId: null, error: error.message });
@@ -29,7 +29,7 @@ export function useMyStudentId(schoolId: string | null) {
         setState({ status: "error", studentId: null, error: "No student profile is linked to this account." });
         return;
       }
-      setState({ status: "ready", studentId: data as string, error: null });
+      setState({ status: "ready", studentId: data as unknown as string, error: null });
     })();
 
     return () => {
