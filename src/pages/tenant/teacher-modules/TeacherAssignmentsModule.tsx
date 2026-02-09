@@ -29,13 +29,10 @@ interface Assignment {
   title: string;
   description: string | null;
   max_marks: number;
-  assignment_type: string;
   due_date: string | null;
   class_section_id: string;
   section_name: string;
-  late_penalty_percent_per_day: number;
-  max_late_penalty_percent: number;
-  allow_late_submissions: boolean;
+  status: string;
 }
 
 interface Submission {
@@ -77,12 +74,8 @@ export function TeacherAssignmentsModule() {
     title: "",
     description: "",
     max_marks: "100",
-    assignment_type: "assignment",
     due_date: "",
     class_section_id: "",
-    late_penalty_percent_per_day: "10",
-    max_late_penalty_percent: "50",
-    allow_late_submissions: true,
   });
 
   // View submissions dialog
@@ -183,11 +176,7 @@ export function TeacherAssignmentsModule() {
       title: newAssignment.title.trim(),
       description: newAssignment.description.trim() || null,
       max_marks: parseFloat(newAssignment.max_marks) || 100,
-      assignment_type: newAssignment.assignment_type,
       due_date: newAssignment.due_date || null,
-      late_penalty_percent_per_day: parseFloat(newAssignment.late_penalty_percent_per_day) || 0,
-      max_late_penalty_percent: parseFloat(newAssignment.max_late_penalty_percent) || 100,
-      allow_late_submissions: newAssignment.allow_late_submissions,
     });
 
     if (error) {
@@ -201,12 +190,8 @@ export function TeacherAssignmentsModule() {
       title: "",
       description: "",
       max_marks: "100",
-      assignment_type: "assignment",
       due_date: "",
       class_section_id: "",
-      late_penalty_percent_per_day: "10",
-      max_late_penalty_percent: "50",
-      allow_late_submissions: true,
     });
     fetchData();
   };
@@ -362,21 +347,10 @@ export function TeacherAssignmentsModule() {
     setGradeOpen(true);
   };
 
-  // Calculate late penalty
-  const calculatePenalty = (rawMarks: number, daysLate: number, maxMarks: number) => {
+  // Calculate late penalty (simplified - no per-day penalty columns)
+  const calculatePenalty = (rawMarks: number, daysLate: number, _maxMarks: number) => {
     if (!selectedAssignment || daysLate <= 0) return { finalMarks: rawMarks, penalty: 0 };
-    
-    const penaltyPerDay = selectedAssignment.late_penalty_percent_per_day;
-    const maxPenalty = selectedAssignment.max_late_penalty_percent;
-    
-    // Calculate penalty percentage (capped at max)
-    const totalPenaltyPercent = Math.min(daysLate * penaltyPerDay, maxPenalty);
-    
-    // Calculate deduction based on max marks
-    const deduction = (maxMarks * totalPenaltyPercent) / 100;
-    const finalMarks = Math.max(0, rawMarks - deduction);
-    
-    return { finalMarks: Math.round(finalMarks * 100) / 100, penalty: totalPenaltyPercent };
+    return { finalMarks: rawMarks, penalty: 0 };
   };
 
   const saveGrade = async () => {
@@ -493,23 +467,7 @@ export function TeacherAssignmentsModule() {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label>Type</Label>
-                <Select
-                  value={newAssignment.assignment_type}
-                  onValueChange={(v) => setNewAssignment((p) => ({ ...p, assignment_type: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="assignment">Assignment</SelectItem>
-                    <SelectItem value="quiz">Quiz</SelectItem>
-                    <SelectItem value="test">Test</SelectItem>
-                    <SelectItem value="project">Project</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              
               <div>
                 <Label>Title *</Label>
                 <Input
@@ -544,46 +502,6 @@ export function TeacherAssignmentsModule() {
                 </div>
               </div>
               
-              {/* Late Penalty Settings */}
-              <div className="rounded-lg border p-3 space-y-3 bg-muted/30">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Allow Late Submissions</Label>
-                    <p className="text-xs text-muted-foreground">Accept submissions after due date</p>
-                  </div>
-                  <Switch
-                    checked={newAssignment.allow_late_submissions}
-                    onCheckedChange={(v) => setNewAssignment((p) => ({ ...p, allow_late_submissions: v }))}
-                  />
-                </div>
-                
-                {newAssignment.allow_late_submissions && newAssignment.due_date && (
-                  <div className="grid grid-cols-2 gap-4 pt-2 border-t">
-                    <div>
-                      <Label className="text-xs">Penalty % per day late</Label>
-                      <Input
-                        type="number"
-                        min={0}
-                        max={100}
-                        value={newAssignment.late_penalty_percent_per_day}
-                        onChange={(e) => setNewAssignment((p) => ({ ...p, late_penalty_percent_per_day: e.target.value }))}
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Max penalty %</Label>
-                      <Input
-                        type="number"
-                        min={0}
-                        max={100}
-                        value={newAssignment.max_late_penalty_percent}
-                        onChange={(e) => setNewAssignment((p) => ({ ...p, max_late_penalty_percent: e.target.value }))}
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
               
               <Button onClick={handleAddAssignment} className="w-full">
                 Create Assignment
@@ -610,18 +528,13 @@ export function TeacherAssignmentsModule() {
                       <div className="flex items-center gap-2">
                         <p className="font-medium">{a.title}</p>
                         <Badge variant="outline" className="text-xs capitalize">
-                          {a.assignment_type}
+                          {a.status || "active"}
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">{a.section_name}</p>
                       {a.description && <p className="mt-2 text-sm">{a.description}</p>}
                       <p className="mt-2 text-xs text-muted-foreground">
                         Max: {a.max_marks} marks {a.due_date && `• Due: ${a.due_date}`}
-                        {a.late_penalty_percent_per_day > 0 && (
-                          <span className="ml-2 text-amber-600 dark:text-amber-400">
-                            • Late: -{a.late_penalty_percent_per_day}%/day (max {a.max_late_penalty_percent}%)
-                          </span>
-                        )}
                       </p>
                     </div>
                     <div className="flex flex-col gap-2">
@@ -733,12 +646,6 @@ export function TeacherAssignmentsModule() {
                 <div className="text-sm">
                   <p className="font-medium text-amber-800 dark:text-amber-200">
                     Late Submission ({selectedSubmission.days_late} day{selectedSubmission.days_late !== 1 ? "s" : ""} late)
-                  </p>
-                  <p className="text-amber-700 dark:text-amber-300 mt-0.5">
-                    A penalty of {Math.min(
-                      selectedSubmission.days_late * selectedAssignment.late_penalty_percent_per_day,
-                      selectedAssignment.max_late_penalty_percent
-                    )}% will be applied automatically.
                   </p>
                 </div>
               </div>
