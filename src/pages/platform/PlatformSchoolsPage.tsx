@@ -118,12 +118,12 @@ export default function PlatformSchoolsPage() {
       .limit(200);
     if (!sErr) setSchools((s ?? []) as SchoolRow[]);
 
-    const { data: a, error: aErr } = await supabase
+    const { data: a, error: aErr } = await (supabase as any)
       .from("audit_logs")
       .select("id,created_at,action,entity_type,entity_id,school_id,actor_user_id")
       .order("created_at", { ascending: false })
       .limit(200);
-    if (!aErr) setAudit((a ?? []) as AuditRow[]);
+    if (!aErr) setAudit((a ?? []) as unknown as AuditRow[]);
   };
 
   const getDetailFromInvokeError = (error: unknown) => {

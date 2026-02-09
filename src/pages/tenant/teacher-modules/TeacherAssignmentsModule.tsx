@@ -330,7 +330,7 @@ export function TeacherAssignmentsModule() {
     const subMap = new Map((subs || []).map((s: any) => [s.student_id, s]));
     
     const enriched: Submission[] = (students || []).map((s: any) => {
-      const sub = subMap.get(s.id);
+      const sub = subMap.get(s.id) as any;
       return {
         id: sub?.id || "",
         student_id: s.id,

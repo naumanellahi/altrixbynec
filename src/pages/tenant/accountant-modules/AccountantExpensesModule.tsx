@@ -95,13 +95,13 @@ export function AccountantExpensesModule() {
   const { data: expenses = [], isLoading } = useQuery({
     queryKey: ["finance_expenses", schoolId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("finance_expenses")
         .select("*")
         .eq("school_id", schoolId!)
         .order("expense_date", { ascending: false });
       if (error) throw error;
-      return data as Expense[];
+      return data as unknown as Expense[];
     },
     enabled: !!schoolId,
   });

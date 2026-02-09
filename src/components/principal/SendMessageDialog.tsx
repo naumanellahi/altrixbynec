@@ -71,13 +71,13 @@ export function SendMessageDialog({ schoolId, trigger, onMessageSent }: SendMess
         const userIds = [...new Set(roles.map((r) => r.user_id))];
 
         // Fetch profiles for these users
-        const { data: profiles } = await supabase
+        const { data: profiles } = await (supabase as any)
           .from("profiles")
-          .select("user_id, display_name")
-          .in("user_id", userIds);
+          .select("id, display_name")
+          .in("id", userIds);
 
         const profileMap = new Map(
-          (profiles ?? []).map((p) => [p.user_id, p.display_name])
+          ((profiles as any[]) ?? []).map((p: any) => [p.id, p.display_name])
         );
 
         // Build user list with roles

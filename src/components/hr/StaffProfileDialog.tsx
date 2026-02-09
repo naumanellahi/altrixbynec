@@ -44,10 +44,10 @@ export function StaffProfileDialog({
     setLoading(true);
 
     (async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("profiles")
         .select("display_name, phone")
-        .eq("user_id", userId)
+        .eq("id", userId)
         .maybeSingle();
 
       if (cancelled) return;
@@ -77,28 +77,28 @@ export function StaffProfileDialog({
     setSaving(true);
     try {
       // Check if profile exists
-      const { data: existing } = await supabase
+      const { data: existing } = await (supabase as any)
         .from("profiles")
         .select("id")
-        .eq("user_id", userId)
+        .eq("id", userId)
         .maybeSingle();
 
       if (existing) {
         // Update existing profile
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("profiles")
           .update({
             display_name: name.trim() || null,
             phone: phone.trim() || null,
             updated_at: new Date().toISOString(),
           })
-          .eq("user_id", userId);
+          .eq("id", userId);
 
         if (error) throw error;
       } else {
         // Create new profile
-        const { error } = await supabase.from("profiles").insert({
-          user_id: userId,
+        const { error } = await (supabase as any).from("profiles").insert({
+          id: userId,
           display_name: name.trim() || null,
           phone: phone.trim() || null,
         });

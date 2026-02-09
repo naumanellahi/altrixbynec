@@ -89,10 +89,10 @@ export function usePushNotifications({ schoolId, userId, enabled = true }: PushN
           if (!message) return;
 
           // Fetch sender name
-          const { data: senderProfile } = await supabase
+          const { data: senderProfile } = await (supabase as any)
             .from("profiles")
             .select("display_name")
-            .eq("user_id", message.sender_user_id)
+            .eq("id", message.sender_user_id)
             .maybeSingle();
 
           const senderName = senderProfile?.display_name || "Someone";

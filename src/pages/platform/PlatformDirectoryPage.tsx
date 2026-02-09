@@ -58,7 +58,7 @@ type DirRow = { id: string; school_id: string; email: string; display_name: stri
       }
 
       if (tab === "users") {
-        const query = supabase
+        const query = (supabase as any)
           .from("school_user_directory")
           .select("id,school_id,email,display_name,user_id,created_at")
           .order("created_at", { ascending: false })
@@ -67,7 +67,7 @@ type DirRow = { id: string; school_id: string; email: string; display_name: stri
         const { data } = needle
           ? await query.or(`email.ilike.%${needle}%,display_name.ilike.%${needle}%`)
           : await query;
-        setUsers((data ?? []) as DirRow[]);
+        setUsers((data ?? []) as unknown as DirRow[]);
       }
 
       if (tab === "students") {
