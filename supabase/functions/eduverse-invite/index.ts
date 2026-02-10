@@ -126,7 +126,7 @@ serve(async (req) => {
     if (body.displayName?.trim()) {
       const { error: profErr } = await admin
         .from("profiles")
-        .upsert({ user_id: userId, display_name: body.displayName.trim() }, { onConflict: "user_id" });
+        .upsert({ id: userId, display_name: body.displayName.trim() }, { onConflict: "id" });
       if (profErr) return json({ ok: false, error: profErr.message }, 400, traceId);
     }
 
