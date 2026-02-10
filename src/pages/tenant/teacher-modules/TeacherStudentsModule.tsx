@@ -262,7 +262,6 @@ export function TeacherStudentsModule() {
     }
 
     const { error } = await supabase.from("student_guardians").insert({
-      school_id: tenant.schoolId,
       student_id: selectedStudentId,
       full_name: newParent.full_name.trim(),
       relationship: newParent.relationship,
