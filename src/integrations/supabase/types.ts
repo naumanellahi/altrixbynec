@@ -2953,9 +2953,11 @@ export type Database = {
           gender: string | null
           id: string
           last_name: string | null
+          parent_name: string | null
           profile_id: string | null
           school_id: string
           status: string | null
+          student_code: string | null
           updated_at: string | null
         }
         Insert: {
@@ -2967,9 +2969,11 @@ export type Database = {
           gender?: string | null
           id?: string
           last_name?: string | null
+          parent_name?: string | null
           profile_id?: string | null
           school_id: string
           status?: string | null
+          student_code?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -2981,9 +2985,11 @@ export type Database = {
           gender?: string | null
           id?: string
           last_name?: string | null
+          parent_name?: string | null
           profile_id?: string | null
           school_id?: string
           status?: string | null
+          student_code?: string | null
           updated_at?: string | null
         }
         Relationships: [
