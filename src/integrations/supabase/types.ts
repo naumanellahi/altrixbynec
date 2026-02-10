@@ -240,6 +240,7 @@ export type Database = {
           created_by: string | null
           id: string
           priority: string | null
+          reply_to_id: string | null
           school_id: string
           sender_user_id: string
           status: string | null
@@ -252,6 +253,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           priority?: string | null
+          reply_to_id?: string | null
           school_id: string
           sender_user_id: string
           status?: string | null
@@ -264,12 +266,20 @@ export type Database = {
           created_by?: string | null
           id?: string
           priority?: string | null
+          reply_to_id?: string | null
           school_id?: string
           sender_user_id?: string
           status?: string | null
           subject?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "admin_messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "admin_messages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "admin_messages_school_id_fkey"
             columns: ["school_id"]
