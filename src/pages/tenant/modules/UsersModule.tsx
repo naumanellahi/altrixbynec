@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Download, FileUp, KeyRound, UserMinus, UserPlus, Phone } from "lucide-react";
+import { Download, FileUp, KeyRound, Trash2, UserMinus, UserPlus, Phone } from "lucide-react";
 import { StaffProfileDialog } from "@/components/hr/StaffProfileDialog";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -688,6 +688,40 @@ export function UsersModule() {
                             disabled={busy}
                           >
                             <KeyRound className="mr-2 h-4 w-4" /> Set password
+                          </Button>
+
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={async () => {
+                              const confirmed = window.confirm(`Delete user ${r.email}? This will remove all their roles and data from this school. This cannot be undone.`);
+                              if (!confirmed) return;
+                              try {
+                                setBusy(true);
+                                // Remove all roles first
+                                await governanceInvoke({
+                                  action: "deactivate",
+                                  schoolSlug: tenant.slug,
+                                  targetUserId: r.user_id,
+                                  reason: govReason.trim() || "User deleted by admin",
+                                });
+                                // Delete from school directory
+                                await supabase
+                                  .from("user_roles")
+                                  .delete()
+                                  .eq("school_id", schoolId!)
+                                  .eq("user_id", r.user_id);
+                                toast.success("User removed from school");
+                                await refresh();
+                              } catch (e) {
+                                toast.error((e as Error).message);
+                              } finally {
+                                setBusy(false);
+                              }
+                            }}
+                            disabled={busy}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete
                           </Button>
                         </div>
                       </TableCell>
