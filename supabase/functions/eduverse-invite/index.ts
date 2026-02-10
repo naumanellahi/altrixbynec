@@ -138,7 +138,7 @@ serve(async (req) => {
 
     const { error: assignErr } = await admin
       .from("user_roles")
-      .upsert({ school_id: school.id, user_id: userId, role: body.role, created_by: actorUserId }, { onConflict: "school_id,user_id,role" });
+      .upsert({ school_id: school.id, user_id: userId, role: body.role }, { onConflict: "school_id,user_id,role" });
     if (assignErr) return json({ ok: false, error: assignErr.message }, 400, traceId);
 
     // Directory for UI
