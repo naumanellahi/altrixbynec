@@ -1917,6 +1917,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          instructions: string | null
           is_active: boolean | null
           name: string
           school_id: string
@@ -1925,6 +1926,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          instructions?: string | null
           is_active?: boolean | null
           name: string
           school_id: string
@@ -1933,6 +1935,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          instructions?: string | null
           is_active?: boolean | null
           name?: string
           school_id?: string
