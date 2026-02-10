@@ -133,7 +133,7 @@ serve(async (req) => {
     // Attach membership + role
     const { error: memErr } = await admin
       .from("school_memberships")
-      .upsert({ school_id: school.id, user_id: userId, status: "active", created_by: actorUserId }, { onConflict: "school_id,user_id" });
+      .upsert({ school_id: school.id, user_id: userId, status: "active" }, { onConflict: "school_id,user_id" });
     if (memErr) return json({ ok: false, error: memErr.message }, 400, traceId);
 
     const { error: assignErr } = await admin
