@@ -269,40 +269,14 @@ export function NotificationsBell({ schoolId, schoolSlug, role }: NotificationsB
               <Button
                 variant="ghost"
                 className="w-full h-8 text-xs text-muted-foreground"
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  void markAllRead();
                   setOpen(false);
-                  // Navigate to notifications page
-                  if (schoolSlug && role) {
-                    const getRolePath = (r: string): string => {
-                      switch (r) {
-                        case "principal":
-                        case "vice_principal":
-                        case "school_admin":
-                        case "academic_coordinator":
-                          return "admin";
-                        case "teacher":
-                          return "teacher";
-                        case "student":
-                          return "student";
-                        case "parent":
-                          return "parent";
-                        case "hr_manager":
-                          return "hr";
-                        case "accountant":
-                          return "accountant";
-                        case "marketing_staff":
-                          return "marketing";
-                        case "school_owner":
-                          return "school_owner";
-                        default:
-                          return r;
-                      }
-                    };
-                    navigate(`/${schoolSlug}/${getRolePath(role)}/notifications`);
-                  }
                 }}
               >
-                View all notifications
+                Mark all read & close
               </Button>
             </div>
           </>

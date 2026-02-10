@@ -3848,6 +3848,7 @@ export type Database = {
         }[]
       }
       my_children: { Args: { _school_id: string }; Returns: string[] }
+      my_student_id: { Args: { _school_id: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
