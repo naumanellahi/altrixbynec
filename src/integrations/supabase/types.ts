@@ -3787,6 +3787,10 @@ export type Database = {
       }
     }
     Functions: {
+      can_manage_finance: { Args: { _school_id: string }; Returns: boolean }
+      can_manage_staff: { Args: { _school_id: string }; Returns: boolean }
+      can_manage_students: { Args: { _school_id: string }; Returns: boolean }
+      can_work_crm: { Args: { _school_id: string }; Returns: boolean }
       get_school_public_by_slug: {
         Args: { _slug: string }
         Returns: {
