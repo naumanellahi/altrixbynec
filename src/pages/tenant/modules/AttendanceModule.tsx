@@ -137,7 +137,8 @@ export function AttendanceModule() {
     };
     void load();
     return () => { cancelled = true; };
-  }, [schoolId, user?.id, perms.loading, perms.canManageStudents, offlineSectionsKey, offlineClassesKey, offlineAssignmentsKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schoolId, user?.id, perms.loading, perms.canManageStudents]);
 
   const start = async () => {
     if (!schoolId) return;
