@@ -3811,10 +3811,12 @@ export type Database = {
           user_id: string
         }[]
       }
-      has_role: {
-        Args: { _role: string; _school_id: string; _user_id: string }
-        Returns: boolean
-      }
+      has_role:
+        | { Args: { _role: string; _school_id: string }; Returns: boolean }
+        | {
+            Args: { _role: string; _school_id: string; _user_id: string }
+            Returns: boolean
+          }
       is_my_child: {
         Args: { _school_id: string; _student_id: string }
         Returns: boolean
