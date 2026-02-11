@@ -56,10 +56,10 @@ export function HrLeavesModule() {
  
    const approveMutation = useMutation({
      mutationFn: async ({ id, status }: { id: string; status: string }) => {
-       const { error } = await supabase
-         .from("hr_leave_requests")
-         .update({ status, reviewed_at: new Date().toISOString() })
-         .eq("id", id);
+        const { error } = await supabase
+          .from("hr_leave_requests")
+          .update({ status, reviewed_by: (await supabase.auth.getUser()).data.user?.id })
+          .eq("id", id);
        if (error) throw error;
      },
      onSuccess: () => {
