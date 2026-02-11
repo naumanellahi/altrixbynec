@@ -27,6 +27,7 @@ import { SupportModule } from "@/pages/tenant/modules/SupportModule";
 import { DirectoryModule } from "@/pages/tenant/modules/DirectoryModule";
 import { TimetableBuilderModule } from "@/pages/tenant/modules/TimetableBuilderModule";
 import { MessagesModule } from "@/pages/tenant/modules/MessagesModule";
+import { HrLeavesModule } from "@/pages/tenant/hr-modules/HrLeavesModule";
 
 const TenantDashboard = () => {
   const { schoolSlug, role: roleParam } = useParams();
@@ -443,6 +444,7 @@ const TenantDashboard = () => {
             <Route path="attendance" element={<AttendanceModule />} />
             <Route path="finance" element={<FinanceModule />} />
             <Route path="reports" element={<ReportsModule />} />
+            <Route path="leaves" element={<HrLeavesModule />} />
             <Route path="support" element={<SupportModule schoolId={tenant.schoolId} />} />
             <Route path="*" element={<Navigate to={`/${tenant.slug}/${role}`} replace />} />
           </Routes>

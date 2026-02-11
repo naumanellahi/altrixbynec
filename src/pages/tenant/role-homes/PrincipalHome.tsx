@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { HrLeavesModule } from "@/pages/tenant/hr-modules/HrLeavesModule";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   BarChart3,
@@ -222,6 +223,9 @@ export function PrincipalHome() {
         </TabsTrigger>
         <TabsTrigger value="students" className="flex-1 px-2 py-2 text-xs sm:px-4 sm:text-sm">
           Students
+        </TabsTrigger>
+        <TabsTrigger value="leaves" className="flex-1 px-2 py-2 text-xs sm:px-4 sm:text-sm">
+          Leave Requests
         </TabsTrigger>
       </TabsList>
 
@@ -628,6 +632,11 @@ export function PrincipalHome() {
       {/* Students Tab */}
       <TabsContent value="students">
         {schoolId && <PrincipalStudentsTab schoolId={schoolId} />}
+      </TabsContent>
+
+      {/* Leave Requests Tab */}
+      <TabsContent value="leaves">
+        <HrLeavesModule />
       </TabsContent>
     </Tabs>
   );
