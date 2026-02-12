@@ -35,8 +35,36 @@ export default function App() {
       event.preventDefault();
     };
 
+    // Global Enter key: if focused element is inside a dialog/form, submit the closest form or click the primary button
+    const handleGlobalEnter = (event: KeyboardEvent) => {
+      if (event.key !== "Enter") return;
+      const target = event.target as HTMLElement;
+      // Skip if target is a textarea or already a button/link
+      if (target.tagName === "TEXTAREA" || target.tagName === "BUTTON" || target.tagName === "A") return;
+      // Skip if inside a select/combobox
+      if (target.closest("[role='listbox']") || target.closest("[role='combobox']")) return;
+
+      // Find closest dialog content and click its primary (last) button
+      const dialog = target.closest("[role='dialog']");
+      if (dialog) {
+        const footer = dialog.querySelector("[class*='DialogFooter'], footer");
+        if (footer) {
+          const buttons = footer.querySelectorAll("button:not([disabled])");
+          const primary = buttons[buttons.length - 1] as HTMLButtonElement | undefined;
+          if (primary) {
+            event.preventDefault();
+            primary.click();
+          }
+        }
+      }
+    };
+
     window.addEventListener("unhandledrejection", handleRejection);
-    return () => window.removeEventListener("unhandledrejection", handleRejection);
+    window.addEventListener("keydown", handleGlobalEnter);
+    return () => {
+      window.removeEventListener("unhandledrejection", handleRejection);
+      window.removeEventListener("keydown", handleGlobalEnter);
+    };
   }, []);
 
   return (

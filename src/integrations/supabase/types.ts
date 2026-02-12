@@ -855,8 +855,12 @@ export type Database = {
           created_at: string | null
           feedback: string | null
           graded_at: string | null
+          graded_by: string | null
           id: string
           marks: number | null
+          marks_before_penalty: number | null
+          marks_obtained: number | null
+          penalty_applied: number | null
           school_id: string
           status: string | null
           student_id: string
@@ -869,8 +873,12 @@ export type Database = {
           created_at?: string | null
           feedback?: string | null
           graded_at?: string | null
+          graded_by?: string | null
           id?: string
           marks?: number | null
+          marks_before_penalty?: number | null
+          marks_obtained?: number | null
+          penalty_applied?: number | null
           school_id: string
           status?: string | null
           student_id: string
@@ -883,8 +891,12 @@ export type Database = {
           created_at?: string | null
           feedback?: string | null
           graded_at?: string | null
+          graded_by?: string | null
           id?: string
           marks?: number | null
+          marks_before_penalty?: number | null
+          marks_obtained?: number | null
+          penalty_applied?: number | null
           school_id?: string
           status?: string | null
           student_id?: string
@@ -3127,6 +3139,7 @@ export type Database = {
           is_primary: boolean | null
           phone: string | null
           relationship: string | null
+          school_id: string | null
           student_id: string
           user_id: string | null
         }
@@ -3139,6 +3152,7 @@ export type Database = {
           is_primary?: boolean | null
           phone?: string | null
           relationship?: string | null
+          school_id?: string | null
           student_id: string
           user_id?: string | null
         }
@@ -3151,10 +3165,18 @@ export type Database = {
           is_primary?: boolean | null
           phone?: string | null
           relationship?: string | null
+          school_id?: string | null
           student_id?: string
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "student_guardians_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "student_guardians_student_id_fkey"
             columns: ["student_id"]
@@ -3215,6 +3237,67 @@ export type Database = {
           },
           {
             foreignKeyName: "student_marks_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_results: {
+        Row: {
+          assignment_id: string
+          created_at: string | null
+          grade: string | null
+          graded_at: string | null
+          graded_by: string | null
+          id: string
+          marks_obtained: number | null
+          remarks: string | null
+          school_id: string
+          student_id: string
+        }
+        Insert: {
+          assignment_id: string
+          created_at?: string | null
+          grade?: string | null
+          graded_at?: string | null
+          graded_by?: string | null
+          id?: string
+          marks_obtained?: number | null
+          remarks?: string | null
+          school_id: string
+          student_id: string
+        }
+        Update: {
+          assignment_id?: string
+          created_at?: string | null
+          grade?: string | null
+          graded_at?: string | null
+          graded_by?: string | null
+          id?: string
+          marks_obtained?: number | null
+          remarks?: string | null
+          school_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_results_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_results_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_results_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
@@ -3807,6 +3890,19 @@ export type Database = {
       can_manage_staff: { Args: { _school_id: string }; Returns: boolean }
       can_manage_students: { Args: { _school_id: string }; Returns: boolean }
       can_work_crm: { Args: { _school_id: string }; Returns: boolean }
+      get_at_risk_students: {
+        Args: { _class_section_id?: string; _school_id: string }
+        Returns: {
+          attendance_rate: number
+          avg_grade_percentage: number
+          class_section_id: string
+          first_name: string
+          last_name: string
+          recent_grade_avg: number
+          risk_reason: string
+          student_id: string
+        }[]
+      }
       get_school_public_by_slug: {
         Args: { _slug: string }
         Returns: {
