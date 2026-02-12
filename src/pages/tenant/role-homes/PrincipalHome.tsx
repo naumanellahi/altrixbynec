@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { HrLeavesModule } from "@/pages/tenant/hr-modules/HrLeavesModule";
+import { ParentChildLinkingTab } from "@/components/principal/ParentChildLinkingTab";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   BarChart3,
@@ -225,7 +226,10 @@ export function PrincipalHome() {
           Students
         </TabsTrigger>
         <TabsTrigger value="leaves" className="flex-1 px-2 py-2 text-xs sm:px-4 sm:text-sm">
-          Leave Requests
+          Leaves
+        </TabsTrigger>
+        <TabsTrigger value="parents" className="flex-1 px-2 py-2 text-xs sm:px-4 sm:text-sm">
+          Parents
         </TabsTrigger>
       </TabsList>
 
@@ -637,6 +641,11 @@ export function PrincipalHome() {
       {/* Leave Requests Tab */}
       <TabsContent value="leaves">
         <HrLeavesModule />
+      </TabsContent>
+
+      {/* Parent-Child Linking Tab */}
+      <TabsContent value="parents">
+        {schoolId && <ParentChildLinkingTab schoolId={schoolId} />}
       </TabsContent>
     </Tabs>
   );
