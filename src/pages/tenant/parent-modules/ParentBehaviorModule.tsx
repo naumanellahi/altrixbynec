@@ -27,7 +27,7 @@ export default function ParentBehaviorModule({ child, schoolId }: Props) {
   const load = async () => {
     if (!schoolId || !child) return;
     const { data } = await (supabase as any).from("parent_behavior_notes")
-      .select("*").eq("school_id", schoolId).eq("student_id", child.studentId)
+      .select("*").eq("school_id", schoolId).eq("student_id", child.student_id)
       .order("note_date", { ascending: false }).limit(50);
     setItems(data || []);
   };
@@ -37,7 +37,7 @@ export default function ParentBehaviorModule({ child, schoolId }: Props) {
     if (!schoolId || !child || !user) return;
     if (!form.behavior.trim() && !form.routine.trim()) return toast.error("Add behavior or routine details");
     const { error } = await (supabase as any).from("parent_behavior_notes").insert({
-      school_id: schoolId, student_id: child.studentId, parent_user_id: user.id,
+      school_id: schoolId, student_id: child.student_id, parent_user_id: user.id,
       note_date: form.note_date, behavior: form.behavior || null, routine: form.routine || null, mood: form.mood,
     });
     if (error) return toast.error(error.message);
@@ -57,7 +57,7 @@ export default function ParentBehaviorModule({ child, schoolId }: Props) {
     <div className="space-y-4">
       <div>
         <h2 className="font-display text-2xl font-semibold">Behavior & Routine</h2>
-        <p className="text-sm text-muted-foreground">Daily notes about {child.studentName} — visible to school staff</p>
+        <p className="text-sm text-muted-foreground">Daily notes about {child.first_name} {child.last_name} — visible to school staff</p>
       </div>
 
       <Card>
