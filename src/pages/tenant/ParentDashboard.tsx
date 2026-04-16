@@ -16,6 +16,12 @@ import ParentTimetableModule from "./parent-modules/ParentTimetableModule";
 import ParentNotificationsModule from "./parent-modules/ParentNotificationsModule";
 import ParentSupportModule from "./parent-modules/ParentSupportModule";
 import ParentAIModule from "./parent-modules/ParentAIModule";
+import ParentBehaviorModule from "./parent-modules/ParentBehaviorModule";
+import NoticesModule from "./modules/NoticesModule";
+import HolidaysModule from "./modules/HolidaysModule";
+import DiaryModule from "./modules/DiaryModule";
+import ExamsModule from "./modules/ExamsModule";
+import ReportCardModule from "./modules/ReportCardModule";
 
 // Cache key for parent auth
 const PARENT_AUTHZ_CACHE = "eduverse_parent_authz_cache";
@@ -255,6 +261,12 @@ const ParentDashboard = () => {
         <Route path="timetable" element={<ParentTimetableModule child={selectedChild} schoolId={schoolId} />} />
         <Route path="notifications" element={<ParentNotificationsModule child={selectedChild} schoolId={schoolId} />} />
         <Route path="support" element={<ParentSupportModule child={selectedChild} schoolId={schoolId} />} />
+        <Route path="behavior" element={<ParentBehaviorModule child={selectedChild} schoolId={schoolId} />} />
+        <Route path="notices" element={<NoticesModule schoolId={schoolId} canManage={false} />} />
+        <Route path="holidays" element={<HolidaysModule schoolId={schoolId} canManage={false} />} />
+        <Route path="diary" element={<DiaryModule schoolId={schoolId} canManage={false} />} />
+        <Route path="exams" element={<ExamsModule schoolId={schoolId} canManage={false} />} />
+        <Route path="report-card" element={<ReportCardModule schoolId={schoolId} canManage={false} studentIdLocked={selectedChild?.student_id ?? null} />} />
         <Route path="*" element={<Navigate to="" replace />} />
       </Routes>
     </ParentShell>

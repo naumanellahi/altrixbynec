@@ -4,7 +4,7 @@ import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, CalendarDays, Coins, GraduationCap, Headphones, KanbanSquare, LayoutGrid, LogOut, Menu, MessageSquare, Settings, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { BarChart3, BookOpen, CalendarDays, Coins, GraduationCap, Headphones, KanbanSquare, LayoutGrid, LogOut, Megaphone, Menu, MessageSquare, Settings, ShieldCheck, Sparkles, Users, FileText, PartyPopper } from "lucide-react";
 import type { EduverseRole } from "@/lib/eduverse-roles";
 import { supabase } from "@/integrations/supabase/client";
 import { GlobalCommandPalette } from "@/components/global/GlobalCommandPalette";
@@ -46,6 +46,11 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
     { to: `/${schoolSlug}/${role}/academic`, icon: GraduationCap, label: "Academic", show: true, badge: 0 },
     { to: `/${schoolSlug}/${role}/timetable`, icon: CalendarDays, label: "Timetable", show: true, badge: 0 },
     { to: `/${schoolSlug}/${role}/attendance`, icon: GraduationCap, label: "Attendance", show: true, badge: 0 },
+    { to: `/${schoolSlug}/${role}/exams`, icon: GraduationCap, label: "Exams", show: true, badge: 0 },
+    { to: `/${schoolSlug}/${role}/report-cards`, icon: FileText, label: "Report Cards", show: true, badge: 0 },
+    { to: `/${schoolSlug}/${role}/diary`, icon: BookOpen, label: "Diary", show: true, badge: 0 },
+    { to: `/${schoolSlug}/${role}/notices`, icon: Megaphone, label: "Notices", show: true, badge: 0 },
+    { to: `/${schoolSlug}/${role}/holidays`, icon: PartyPopper, label: "Holidays", show: true, badge: 0 },
     { to: `/${schoolSlug}/${role}/finance`, icon: Coins, label: "Finance", show: ["principal", "vice_principal", "accountant", "super_admin", "school_owner"].includes(role), badge: 0 },
     { to: `/${schoolSlug}/${role}/reports`, icon: BarChart3, label: "Reports", show: true, badge: 0 },
     { to: `/${schoolSlug}/${role}/support`, icon: Headphones, label: "Support", show: ["principal", "vice_principal", "super_admin", "school_owner", "hr_manager"].includes(role), badge: 0 },
@@ -64,7 +69,7 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
     <>
       <div className="flex items-center justify-between">
         <div>
-          <p className="font-display text-lg font-semibold tracking-tight">EDUVERSE</p>
+          <p className="font-display text-lg font-semibold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">AltRix</p>
           <p className="text-xs text-muted-foreground">/{schoolSlug} • {role}</p>
         </div>
         <div className="flex items-center gap-2">
