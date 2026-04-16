@@ -28,6 +28,11 @@ import { DirectoryModule } from "@/pages/tenant/modules/DirectoryModule";
 import { TimetableBuilderModule } from "@/pages/tenant/modules/TimetableBuilderModule";
 import { MessagesModule } from "@/pages/tenant/modules/MessagesModule";
 import { HrLeavesModule } from "@/pages/tenant/hr-modules/HrLeavesModule";
+import NoticesModule from "@/pages/tenant/modules/NoticesModule";
+import HolidaysModule from "@/pages/tenant/modules/HolidaysModule";
+import DiaryModule from "@/pages/tenant/modules/DiaryModule";
+import ExamsModule from "@/pages/tenant/modules/ExamsModule";
+import ReportCardModule from "@/pages/tenant/modules/ReportCardModule";
 
 const TenantDashboard = () => {
   const { schoolSlug, role: roleParam } = useParams();
@@ -445,6 +450,11 @@ const TenantDashboard = () => {
             <Route path="finance" element={<FinanceModule />} />
             <Route path="reports" element={<ReportsModule />} />
             <Route path="leaves" element={<HrLeavesModule />} />
+            <Route path="notices" element={<NoticesModule schoolId={tenant.schoolId} canManage={true} />} />
+            <Route path="holidays" element={<HolidaysModule schoolId={tenant.schoolId} canManage={["principal","vice_principal","school_admin","academic_coordinator","hr_manager","school_owner","super_admin"].includes(role || "")} />} />
+            <Route path="diary" element={<DiaryModule schoolId={tenant.schoolId} canManage={["teacher","principal","vice_principal","school_admin","academic_coordinator"].includes(role || "")} />} />
+            <Route path="exams" element={<ExamsModule schoolId={tenant.schoolId} canManage={["teacher","principal","vice_principal","school_admin","academic_coordinator","school_owner"].includes(role || "")} />} />
+            <Route path="report-cards" element={<ReportCardModule schoolId={tenant.schoolId} canManage={["teacher","principal","vice_principal","school_admin","academic_coordinator"].includes(role || "")} />} />
             <Route path="support" element={<SupportModule schoolId={tenant.schoolId} />} />
             <Route path="*" element={<Navigate to={`/${tenant.slug}/${role}`} replace />} />
           </Routes>

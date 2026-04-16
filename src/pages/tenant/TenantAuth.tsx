@@ -41,7 +41,7 @@ const TenantAuth = () => {
 
   const title = useMemo(() => {
     if (tenant.status === "ready") return tenant.school.name;
-    return "EDUVERSE";
+    return "AltRix";
   }, [tenant.status, tenant.school]);
 
   const doPasswordLogin = async () => {
