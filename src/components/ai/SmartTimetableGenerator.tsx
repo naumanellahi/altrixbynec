@@ -67,6 +67,9 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [showConstraints, setShowConstraints] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editedGrid, setEditedGrid] = useState<Record<string, Record<string, { subject: string; teacher: string; room?: string }>> | null>(null);
+  const [editingCell, setEditingCell] = useState<{ day: string; period: string } | null>(null);
 
   // Fetch class sections
   const { data: sections, isLoading: loadingSections } = useQuery({
