@@ -8,6 +8,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { FileText, Printer, Search, User, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 interface Exam { id: string; name: string; term_label: string | null; }
 interface Student { id: string; first_name: string; last_name: string | null; student_code?: string | null; section_id?: string | null; }
@@ -183,16 +185,43 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
           <h2 className="font-display text-2xl font-semibold">Report Cards</h2>
           <p className="text-sm text-muted-foreground">Premium printable result cards with school branding</p>
         </div>
-        <Button variant="outline" onClick={() => {
-          document.body.classList.add("printing-report-card");
-          const cleanup = () => {
-            document.body.classList.remove("printing-report-card");
-            window.removeEventListener("afterprint", cleanup);
-          };
-          window.addEventListener("afterprint", cleanup);
-          setTimeout(() => window.print(), 50);
+        <Button variant="outline" onClick={async () => {
+          const el = document.getElementById("report-card-print") as HTMLElement | null;
+          if (!el) return toast.error("No report card to export");
+          try {
+            // Force white background, hide editable inputs visually for clean export
+            el.classList.add("exporting-pdf");
+            const canvas = await html2canvas(el, {
+              scale: 2,
+              useCORS: true,
+              backgroundColor: "#ffffff",
+              logging: false,
+              windowWidth: el.scrollWidth,
+            });
+            el.classList.remove("exporting-pdf");
+
+            const pdf = new jsPDF("p", "mm", "a4");
+            const pageW = pdf.internal.pageSize.getWidth();
+            const pageH = pdf.internal.pageSize.getHeight();
+            const margin = 8;
+            const availW = pageW - margin * 2;
+            const availH = pageH - margin * 2;
+            // Fit to single page (preserve aspect ratio)
+            const ratio = canvas.width / canvas.height;
+            let w = availW;
+            let h = w / ratio;
+            if (h > availH) { h = availH; w = h * ratio; }
+            const x = (pageW - w) / 2;
+            const y = (pageH - h) / 2;
+            pdf.addImage(canvas.toDataURL("image/png"), "PNG", x, y, w, h, undefined, "FAST");
+            const name = (studentInfo ? `${studentInfo.first_name}-${studentInfo.last_name || ""}` : "report-card").replace(/\s+/g, "_");
+            pdf.save(`${name}_report-card.pdf`);
+          } catch (e: any) {
+            el.classList.remove("exporting-pdf");
+            toast.error(e?.message || "Failed to export PDF");
+          }
         }}>
-          <Printer className="mr-2 h-4 w-4" />Print / Download PDF
+          <Printer className="mr-2 h-4 w-4" />Download PDF
         </Button>
       </div>
 

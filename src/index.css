@@ -197,27 +197,32 @@ All colors MUST be HSL.
     print-color-adjust: exact;
   }
 
-  /* Isolated print: when body has .printing-report-card, hide everything
-     except #report-card-print and its ancestors/descendants. */
-  body.printing-report-card * {
-    visibility: hidden !important;
-  }
+  /* Isolated print fallback (window.print) */
+  body.printing-report-card * { visibility: hidden !important; }
   body.printing-report-card #report-card-print,
-  body.printing-report-card #report-card-print * {
-    visibility: visible !important;
-  }
+  body.printing-report-card #report-card-print * { visibility: visible !important; }
   body.printing-report-card #report-card-print {
     position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 16px !important;
-    box-shadow: none !important;
-    border: none !important;
+    left: 0 !important; top: 0 !important;
+    width: 100% !important; margin: 0 !important; padding: 16px !important;
+    box-shadow: none !important; border: none !important;
+    background: #ffffff !important;
   }
-  body.printing-report-card #report-card-print .print\:hidden {
-    display: none !important;
-  }
+  body.printing-report-card #report-card-print .print\:hidden { display: none !important; }
+  /* Hide browser-injected URL/header by suggesting no margins (user must also disable headers/footers in print dialog) */
+  @page { margin: 8mm; }
+}
+
+/* PDF export: ensure pure white card, hide editable controls */
+#report-card-print.exporting-pdf {
+  background: #ffffff !important;
+  color: #000 !important;
+}
+#report-card-print.exporting-pdf input,
+#report-card-print.exporting-pdf textarea {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
 }
 
