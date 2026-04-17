@@ -297,7 +297,7 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
               <p className="rounded-md bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
                 Official Report Card
               </p>
-              <p className="mt-2 text-sm font-semibold">{exams.find((e) => e.id === examId)?.name}</p>
+              <p className="mt-2 text-sm font-semibold">{exams.find((e) => e.id === examId)?.name || "Cumulative Results"}</p>
               <p className="text-xs text-gray-600">Issued: {today}</p>
               {card.is_published && <p className="mt-1 text-[10px] font-bold text-green-700">PUBLISHED</p>}
             </div>
