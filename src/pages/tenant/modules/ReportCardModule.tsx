@@ -76,7 +76,7 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
         examId
           ? (supabase as any).from("report_cards").select("*").eq("school_id", schoolId).eq("exam_id", examId).eq("student_id", studentId).maybeSingle()
           : Promise.resolve({ data: null }),
-        (supabase as any).from("students").select("*, class_sections(name, academic_classes(name))").eq("id", studentId).maybeSingle(),
+        (supabase as any).from("students").select("*").eq("id", studentId).maybeSingle(),
         (supabase as any).from("academic_assessments").select("id,subject_id,max_marks,is_published").eq("school_id", schoolId),
         (supabase as any).from("student_marks").select("assessment_id,marks,computed_grade").eq("school_id", schoolId).eq("student_id", studentId),
       ]);
