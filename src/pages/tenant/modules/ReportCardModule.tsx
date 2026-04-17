@@ -76,7 +76,7 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
         examId
           ? (supabase as any).from("report_cards").select("*").eq("school_id", schoolId).eq("exam_id", examId).eq("student_id", studentId).maybeSingle()
           : Promise.resolve({ data: null }),
-        (supabase as any).from("students").select("*, class_sections(name, academic_classes(name))").eq("id", studentId).maybeSingle(),
+        (supabase as any).from("students").select("*").eq("id", studentId).maybeSingle(),
         (supabase as any).from("academic_assessments").select("id,subject_id,max_marks,is_published").eq("school_id", schoolId),
         (supabase as any).from("student_marks").select("assessment_id,marks,computed_grade").eq("school_id", schoolId).eq("student_id", studentId),
       ]);
@@ -307,8 +307,8 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
           <div className="relative mt-4 grid grid-cols-2 gap-x-6 gap-y-1 rounded-lg bg-gray-50 p-3 text-sm md:grid-cols-3">
             <p><span className="text-gray-500">Name:</span> <strong>{studentInfo.first_name} {studentInfo.last_name}</strong></p>
             <p><span className="text-gray-500">Roll No:</span> <strong>{studentInfo.student_code || "—"}</strong></p>
-            <p><span className="text-gray-500">Class:</span> <strong>{studentInfo.class_sections?.academic_classes?.name || "—"}</strong></p>
-            <p><span className="text-gray-500">Section:</span> <strong>{studentInfo.class_sections?.name || "—"}</strong></p>
+            <p><span className="text-gray-500">Class:</span> <strong>{(() => { const e = enrollments.find(x => x.student_id === studentId); const sec = sections.find(s => s.id === e?.class_section_id); const cls = classes.find(c => c.id === sec?.class_id); return cls?.name || "—"; })()}</strong></p>
+            <p><span className="text-gray-500">Section:</span> <strong>{(() => { const e = enrollments.find(x => x.student_id === studentId); const sec = sections.find(s => s.id === e?.class_section_id); return sec?.name || "—"; })()}</strong></p>
             <p><span className="text-gray-500">DOB:</span> <strong>{studentInfo.date_of_birth ? format(new Date(studentInfo.date_of_birth), "MMM d, yyyy") : "—"}</strong></p>
             <p><span className="text-gray-500">Parent:</span> <strong>{studentInfo.parent_name || "—"}</strong></p>
             <p><span className="text-gray-500">Phone:</span> <strong>{studentInfo.phone || studentInfo.parent_phone || "—"}</strong></p>
