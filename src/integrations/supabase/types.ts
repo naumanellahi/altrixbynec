@@ -3403,31 +3403,46 @@ export type Database = {
       }
       schools: {
         Row: {
+          address: string | null
           created_at: string | null
+          email: string | null
           id: string
           is_active: boolean | null
           logo_url: string | null
+          motto: string | null
           name: string
+          phone: string | null
           slug: string
           updated_at: string | null
+          website: string | null
         }
         Insert: {
+          address?: string | null
           created_at?: string | null
+          email?: string | null
           id?: string
           is_active?: boolean | null
           logo_url?: string | null
+          motto?: string | null
           name: string
+          phone?: string | null
           slug: string
           updated_at?: string | null
+          website?: string | null
         }
         Update: {
+          address?: string | null
           created_at?: string | null
+          email?: string | null
           id?: string
           is_active?: boolean | null
           logo_url?: string | null
+          motto?: string | null
           name?: string
+          phone?: string | null
           slug?: string
           updated_at?: string | null
+          website?: string | null
         }
         Relationships: []
       }
@@ -3793,6 +3808,7 @@ export type Database = {
       }
       students: {
         Row: {
+          address: string | null
           admission_date: string | null
           campus_id: string | null
           created_at: string | null
@@ -3801,7 +3817,10 @@ export type Database = {
           gender: string | null
           id: string
           last_name: string | null
+          parent_email: string | null
           parent_name: string | null
+          parent_phone: string | null
+          phone: string | null
           profile_id: string | null
           school_id: string
           status: string | null
@@ -3809,6 +3828,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          address?: string | null
           admission_date?: string | null
           campus_id?: string | null
           created_at?: string | null
@@ -3817,7 +3837,10 @@ export type Database = {
           gender?: string | null
           id?: string
           last_name?: string | null
+          parent_email?: string | null
           parent_name?: string | null
+          parent_phone?: string | null
+          phone?: string | null
           profile_id?: string | null
           school_id: string
           status?: string | null
@@ -3825,6 +3848,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          address?: string | null
           admission_date?: string | null
           campus_id?: string | null
           created_at?: string | null
@@ -3833,7 +3857,10 @@ export type Database = {
           gender?: string | null
           id?: string
           last_name?: string | null
+          parent_email?: string | null
           parent_name?: string | null
+          parent_phone?: string | null
+          phone?: string | null
           profile_id?: string | null
           school_id?: string
           status?: string | null
