@@ -23,6 +23,7 @@ import StudentDashboard from "./pages/tenant/StudentDashboard";
 import ParentDashboard from "./pages/tenant/ParentDashboard";
 import TenantBootstrap from "./pages/tenant/TenantBootstrap";
 import OwnerDashboard from "./pages/tenant/OwnerDashboard";
+import { PoweredByFooter } from "./components/global/PoweredByFooter";
 
 const queryClient = new QueryClient();
 
@@ -101,6 +102,7 @@ export default function App() {
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <PoweredByFooter />
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
