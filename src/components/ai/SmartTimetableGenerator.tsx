@@ -220,39 +220,114 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
 
   const latestSuggestion = useMemo(() => suggestions?.[0], [suggestions]);
 
-  const renderTimetableGrid = (data: Json) => {
-    // Supports BOTH formats:
-    // A) { Monday: { P1: {subject, teacher}, ... } }
-    // B) { timetable: [{ day, period_index, subject_name, teacher_id, ... }], ... }
-
-    const normalize = (): Record<string, Record<string, { subject: string; teacher: string }>> => {
-      const obj: any = data;
-
-      // Format B
-      if (obj && typeof obj === "object" && Array.isArray(obj.timetable)) {
-        const grid: Record<string, Record<string, { subject: string; teacher: string }>> = {};
-        for (const row of obj.timetable) {
-          const day = String(row.day ?? "").toLowerCase();
-          const periodIndex = Number(row.period_index);
-          if (!day || !Number.isFinite(periodIndex)) continue;
-
-          const dayLabel = day.charAt(0).toUpperCase() + day.slice(1);
-          const periodKey = `P${periodIndex + 1}`;
-
-          grid[dayLabel] ??= {};
-          grid[dayLabel][periodKey] = {
-            subject: String(row.subject_name ?? "—"),
-            teacher: String(row.teacher_name ?? row.teacher_id ?? "—"),
-          };
-        }
-        return grid;
+  const normalizeSuggestion = (data: Json): Record<string, Record<string, { subject: string; teacher: string; room?: string }>> => {
+    const obj: any = data;
+    if (obj && typeof obj === "object" && Array.isArray(obj.timetable)) {
+      const grid: Record<string, Record<string, { subject: string; teacher: string; room?: string }>> = {};
+      for (const row of obj.timetable) {
+        const day = String(row.day ?? "").toLowerCase();
+        const periodIndex = Number(row.period_index);
+        if (!day || !Number.isFinite(periodIndex)) continue;
+        const dayLabel = day.charAt(0).toUpperCase() + day.slice(1);
+        const periodKey = `P${periodIndex + 1}`;
+        grid[dayLabel] ??= {};
+        grid[dayLabel][periodKey] = {
+          subject: String(row.subject_name ?? "—"),
+          teacher: String(row.teacher_name ?? row.teacher_id ?? "—"),
+          room: row.room ? String(row.room) : undefined,
+        };
       }
+      return grid;
+    }
+    return (obj ?? {}) as Record<string, Record<string, { subject: string; teacher: string; room?: string }>>;
+  };
 
-      // Format A (best-effort)
-      return (obj ?? {}) as Record<string, Record<string, { subject: string; teacher: string }>>;
+  // Apply suggestion as real timetable_entries
+  const applyMutation = useMutation({
+    mutationFn: async (suggestion: TimetableSuggestion) => {
+      if (!suggestion.class_section_id) throw new Error("Apply requires a specific section. Re-generate with a section selected.");
+      const grid = editedGrid ?? normalizeSuggestion(suggestion.suggestion_data);
+
+      // Fetch periods to map P1.. -> period_id
+      const { data: periodsData, error: pErr } = await supabase
+        .from("timetable_periods")
+        .select("id,sort_order,start_time,end_time,is_break")
+        .eq("school_id", schoolId)
+        .order("sort_order");
+      if (pErr) throw pErr;
+      const periodByIndex = new Map<number, any>();
+      (periodsData || []).forEach((p, i) => periodByIndex.set(i, p));
+
+      const dayMap: Record<string, number> = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 };
+
+      // Clear existing entries for this section
+      const { error: delErr } = await supabase
+        .from("timetable_entries")
+        .delete()
+        .eq("school_id", schoolId)
+        .eq("class_section_id", suggestion.class_section_id);
+      if (delErr) throw delErr;
+
+      // Resolve teachers by display_name → user_id from directory
+      const { data: dir } = await supabase
+        .from("school_user_directory")
+        .select("user_id,display_name,email")
+        .eq("school_id", schoolId);
+      const teacherIdByName = new Map<string, string>();
+      (dir || []).forEach((d: any) => {
+        if (d.display_name) teacherIdByName.set(String(d.display_name).toLowerCase(), d.user_id);
+        if (d.email) teacherIdByName.set(String(d.email).toLowerCase(), d.user_id);
+      });
+
+      const inserts: any[] = [];
+      for (const [dayLabel, periodsObj] of Object.entries(grid)) {
+        const dayOfWeek = dayMap[dayLabel] ?? -1;
+        if (dayOfWeek < 0) continue;
+        for (const [periodKey, cell] of Object.entries(periodsObj)) {
+          if (!cell?.subject || cell.subject === "—") continue;
+          const idx = Number(periodKey.replace("P", "")) - 1;
+          const period = periodByIndex.get(idx);
+          if (!period || period.is_break) continue;
+          const teacherUserId = cell.teacher && cell.teacher !== "—" ? teacherIdByName.get(cell.teacher.toLowerCase()) ?? null : null;
+          inserts.push({
+            school_id: schoolId,
+            class_section_id: suggestion.class_section_id,
+            day_of_week: dayOfWeek,
+            period_id: period.id,
+            subject_name: cell.subject,
+            teacher_user_id: teacherUserId,
+            start_time: period.start_time,
+            end_time: period.end_time,
+            room: cell.room ?? null,
+          });
+        }
+      }
+      if (inserts.length) {
+        const { error: insErr } = await supabase.from("timetable_entries").insert(inserts);
+        if (insErr) throw insErr;
+      }
+    },
+    onSuccess: () => {
+      toast.success("AI timetable applied to the live schedule");
+      setEditMode(false);
+      setEditedGrid(null);
+      qc.invalidateQueries({ queryKey: ["ai_timetable_suggestions", schoolId] });
+    },
+    onError: (e: any) => toast.error(e?.message || "Failed to apply"),
+  });
+
+  const renderTimetableGrid = (data: Json) => {
+    const baseGrid = normalizeSuggestion(data);
+    const timetableData = editMode && editedGrid ? editedGrid : baseGrid;
+
+    const updateCell = (day: string, period: string, field: "subject" | "teacher" | "room", value: string) => {
+      setEditedGrid((prev) => {
+        const next = { ...(prev ?? baseGrid) };
+        next[day] = { ...(next[day] ?? {}) };
+        next[day][period] = { ...(next[day][period] ?? { subject: "", teacher: "" }), [field]: value };
+        return next;
+      });
     };
-
-    const timetableData = normalize();
 
     return (
       <div className="overflow-x-auto">
@@ -272,16 +347,66 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
               <tr key={period}>
                 <td className="p-2 border bg-muted/50 font-medium text-center">P{period}</td>
                 {DAYS.map((day) => {
-                  const cell = timetableData?.[day]?.[`P${period}`];
+                  const periodKey = `P${period}`;
+                  const cell = timetableData?.[day]?.[periodKey];
+                  const isEditing = editMode && editingCell?.day === day && editingCell?.period === periodKey;
+
+                  if (editMode && isEditing) {
+                    return (
+                      <td key={`${day}-${period}`} className="p-1 border align-top">
+                        <div className="space-y-1">
+                          <select
+                            className="w-full rounded border bg-background px-1 py-0.5 text-[11px]"
+                            value={cell?.subject ?? ""}
+                            onChange={(e) => updateCell(day, periodKey, "subject", e.target.value)}
+                          >
+                            <option value="">—</option>
+                            {(subjects ?? []).map((s) => (
+                              <option key={s.id} value={s.name}>{s.name}</option>
+                            ))}
+                          </select>
+                          <select
+                            className="w-full rounded border bg-background px-1 py-0.5 text-[10px]"
+                            value={cell?.teacher ?? ""}
+                            onChange={(e) => updateCell(day, periodKey, "teacher", e.target.value)}
+                          >
+                            <option value="">— teacher —</option>
+                            {(teachers ?? []).map((t: any) => {
+                              const name = t.profiles?.display_name ?? "";
+                              return name ? <option key={t.user_id} value={name}>{name}</option> : null;
+                            })}
+                          </select>
+                          <input
+                            className="w-full rounded border bg-background px-1 py-0.5 text-[10px]"
+                            placeholder="Room"
+                            value={cell?.room ?? ""}
+                            onChange={(e) => updateCell(day, periodKey, "room", e.target.value)}
+                          />
+                          <button
+                            className="w-full rounded bg-primary px-1 py-0.5 text-[10px] text-primary-foreground"
+                            onClick={() => setEditingCell(null)}
+                          >
+                            Done
+                          </button>
+                        </div>
+                      </td>
+                    );
+                  }
+
                   return (
-                    <td key={`${day}-${period}`} className="p-2 border text-center">
+                    <td
+                      key={`${day}-${period}`}
+                      className={`p-2 border text-center ${editMode ? "cursor-pointer hover:bg-muted/40" : ""}`}
+                      onClick={() => editMode && setEditingCell({ day, period: periodKey })}
+                    >
                       {cell ? (
                         <div>
                           <p className="font-medium text-primary">{cell.subject}</p>
                           <p className="text-[10px] text-muted-foreground truncate">{cell.teacher}</p>
+                          {cell.room && <p className="text-[9px] text-muted-foreground">{cell.room}</p>}
                         </div>
                       ) : (
-                        <span className="text-muted-foreground">—</span>
+                        <span className="text-muted-foreground">{editMode ? "+ add" : "—"}</span>
                       )}
                     </td>
                   );
