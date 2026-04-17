@@ -203,7 +203,7 @@ const StudentDashboard = () => {
     );
   }
 
-  const title = `${tenant.school?.name || "EDUVERSE"} • Student`;
+  const title = `${tenant.school?.name || "AltRix"} • Student`;
 
   return (
     <StudentShell title={title} subtitle="Read-only student portal" schoolSlug={tenant.slug}>
@@ -221,7 +221,7 @@ const StudentDashboard = () => {
         <Route path="holidays" element={<HolidaysModule schoolId={schoolId} canManage={false} />} />
         <Route path="diary" element={<DiaryModule schoolId={schoolId} canManage={false} />} />
         <Route path="exams" element={<ExamsModule schoolId={schoolId} canManage={false} />} />
-        <Route path="report-card" element={<ReportCardModule schoolId={schoolId} canManage={false} studentIdLocked={myStudent.status === "ok" ? myStudent.studentId : null} />} />
+        <Route path="report-card" element={<ReportCardModule schoolId={schoolId} canManage={false} studentIdLocked={myStudent.status === "ready" ? myStudent.studentId : null} />} />
         <Route path="*" element={<Navigate to={`/${tenant.slug}/student`} replace />} />
       </Routes>
     </StudentShell>
