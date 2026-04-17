@@ -4,7 +4,7 @@ import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { BookOpen, CalendarDays, GraduationCap, Headphones, LayoutGrid, ScrollText, MessageSquare, Sparkles, Menu, LogOut, Brain } from "lucide-react";
+import { BookOpen, CalendarDays, FileText, GraduationCap, Headphones, LayoutGrid, Megaphone, NotebookPen, ScrollText, MessageSquare, Sparkles, Menu, LogOut, Brain, PartyPopper } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GlobalCommandPalette } from "@/components/global/GlobalCommandPalette";
 import { NotificationsBell } from "@/components/global/NotificationsBell";
@@ -51,6 +51,11 @@ export function StudentShell({ title, subtitle, schoolSlug, children }: Props) {
     { to: `${basePath}/grades`, icon: BookOpen, label: "Grades", badge: 0 },
     { to: `${basePath}/timetable`, icon: ScrollText, label: "Timetable", badge: 0 },
     { to: `${basePath}/assignments`, icon: ScrollText, label: "Assignments", badge: 0 },
+    { to: `${basePath}/exams`, icon: GraduationCap, label: "Exams", badge: 0 },
+    { to: `${basePath}/report-card`, icon: FileText, label: "Report Card", badge: 0 },
+    { to: `${basePath}/diary`, icon: NotebookPen, label: "Diary", badge: 0 },
+    { to: `${basePath}/notices`, icon: Megaphone, label: "Notices", badge: 0 },
+    { to: `${basePath}/holidays`, icon: PartyPopper, label: "Holidays", badge: 0 },
     { to: `${basePath}/certificates`, icon: GraduationCap, label: "Certificates", badge: 0 },
     { to: `${basePath}/messages`, icon: MessageSquare, label: "Messages", badge: unreadCount },
     { to: `${basePath}/support`, icon: Headphones, label: "Support", badge: 0 },
@@ -67,7 +72,7 @@ export function StudentShell({ title, subtitle, schoolSlug, children }: Props) {
     <>
       <div className="flex items-center justify-between">
         <div>
-          <p className="font-display text-lg font-semibold tracking-tight">EDUVERSE</p>
+          <p className="font-display text-lg font-semibold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">AltRix</p>
           <p className="text-xs text-muted-foreground">/{schoolSlug} • Student</p>
         </div>
         <div className="flex items-center gap-2">

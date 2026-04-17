@@ -17,6 +17,11 @@ import {
   Sparkles,
   Menu,
   Brain,
+  FileText,
+  Megaphone,
+  NotebookPen,
+  PartyPopper,
+  HeartHandshake,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -80,6 +85,12 @@ export function ParentShell({
     { to: `${basePath}/ai-insights`, icon: Brain, label: "AI Insights", badge: 0 },
     { to: `${basePath}/attendance`, icon: Calendar, label: "Attendance", badge: 0 },
     { to: `${basePath}/grades`, icon: GraduationCap, label: "Grades", badge: 0 },
+    { to: `${basePath}/report-card`, icon: FileText, label: "Report Card", badge: 0 },
+    { to: `${basePath}/exams`, icon: GraduationCap, label: "Exams", badge: 0 },
+    { to: `${basePath}/diary`, icon: NotebookPen, label: "Diary", badge: 0 },
+    { to: `${basePath}/behavior`, icon: HeartHandshake, label: "Behavior Notes", badge: 0 },
+    { to: `${basePath}/notices`, icon: Megaphone, label: "Notices", badge: 0 },
+    { to: `${basePath}/holidays`, icon: PartyPopper, label: "Holidays", badge: 0 },
     { to: `${basePath}/fees`, icon: Receipt, label: "Fees", badge: 0 },
     { to: `${basePath}/messages`, icon: MessageSquare, label: "Messages", badge: unreadCount },
     { to: `${basePath}/timetable`, icon: Clock, label: "Timetable", badge: 0 },
@@ -98,7 +109,7 @@ export function ParentShell({
     <>
       <div className="flex items-center justify-between">
         <div>
-          <p className="font-display text-lg font-semibold tracking-tight">EDUVERSE</p>
+          <p className="font-display text-lg font-semibold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">AltRix</p>
           <p className="text-xs text-muted-foreground">/{schoolSlug} • Parent</p>
         </div>
         <div className="flex items-center gap-2">

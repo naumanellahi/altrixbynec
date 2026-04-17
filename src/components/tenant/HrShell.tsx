@@ -3,7 +3,7 @@ import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Briefcase, Calendar, CalendarDays, Coins, FileText, LayoutGrid, Star, Users as UsersIcon, ClipboardList, Headphones, LogOut, Sparkles, MessageSquare, Menu } from "lucide-react";
+import { Briefcase, Calendar, CalendarDays, Coins, FileText, LayoutGrid, Megaphone, PartyPopper, Star, Users as UsersIcon, ClipboardList, Headphones, LogOut, Sparkles, MessageSquare, Menu } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GlobalCommandPalette } from "@/components/global/GlobalCommandPalette";
 import { NotificationsBell } from "@/components/global/NotificationsBell";
@@ -51,6 +51,8 @@ export function HrShell({ title, subtitle, schoolSlug, children }: Props) {
     { to: `${basePath}/contracts`, icon: FileText, label: "Contracts", badge: 0 },
     { to: `${basePath}/reviews`, icon: Star, label: "Performance Reviews", badge: 0 },
     { to: `${basePath}/documents`, icon: Briefcase, label: "Documents", badge: 0 },
+    { to: `${basePath}/notices`, icon: Megaphone, label: "Notices", badge: 0 },
+    { to: `${basePath}/holidays`, icon: PartyPopper, label: "Holidays", badge: 0 },
     { to: `${basePath}/support`, icon: Headphones, label: "Support Inbox", badge: 0 },
     { to: `${basePath}/messages`, icon: MessageSquare, label: "Messages", badge: unreadCount },
     { to: `${basePath}/timetable`, icon: CalendarDays, label: "Timetable Builder", badge: 0 },
@@ -67,7 +69,7 @@ export function HrShell({ title, subtitle, schoolSlug, children }: Props) {
     <>
       <div className="flex items-center justify-between">
         <div>
-          <p className="font-display text-lg font-semibold tracking-tight">EDUVERSE</p>
+          <p className="font-display text-lg font-semibold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">AltRix</p>
           <p className="text-xs text-muted-foreground">/{schoolSlug} • HR</p>
         </div>
         <div className="flex items-center gap-2">

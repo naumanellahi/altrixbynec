@@ -14,9 +14,11 @@ import {
   GraduationCap,
   LayoutGrid,
   LogOut,
+  Megaphone,
   Menu,
   MessageSquare,
   NotebookPen,
+  PartyPopper,
   Sparkles,
   TableIcon,
   TrendingUp,
@@ -66,7 +68,12 @@ export function TeacherShell({ title, subtitle, schoolSlug, children }: Props) {
     { to: `${basePath}/gradebook`, icon: TableIcon, label: "Gradebook", badge: 0 },
     { to: `${basePath}/progress`, icon: TrendingUp, label: "Student Progress", badge: 0 },
     { to: `${basePath}/lesson-plans`, icon: BookCheck, label: "Lesson Planner", badge: 0 },
-    { to: `${basePath}/reports`, icon: GraduationCap, label: "Report Cards", badge: 0 },
+    { to: `${basePath}/exams`, icon: GraduationCap, label: "Exams", badge: 0 },
+    { to: `${basePath}/report-cards`, icon: FileText, label: "Report Cards", badge: 0 },
+    { to: `${basePath}/diary`, icon: BookOpen, label: "Diary", badge: 0 },
+    { to: `${basePath}/notices`, icon: Megaphone, label: "Notices", badge: 0 },
+    { to: `${basePath}/holidays`, icon: PartyPopper, label: "Holidays", badge: 0 },
+    { to: `${basePath}/reports`, icon: GraduationCap, label: "Reports", badge: 0 },
     { to: `${basePath}/timetable`, icon: CalendarDays, label: "Timetable", badge: 0 },
     { to: `${basePath}/leaves`, icon: Umbrella, label: "Apply Leave", badge: 0 },
     { to: `${basePath}/ai-insights`, icon: Brain, label: "AI Insights", badge: 0 },
@@ -84,7 +91,7 @@ export function TeacherShell({ title, subtitle, schoolSlug, children }: Props) {
     <>
       <div className="flex items-center justify-between">
         <div>
-          <p className="font-display text-lg font-semibold tracking-tight">EDUVERSE</p>
+          <p className="font-display text-lg font-semibold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">AltRix</p>
           <p className="text-xs text-muted-foreground">/{schoolSlug} • Teacher</p>
         </div>
         <div className="flex items-center gap-2">

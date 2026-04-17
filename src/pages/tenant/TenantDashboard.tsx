@@ -75,8 +75,8 @@ const TenantDashboard = () => {
 
   const title = useMemo(() => {
     if (tenant.status === "ready" && role) return `${tenant.school?.name} • ${roleLabel[role]}`;
-    if (tenant.status === "ready") return tenant.school?.name || "EDUVERSE";
-    return "EDUVERSE";
+    if (tenant.status === "ready") return tenant.school?.name || "AltRix";
+    return "AltRix";
   }, [tenant.status, tenant.school, role]);
 
   // Calculate month start for MTD queries

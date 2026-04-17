@@ -26,6 +26,11 @@ import { TeacherProgressModule } from "@/pages/tenant/teacher-modules/TeacherPro
 import { TeacherLessonPlannerModule } from "@/pages/tenant/teacher-modules/TeacherLessonPlannerModule";
 import { TeacherLeavesModule } from "@/pages/tenant/teacher-modules/TeacherLeavesModule";
 import { TeacherAIModule } from "@/pages/tenant/teacher-modules/TeacherAIModule";
+import NoticesModule from "@/pages/tenant/modules/NoticesModule";
+import HolidaysModule from "@/pages/tenant/modules/HolidaysModule";
+import DiaryModule from "@/pages/tenant/modules/DiaryModule";
+import ExamsModule from "@/pages/tenant/modules/ExamsModule";
+import ReportCardModule from "@/pages/tenant/modules/ReportCardModule";
 
 const TeacherDashboard = () => {
   const { schoolSlug } = useParams();
@@ -71,7 +76,7 @@ const TeacherDashboard = () => {
     return <Navigate to={`/${tenant.slug}/auth`} replace />;
   }
 
-  const title = tenant.status === "ready" ? `${tenant.school?.name} • Teacher` : "EDUVERSE";
+  const title = tenant.status === "ready" ? `${tenant.school?.name} • Teacher` : "AltRix";
 
   return (
     <TeacherShell title={title} subtitle="Teacher workspace" schoolSlug={tenant.slug}>
@@ -137,6 +142,11 @@ const TeacherDashboard = () => {
             <Route path="progress" element={<TeacherProgressModule />} />
             <Route path="lesson-plans" element={<TeacherLessonPlannerModule />} />
             <Route path="reports" element={<TeacherReportsModule />} />
+            <Route path="report-cards" element={<ReportCardModule schoolId={schoolId} canManage={true} />} />
+            <Route path="exams" element={<ExamsModule schoolId={schoolId} canManage={true} />} />
+            <Route path="diary" element={<DiaryModule schoolId={schoolId} canManage={true} />} />
+            <Route path="notices" element={<NoticesModule schoolId={schoolId} canManage={true} />} />
+            <Route path="holidays" element={<HolidaysModule schoolId={schoolId} canManage={false} />} />
             <Route path="timetable" element={<TeacherTimetableModule />} />
             <Route path="leaves" element={<TeacherLeavesModule />} />
             <Route path="ai-insights" element={<TeacherAIModule />} />

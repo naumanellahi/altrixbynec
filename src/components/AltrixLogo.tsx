@@ -19,7 +19,7 @@ export function AltrixLogo({ className, size = "md" }: Props) {
         className,
       )}
     >
-      AltRix
+      Alt<span className="bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">Rix</span>
     </span>
   );
 }

@@ -75,7 +75,7 @@ export default function OwnerDashboard() {
 
   const title = useMemo(() => {
     if (tenant.status === "ready") return `${tenant.school.name} • Owner`;
-    return "EDUVERSE • Owner";
+    return "AltRix • Owner";
   }, [tenant.status, tenant.school]);
 
   // Universal prefetch for offline support

@@ -93,8 +93,8 @@ export function OwnerShell({ title, subtitle, schoolSlug, children }: Props) {
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between">
         <div>
-          <p className="font-display text-lg font-semibold tracking-tight text-primary">
-            {schoolName || "EDUVERSE"}
+          <p className="font-display text-lg font-semibold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            {schoolName || "AltRix"}
           </p>
           <p className="text-xs text-muted-foreground">School Owner • CEO View</p>
         </div>

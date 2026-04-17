@@ -60,6 +60,10 @@ interface Student {
   status: string;
   profile_id: string | null;
   created_at: string;
+  address?: string | null;
+  phone?: string | null;
+  parent_phone?: string | null;
+  parent_email?: string | null;
 }
 
 interface ClassRow {
@@ -113,6 +117,10 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
     date_of_birth: "",
     section_id: "",
     status: "enrolled",
+    address: "",
+    phone: "",
+    parent_phone: "",
+    parent_email: "",
   });
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -131,7 +139,7 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
       ] = await Promise.all([
         (supabase as any)
           .from("students")
-          .select("id, first_name, last_name, parent_name, student_code, date_of_birth, status, profile_id, created_at")
+          .select("id, first_name, last_name, parent_name, student_code, date_of_birth, status, profile_id, created_at, address, phone, parent_phone, parent_email")
           .eq("school_id", schoolId)
           .order("first_name"),
         supabase.from("academic_classes").select("id, name").eq("school_id", schoolId).order("name"),
@@ -275,7 +283,11 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
           parent_name: formData.parent_name.trim(),
           date_of_birth: formData.date_of_birth || null,
           status: formData.status,
-        })
+          address: formData.address.trim() || null,
+          phone: formData.phone.trim() || null,
+          parent_phone: formData.parent_phone.trim() || null,
+          parent_email: formData.parent_email.trim() || null,
+        } as any)
         .select("id")
         .single();
 
@@ -315,7 +327,11 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
           parent_name: formData.parent_name.trim(),
           date_of_birth: formData.date_of_birth || null,
           status: formData.status,
-        })
+          address: formData.address.trim() || null,
+          phone: formData.phone.trim() || null,
+          parent_phone: formData.parent_phone.trim() || null,
+          parent_email: formData.parent_email.trim() || null,
+        } as any)
         .eq("id", editingStudent.id);
 
       if (error) throw error;
@@ -395,6 +411,10 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
       date_of_birth: "",
       section_id: "",
       status: "enrolled",
+      address: "",
+      phone: "",
+      parent_phone: "",
+      parent_email: "",
     });
   };
 
@@ -407,6 +427,10 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
       date_of_birth: student.date_of_birth || "",
       section_id: student.sectionId || "",
       status: student.status,
+      address: (student as any).address || "",
+      phone: (student as any).phone || "",
+      parent_phone: (student as any).parent_phone || "",
+      parent_email: (student as any).parent_email || "",
     });
     setShowEditDialog(true);
   };
@@ -741,6 +765,24 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
                 </Select>
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Student Phone</Label>
+                <Input value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="+1 555 1234" />
+              </div>
+              <div className="space-y-2">
+                <Label>Parent Phone</Label>
+                <Input value={formData.parent_phone} onChange={(e) => setFormData({ ...formData, parent_phone: e.target.value })} placeholder="+1 555 5678" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Parent Email</Label>
+              <Input type="email" value={formData.parent_email} onChange={(e) => setFormData({ ...formData, parent_email: e.target.value })} placeholder="parent@example.com" />
+            </div>
+            <div className="space-y-2">
+              <Label>Home Address</Label>
+              <Input value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} placeholder="Street, City, State" />
+            </div>
             <div className="space-y-2">
               <Label>Section *</Label>
               <Select
@@ -830,6 +872,24 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Student Phone</Label>
+                <Input value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Parent Phone</Label>
+                <Input value={formData.parent_phone} onChange={(e) => setFormData({ ...formData, parent_phone: e.target.value })} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Parent Email</Label>
+              <Input type="email" value={formData.parent_email} onChange={(e) => setFormData({ ...formData, parent_email: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Home Address</Label>
+              <Input value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label>Section</Label>
