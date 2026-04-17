@@ -765,6 +765,24 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
                 </Select>
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Student Phone</Label>
+                <Input value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="+1 555 1234" />
+              </div>
+              <div className="space-y-2">
+                <Label>Parent Phone</Label>
+                <Input value={formData.parent_phone} onChange={(e) => setFormData({ ...formData, parent_phone: e.target.value })} placeholder="+1 555 5678" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Parent Email</Label>
+              <Input type="email" value={formData.parent_email} onChange={(e) => setFormData({ ...formData, parent_email: e.target.value })} placeholder="parent@example.com" />
+            </div>
+            <div className="space-y-2">
+              <Label>Home Address</Label>
+              <Input value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} placeholder="Street, City, State" />
+            </div>
             <div className="space-y-2">
               <Label>Section *</Label>
               <Select
