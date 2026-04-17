@@ -278,6 +278,8 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
             <p><span className="text-gray-500">Section:</span> <strong>{studentInfo.class_sections?.name || "—"}</strong></p>
             <p><span className="text-gray-500">DOB:</span> <strong>{studentInfo.date_of_birth ? format(new Date(studentInfo.date_of_birth), "MMM d, yyyy") : "—"}</strong></p>
             <p><span className="text-gray-500">Parent:</span> <strong>{studentInfo.parent_name || "—"}</strong></p>
+            <p><span className="text-gray-500">Phone:</span> <strong>{studentInfo.phone || studentInfo.parent_phone || "—"}</strong></p>
+            <p className="md:col-span-2"><span className="text-gray-500">Address:</span> <strong>{studentInfo.address || "—"}</strong></p>
           </div>
 
           {/* Subjects table */}

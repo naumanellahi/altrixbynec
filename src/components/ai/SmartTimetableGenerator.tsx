@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Calendar,
   Clock,
@@ -8,14 +8,16 @@ import {
   CheckCircle2,
   AlertTriangle,
   Lock,
-  Unlock,
   Sparkles,
   Download,
-  Eye,
   Wand2,
   Loader2,
   ChevronDown,
   ChevronUp,
+  Pencil,
+  Save,
+  X,
+  Upload,
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -65,6 +67,9 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [showConstraints, setShowConstraints] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editedGrid, setEditedGrid] = useState<Record<string, Record<string, { subject: string; teacher: string; room?: string }>> | null>(null);
+  const [editingCell, setEditingCell] = useState<{ day: string; period: string } | null>(null);
 
   // Fetch class sections
   const { data: sections, isLoading: loadingSections } = useQuery({
@@ -215,39 +220,114 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
 
   const latestSuggestion = useMemo(() => suggestions?.[0], [suggestions]);
 
-  const renderTimetableGrid = (data: Json) => {
-    // Supports BOTH formats:
-    // A) { Monday: { P1: {subject, teacher}, ... } }
-    // B) { timetable: [{ day, period_index, subject_name, teacher_id, ... }], ... }
-
-    const normalize = (): Record<string, Record<string, { subject: string; teacher: string }>> => {
-      const obj: any = data;
-
-      // Format B
-      if (obj && typeof obj === "object" && Array.isArray(obj.timetable)) {
-        const grid: Record<string, Record<string, { subject: string; teacher: string }>> = {};
-        for (const row of obj.timetable) {
-          const day = String(row.day ?? "").toLowerCase();
-          const periodIndex = Number(row.period_index);
-          if (!day || !Number.isFinite(periodIndex)) continue;
-
-          const dayLabel = day.charAt(0).toUpperCase() + day.slice(1);
-          const periodKey = `P${periodIndex + 1}`;
-
-          grid[dayLabel] ??= {};
-          grid[dayLabel][periodKey] = {
-            subject: String(row.subject_name ?? "—"),
-            teacher: String(row.teacher_name ?? row.teacher_id ?? "—"),
-          };
-        }
-        return grid;
+  const normalizeSuggestion = (data: Json): Record<string, Record<string, { subject: string; teacher: string; room?: string }>> => {
+    const obj: any = data;
+    if (obj && typeof obj === "object" && Array.isArray(obj.timetable)) {
+      const grid: Record<string, Record<string, { subject: string; teacher: string; room?: string }>> = {};
+      for (const row of obj.timetable) {
+        const day = String(row.day ?? "").toLowerCase();
+        const periodIndex = Number(row.period_index);
+        if (!day || !Number.isFinite(periodIndex)) continue;
+        const dayLabel = day.charAt(0).toUpperCase() + day.slice(1);
+        const periodKey = `P${periodIndex + 1}`;
+        grid[dayLabel] ??= {};
+        grid[dayLabel][periodKey] = {
+          subject: String(row.subject_name ?? "—"),
+          teacher: String(row.teacher_name ?? row.teacher_id ?? "—"),
+          room: row.room ? String(row.room) : undefined,
+        };
       }
+      return grid;
+    }
+    return (obj ?? {}) as Record<string, Record<string, { subject: string; teacher: string; room?: string }>>;
+  };
 
-      // Format A (best-effort)
-      return (obj ?? {}) as Record<string, Record<string, { subject: string; teacher: string }>>;
+  // Apply suggestion as real timetable_entries
+  const applyMutation = useMutation({
+    mutationFn: async (suggestion: TimetableSuggestion) => {
+      if (!suggestion.class_section_id) throw new Error("Apply requires a specific section. Re-generate with a section selected.");
+      const grid = editedGrid ?? normalizeSuggestion(suggestion.suggestion_data);
+
+      // Fetch periods to map P1.. -> period_id
+      const { data: periodsData, error: pErr } = await supabase
+        .from("timetable_periods")
+        .select("id,sort_order,start_time,end_time,is_break")
+        .eq("school_id", schoolId)
+        .order("sort_order");
+      if (pErr) throw pErr;
+      const periodByIndex = new Map<number, any>();
+      (periodsData || []).forEach((p, i) => periodByIndex.set(i, p));
+
+      const dayMap: Record<string, number> = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 };
+
+      // Clear existing entries for this section
+      const { error: delErr } = await supabase
+        .from("timetable_entries")
+        .delete()
+        .eq("school_id", schoolId)
+        .eq("class_section_id", suggestion.class_section_id);
+      if (delErr) throw delErr;
+
+      // Resolve teachers by display_name → user_id from directory
+      const { data: dir } = await supabase
+        .from("school_user_directory")
+        .select("user_id,display_name,email")
+        .eq("school_id", schoolId);
+      const teacherIdByName = new Map<string, string>();
+      (dir || []).forEach((d: any) => {
+        if (d.display_name) teacherIdByName.set(String(d.display_name).toLowerCase(), d.user_id);
+        if (d.email) teacherIdByName.set(String(d.email).toLowerCase(), d.user_id);
+      });
+
+      const inserts: any[] = [];
+      for (const [dayLabel, periodsObj] of Object.entries(grid)) {
+        const dayOfWeek = dayMap[dayLabel] ?? -1;
+        if (dayOfWeek < 0) continue;
+        for (const [periodKey, cell] of Object.entries(periodsObj)) {
+          if (!cell?.subject || cell.subject === "—") continue;
+          const idx = Number(periodKey.replace("P", "")) - 1;
+          const period = periodByIndex.get(idx);
+          if (!period || period.is_break) continue;
+          const teacherUserId = cell.teacher && cell.teacher !== "—" ? teacherIdByName.get(cell.teacher.toLowerCase()) ?? null : null;
+          inserts.push({
+            school_id: schoolId,
+            class_section_id: suggestion.class_section_id,
+            day_of_week: dayOfWeek,
+            period_id: period.id,
+            subject_name: cell.subject,
+            teacher_user_id: teacherUserId,
+            start_time: period.start_time,
+            end_time: period.end_time,
+            room: cell.room ?? null,
+          });
+        }
+      }
+      if (inserts.length) {
+        const { error: insErr } = await supabase.from("timetable_entries").insert(inserts);
+        if (insErr) throw insErr;
+      }
+    },
+    onSuccess: () => {
+      toast.success("AI timetable applied to the live schedule");
+      setEditMode(false);
+      setEditedGrid(null);
+      qc.invalidateQueries({ queryKey: ["ai_timetable_suggestions", schoolId] });
+    },
+    onError: (e: any) => toast.error(e?.message || "Failed to apply"),
+  });
+
+  const renderTimetableGrid = (data: Json) => {
+    const baseGrid = normalizeSuggestion(data);
+    const timetableData = editMode && editedGrid ? editedGrid : baseGrid;
+
+    const updateCell = (day: string, period: string, field: "subject" | "teacher" | "room", value: string) => {
+      setEditedGrid((prev) => {
+        const next = { ...(prev ?? baseGrid) };
+        next[day] = { ...(next[day] ?? {}) };
+        next[day][period] = { ...(next[day][period] ?? { subject: "", teacher: "" }), [field]: value };
+        return next;
+      });
     };
-
-    const timetableData = normalize();
 
     return (
       <div className="overflow-x-auto">
@@ -267,16 +347,66 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
               <tr key={period}>
                 <td className="p-2 border bg-muted/50 font-medium text-center">P{period}</td>
                 {DAYS.map((day) => {
-                  const cell = timetableData?.[day]?.[`P${period}`];
+                  const periodKey = `P${period}`;
+                  const cell = timetableData?.[day]?.[periodKey];
+                  const isEditing = editMode && editingCell?.day === day && editingCell?.period === periodKey;
+
+                  if (editMode && isEditing) {
+                    return (
+                      <td key={`${day}-${period}`} className="p-1 border align-top">
+                        <div className="space-y-1">
+                          <select
+                            className="w-full rounded border bg-background px-1 py-0.5 text-[11px]"
+                            value={cell?.subject ?? ""}
+                            onChange={(e) => updateCell(day, periodKey, "subject", e.target.value)}
+                          >
+                            <option value="">—</option>
+                            {(subjects ?? []).map((s) => (
+                              <option key={s.id} value={s.name}>{s.name}</option>
+                            ))}
+                          </select>
+                          <select
+                            className="w-full rounded border bg-background px-1 py-0.5 text-[10px]"
+                            value={cell?.teacher ?? ""}
+                            onChange={(e) => updateCell(day, periodKey, "teacher", e.target.value)}
+                          >
+                            <option value="">— teacher —</option>
+                            {(teachers ?? []).map((t: any) => {
+                              const name = t.profiles?.display_name ?? "";
+                              return name ? <option key={t.user_id} value={name}>{name}</option> : null;
+                            })}
+                          </select>
+                          <input
+                            className="w-full rounded border bg-background px-1 py-0.5 text-[10px]"
+                            placeholder="Room"
+                            value={cell?.room ?? ""}
+                            onChange={(e) => updateCell(day, periodKey, "room", e.target.value)}
+                          />
+                          <button
+                            className="w-full rounded bg-primary px-1 py-0.5 text-[10px] text-primary-foreground"
+                            onClick={() => setEditingCell(null)}
+                          >
+                            Done
+                          </button>
+                        </div>
+                      </td>
+                    );
+                  }
+
                   return (
-                    <td key={`${day}-${period}`} className="p-2 border text-center">
+                    <td
+                      key={`${day}-${period}`}
+                      className={`p-2 border text-center ${editMode ? "cursor-pointer hover:bg-muted/40" : ""}`}
+                      onClick={() => editMode && setEditingCell({ day, period: periodKey })}
+                    >
                       {cell ? (
                         <div>
                           <p className="font-medium text-primary">{cell.subject}</p>
                           <p className="text-[10px] text-muted-foreground truncate">{cell.teacher}</p>
+                          {cell.room && <p className="text-[9px] text-muted-foreground">{cell.room}</p>}
                         </div>
                       ) : (
-                        <span className="text-muted-foreground">—</span>
+                        <span className="text-muted-foreground">{editMode ? "+ add" : "—"}</span>
                       )}
                     </td>
                   );
@@ -478,23 +608,51 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
 
               {/* Actions */}
               <div className="flex flex-wrap gap-2 pt-2">
+                {!editMode ? (
+                  <Button variant="outline" onClick={() => setEditMode(true)} className="gap-2">
+                    <Pencil className="h-4 w-4" />
+                    Edit Timetable
+                  </Button>
+                ) : (
+                  <>
+                    <Button variant="outline" onClick={() => { setEditMode(false); setEditedGrid(null); setEditingCell(null); }} className="gap-2">
+                      <X className="h-4 w-4" />
+                      Cancel Edits
+                    </Button>
+                    <Button variant="secondary" onClick={() => toast.success("Edits kept locally — click Apply to save")} className="gap-2">
+                      <Save className="h-4 w-4" />
+                      Keep Edits
+                    </Button>
+                  </>
+                )}
+                <Button
+                  onClick={() => applyMutation.mutate(latestSuggestion)}
+                  disabled={applyMutation.isPending || !latestSuggestion.class_section_id}
+                  className="gap-2"
+                  title={!latestSuggestion.class_section_id ? "Generate with a section selected to enable Apply" : "Save these entries to the live timetable"}
+                >
+                  {applyMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  Apply to Live Timetable
+                </Button>
                 {latestSuggestion.status !== "approved" && (
                   <Button
+                    variant="outline"
                     onClick={() => approveMutation.mutate(latestSuggestion.id)}
                     disabled={approveMutation.isPending}
                     className="gap-2"
                   >
                     <CheckCircle2 className="h-4 w-4" />
-                    Approve & Apply
+                    Approve
                   </Button>
                 )}
-                <Button variant="outline" className="gap-2">
-                  <Eye className="h-4 w-4" />
-                  Preview
-                </Button>
-                <Button variant="outline" className="gap-2">
+                <Button variant="ghost" className="gap-2" onClick={() => {
+                  const blob = new Blob([JSON.stringify(latestSuggestion.suggestion_data, null, 2)], { type: "application/json" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a"); a.href = url; a.download = `timetable-v${latestSuggestion.version_number ?? 1}.json`; a.click();
+                  URL.revokeObjectURL(url);
+                }}>
                   <Download className="h-4 w-4" />
-                  Export
+                  Export JSON
                 </Button>
                 <Button
                   variant="ghost"
