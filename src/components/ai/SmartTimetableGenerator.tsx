@@ -608,23 +608,51 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
 
               {/* Actions */}
               <div className="flex flex-wrap gap-2 pt-2">
+                {!editMode ? (
+                  <Button variant="outline" onClick={() => setEditMode(true)} className="gap-2">
+                    <Pencil className="h-4 w-4" />
+                    Edit Timetable
+                  </Button>
+                ) : (
+                  <>
+                    <Button variant="outline" onClick={() => { setEditMode(false); setEditedGrid(null); setEditingCell(null); }} className="gap-2">
+                      <X className="h-4 w-4" />
+                      Cancel Edits
+                    </Button>
+                    <Button variant="secondary" onClick={() => toast.success("Edits kept locally — click Apply to save")} className="gap-2">
+                      <Save className="h-4 w-4" />
+                      Keep Edits
+                    </Button>
+                  </>
+                )}
+                <Button
+                  onClick={() => applyMutation.mutate(latestSuggestion)}
+                  disabled={applyMutation.isPending || !latestSuggestion.class_section_id}
+                  className="gap-2"
+                  title={!latestSuggestion.class_section_id ? "Generate with a section selected to enable Apply" : "Save these entries to the live timetable"}
+                >
+                  {applyMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  Apply to Live Timetable
+                </Button>
                 {latestSuggestion.status !== "approved" && (
                   <Button
+                    variant="outline"
                     onClick={() => approveMutation.mutate(latestSuggestion.id)}
                     disabled={approveMutation.isPending}
                     className="gap-2"
                   >
                     <CheckCircle2 className="h-4 w-4" />
-                    Approve & Apply
+                    Approve
                   </Button>
                 )}
-                <Button variant="outline" className="gap-2">
-                  <Eye className="h-4 w-4" />
-                  Preview
-                </Button>
-                <Button variant="outline" className="gap-2">
+                <Button variant="ghost" className="gap-2" onClick={() => {
+                  const blob = new Blob([JSON.stringify(latestSuggestion.suggestion_data, null, 2)], { type: "application/json" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a"); a.href = url; a.download = `timetable-v${latestSuggestion.version_number ?? 1}.json`; a.click();
+                  URL.revokeObjectURL(url);
+                }}>
                   <Download className="h-4 w-4" />
-                  Export
+                  Export JSON
                 </Button>
                 <Button
                   variant="ghost"
