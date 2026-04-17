@@ -60,6 +60,10 @@ interface Student {
   status: string;
   profile_id: string | null;
   created_at: string;
+  address?: string | null;
+  phone?: string | null;
+  parent_phone?: string | null;
+  parent_email?: string | null;
 }
 
 interface ClassRow {
@@ -113,6 +117,10 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
     date_of_birth: "",
     section_id: "",
     status: "enrolled",
+    address: "",
+    phone: "",
+    parent_phone: "",
+    parent_email: "",
   });
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -131,7 +139,7 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
       ] = await Promise.all([
         (supabase as any)
           .from("students")
-          .select("id, first_name, last_name, parent_name, student_code, date_of_birth, status, profile_id, created_at")
+          .select("id, first_name, last_name, parent_name, student_code, date_of_birth, status, profile_id, created_at, address, phone, parent_phone, parent_email")
           .eq("school_id", schoolId)
           .order("first_name"),
         supabase.from("academic_classes").select("id, name").eq("school_id", schoolId).order("name"),
@@ -275,7 +283,11 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
           parent_name: formData.parent_name.trim(),
           date_of_birth: formData.date_of_birth || null,
           status: formData.status,
-        })
+          address: formData.address.trim() || null,
+          phone: formData.phone.trim() || null,
+          parent_phone: formData.parent_phone.trim() || null,
+          parent_email: formData.parent_email.trim() || null,
+        } as any)
         .select("id")
         .single();
 
@@ -315,7 +327,11 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
           parent_name: formData.parent_name.trim(),
           date_of_birth: formData.date_of_birth || null,
           status: formData.status,
-        })
+          address: formData.address.trim() || null,
+          phone: formData.phone.trim() || null,
+          parent_phone: formData.parent_phone.trim() || null,
+          parent_email: formData.parent_email.trim() || null,
+        } as any)
         .eq("id", editingStudent.id);
 
       if (error) throw error;
@@ -395,6 +411,10 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
       date_of_birth: "",
       section_id: "",
       status: "enrolled",
+      address: "",
+      phone: "",
+      parent_phone: "",
+      parent_email: "",
     });
   };
 
@@ -407,6 +427,10 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
       date_of_birth: student.date_of_birth || "",
       section_id: student.sectionId || "",
       status: student.status,
+      address: (student as any).address || "",
+      phone: (student as any).phone || "",
+      parent_phone: (student as any).parent_phone || "",
+      parent_email: (student as any).parent_email || "",
     });
     setShowEditDialog(true);
   };
