@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Calendar,
   Clock,
@@ -8,14 +8,16 @@ import {
   CheckCircle2,
   AlertTriangle,
   Lock,
-  Unlock,
   Sparkles,
   Download,
-  Eye,
   Wand2,
   Loader2,
   ChevronDown,
   ChevronUp,
+  Pencil,
+  Save,
+  X,
+  Upload,
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
