@@ -449,10 +449,24 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
         </div>
       )}
 
-      {canManage && examId && studentId && (
-        <div className="flex gap-2 print:hidden">
-          <Button onClick={() => save(false)}>Save Draft</Button>
-          <Button onClick={() => save(true)}>Save & Publish</Button>
+      {canManage && studentId && (
+        <div className="sticky bottom-2 flex flex-wrap items-center gap-2 rounded-xl border bg-card/95 p-3 shadow-lg backdrop-blur print:hidden">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium">
+              {examId ? "Ready to save" : "Pick an exam to enable saving"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {examId
+                ? "Drafts are private. Publishing makes the report card visible to students & parents."
+                : "Cumulative view is read-only — select a specific exam to save marks and publish."}
+            </p>
+          </div>
+          <Button variant="outline" disabled={!examId} onClick={() => save(false)}>
+            Save Draft
+          </Button>
+          <Button disabled={!examId} onClick={() => save(true)}>
+            Save & Publish
+          </Button>
         </div>
       )}
     </div>
