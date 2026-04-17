@@ -67,15 +67,48 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
   useEffect(() => { if (studentIdLocked) setStudentId(studentIdLocked); }, [studentIdLocked]);
 
   useEffect(() => {
-    if (!examId || !studentId || !schoolId) return;
+    if (!studentId || !schoolId) return;
     (async () => {
-      const [res, rc, info] = await Promise.all([
-        (supabase as any).from("exam_results").select("*").eq("school_id", schoolId).eq("exam_id", examId).eq("student_id", studentId),
-        (supabase as any).from("report_cards").select("*").eq("school_id", schoolId).eq("exam_id", examId).eq("student_id", studentId).maybeSingle(),
+      const [res, rc, info, assessments, marks] = await Promise.all([
+        examId
+          ? (supabase as any).from("exam_results").select("*").eq("school_id", schoolId).eq("exam_id", examId).eq("student_id", studentId)
+          : Promise.resolve({ data: [] }),
+        examId
+          ? (supabase as any).from("report_cards").select("*").eq("school_id", schoolId).eq("exam_id", examId).eq("student_id", studentId).maybeSingle()
+          : Promise.resolve({ data: null }),
         (supabase as any).from("students").select("*, class_sections(name, academic_classes(name))").eq("id", studentId).maybeSingle(),
+        (supabase as any).from("academic_assessments").select("id,subject_id,max_marks,is_published").eq("school_id", schoolId),
+        (supabase as any).from("student_marks").select("assessment_id,marks,computed_grade").eq("school_id", schoolId).eq("student_id", studentId),
       ]);
+
       const map: Record<string, Result> = {};
+      // 1) Prefer explicit exam_results
       (res.data || []).forEach((r: any) => { map[r.subject_id] = r; });
+
+      // 2) Fallback / fill from published assessments + student_marks (aggregate per subject)
+      const assessmentById = new Map<string, any>();
+      (assessments.data || []).filter((a: any) => a.is_published !== false).forEach((a: any) => assessmentById.set(a.id, a));
+      const perSubject: Record<string, { obtained: number; max: number }> = {};
+      (marks.data || []).forEach((m: any) => {
+        const a = assessmentById.get(m.assessment_id);
+        if (!a || !a.subject_id || m.marks == null) return;
+        const max = Number(a.max_marks || 100);
+        if (!perSubject[a.subject_id]) perSubject[a.subject_id] = { obtained: 0, max: 0 };
+        perSubject[a.subject_id].obtained += Number(m.marks);
+        perSubject[a.subject_id].max += max;
+      });
+      Object.entries(perSubject).forEach(([subjectId, v]) => {
+        if (map[subjectId]) return; // exam_results wins
+        const pct = v.max > 0 ? (v.obtained / v.max) * 100 : 0;
+        map[subjectId] = {
+          subject_id: subjectId,
+          marks_obtained: Math.round(v.obtained * 100) / 100,
+          max_marks: v.max,
+          grade: calcGrade(pct).grade,
+          remarks: null,
+        };
+      });
+
       setResults(map);
       if (rc.data) setCard(rc.data);
       else setCard({ total_marks: 0, max_total: 0, percentage: 0, gpa: 0, overall_grade: "", teacher_remarks: "", principal_remarks: "", attendance_percentage: null, is_published: false });
@@ -215,17 +248,17 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
         )}
 
         {/* Right: Empty hint when nothing selected */}
-        {(!examId || !studentId || !studentInfo) && (
+        {(!studentId || !studentInfo) && (
           <div className="grid place-items-center rounded-2xl border bg-card p-12 text-center">
             <GraduationCap className="h-10 w-10 text-muted-foreground" />
-            <p className="mt-3 font-medium">Select an exam and student</p>
-            <p className="text-sm text-muted-foreground">Pick a student on the left to view or generate their report card.</p>
+            <p className="mt-3 font-medium">Select a student</p>
+            <p className="text-sm text-muted-foreground">Pick a student on the left. Choose an exam for term cards, or leave blank for cumulative results.</p>
           </div>
         )}
       </div>
 
       {/* THE PRINTABLE REPORT CARD */}
-      {examId && studentId && studentInfo && (
+      {studentId && studentInfo && (
         <div
           id="report-card-print"
           className="relative mx-auto rounded-2xl border-4 border-double border-primary/40 bg-white p-8 text-black shadow-2xl print:border-2 print:border-black print:shadow-none print:p-6"
@@ -264,7 +297,7 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
               <p className="rounded-md bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
                 Official Report Card
               </p>
-              <p className="mt-2 text-sm font-semibold">{exams.find((e) => e.id === examId)?.name}</p>
+              <p className="mt-2 text-sm font-semibold">{exams.find((e) => e.id === examId)?.name || "Cumulative Results"}</p>
               <p className="text-xs text-gray-600">Issued: {today}</p>
               {card.is_published && <p className="mt-1 text-[10px] font-bold text-green-700">PUBLISHED</p>}
             </div>
