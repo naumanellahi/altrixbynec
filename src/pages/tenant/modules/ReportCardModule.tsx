@@ -248,17 +248,17 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
         )}
 
         {/* Right: Empty hint when nothing selected */}
-        {(!examId || !studentId || !studentInfo) && (
+        {(!studentId || !studentInfo) && (
           <div className="grid place-items-center rounded-2xl border bg-card p-12 text-center">
             <GraduationCap className="h-10 w-10 text-muted-foreground" />
-            <p className="mt-3 font-medium">Select an exam and student</p>
-            <p className="text-sm text-muted-foreground">Pick a student on the left to view or generate their report card.</p>
+            <p className="mt-3 font-medium">Select a student</p>
+            <p className="text-sm text-muted-foreground">Pick a student on the left. Choose an exam for term cards, or leave blank for cumulative results.</p>
           </div>
         )}
       </div>
 
       {/* THE PRINTABLE REPORT CARD */}
-      {examId && studentId && studentInfo && (
+      {studentId && studentInfo && (
         <div
           id="report-card-print"
           className="relative mx-auto rounded-2xl border-4 border-double border-primary/40 bg-white p-8 text-black shadow-2xl print:border-2 print:border-black print:shadow-none print:p-6"
