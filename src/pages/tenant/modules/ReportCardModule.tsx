@@ -183,7 +183,15 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
           <h2 className="font-display text-2xl font-semibold">Report Cards</h2>
           <p className="text-sm text-muted-foreground">Premium printable result cards with school branding</p>
         </div>
-        <Button variant="outline" onClick={() => window.print()}>
+        <Button variant="outline" onClick={() => {
+          document.body.classList.add("printing-report-card");
+          const cleanup = () => {
+            document.body.classList.remove("printing-report-card");
+            window.removeEventListener("afterprint", cleanup);
+          };
+          window.addEventListener("afterprint", cleanup);
+          setTimeout(() => window.print(), 50);
+        }}>
           <Printer className="mr-2 h-4 w-4" />Print / Download PDF
         </Button>
       </div>
