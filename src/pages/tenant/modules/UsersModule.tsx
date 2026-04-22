@@ -72,30 +72,29 @@ export function UsersModule() {
 
     // Fetch directory data
     const { data: dir } = await supabase
-      .from("school_user_directory")
-      .select("user_id,email,display_name")
-      .eq("school_id", schoolId)
-      .order("email", { ascending: true });
+      .rpc("get_school_user_directory", { _school_id: schoolId });
 
     // Fetch phone numbers from profiles
     const userIds = (dir ?? []).map((d: any) => d.user_id);
     const { data: profiles } = userIds.length > 0
       ? await supabase
           .from("profiles")
-          .select("user_id, phone")
-          .in("user_id", userIds)
+          .select("id, phone")
+          .in("id", userIds)
       : { data: [] };
 
     const phoneByUser: Record<string, string | null> = {};
     (profiles ?? []).forEach((p: any) => {
-      phoneByUser[p.user_id] = p.phone;
+      phoneByUser[p.id] = p.phone;
     });
 
     setDirectory(
-      (dir ?? []).map((d: any) => ({
+      [...(dir ?? [])]
+        .sort((a: any, b: any) => (a.email ?? "").localeCompare(b.email ?? ""))
+        .map((d: any) => ({
         ...d,
         phone: phoneByUser[d.user_id] ?? null,
-      })) as DirectoryRow[]
+        })) as DirectoryRow[]
     );
 
     const { data: ur } = await supabase
