@@ -47,6 +47,8 @@ export default function StudentComplaintsModule({ schoolId }: { schoolId: string
   const [content, setContent] = useState("");
   const [category, setCategory] = useState<string>("Other");
   const [sending, setSending] = useState(false);
+  const [editing, setEditing] = useState<Complaint | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   const load = async () => {
     if (!schoolId || !user) return;
