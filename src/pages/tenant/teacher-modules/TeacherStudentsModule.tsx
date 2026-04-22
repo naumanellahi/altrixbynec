@@ -372,127 +372,26 @@ export function TeacherStudentsModule() {
           />
         </div>
 
-        <Dialog open={addStudentOpen} onOpenChange={setAddStudentOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> Add Student
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Add New Student</DialogTitle>
-              <DialogDescription>
-                Add a new student to {sections.find((s) => s.id === selectedSection)?.class_name} - {sections.find((s) => s.id === selectedSection)?.name}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 pt-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <Label htmlFor="first_name">First Name *</Label>
-                  <Input
-                    id="first_name"
-                    value={newStudent.first_name}
-                    onChange={(e) => setNewStudent((p) => ({ ...p, first_name: e.target.value }))}
-                    placeholder="e.g., Ahmed"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="last_name">Last Name</Label>
-                  <Input
-                    id="last_name"
-                    value={newStudent.last_name}
-                    onChange={(e) => setNewStudent((p) => ({ ...p, last_name: e.target.value }))}
-                    placeholder="e.g., Khan"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="parent_name">Parent/Guardian Name *</Label>
-                <Input
-                  id="parent_name"
-                  value={newStudent.parent_name}
-                  onChange={(e) => setNewStudent((p) => ({ ...p, parent_name: e.target.value }))}
-                  placeholder="Required for identification"
-                />
-                <p className="mt-1 text-xs text-muted-foreground">
-                  This helps differentiate students with the same name
-                </p>
-              </div>
+        <Button onClick={() => setAddStudentOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" /> Add Student
+        </Button>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <Label>Date of Birth</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !newStudent.date_of_birth && "text-muted-foreground"
-                        )}
-                      >
-                        <Calendar className="mr-2 h-4 w-4" />
-                        {newStudent.date_of_birth
-                          ? format(new Date(newStudent.date_of_birth), "PPP")
-                          : "Pick a date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <CalendarComponent
-                        mode="single"
-                        selected={newStudent.date_of_birth ? new Date(newStudent.date_of_birth) : undefined}
-                        onSelect={(date) =>
-                          setNewStudent((p) => ({
-                            ...p,
-                            date_of_birth: date ? format(date, "yyyy-MM-dd") : "",
-                          }))
-                        }
-                        disabled={(date) => date > new Date() || date < new Date("1990-01-01")}
-                        initialFocus
-                        className="p-3 pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div>
-                  <Label htmlFor="student_code">Student Code</Label>
-                  <Input
-                    id="student_code"
-                    value={newStudent.student_code}
-                    onChange={(e) => setNewStudent((p) => ({ ...p, student_code: e.target.value }))}
-                    placeholder="Optional ID/Code"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label>Status</Label>
-                <Select
-                  value={newStudent.status}
-                  onValueChange={(v) => setNewStudent((p) => ({ ...p, status: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="enrolled">Enrolled</SelectItem>
-                    <SelectItem value="inquiry">Inquiry</SelectItem>
-                    <SelectItem value="withdrawn">Withdrawn</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter className="mt-4">
-              <Button variant="outline" onClick={() => setAddStudentOpen(false)} disabled={submitting}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddStudent} disabled={submitting}>
-                {submitting ? "Adding..." : "Add Student"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <StudentFormDialog
+          open={addStudentOpen}
+          onOpenChange={setAddStudentOpen}
+          schoolId={tenant.status === "ready" ? tenant.schoolId : ""}
+          classes={classes}
+          sections={sections.map((s) => ({
+            id: s.id,
+            name: s.name,
+            // best-effort: we don't keep class_id locally, fall back to class_name lookup
+            class_id: classes.find((c) => c.name === s.class_name)?.id ?? "",
+          }))}
+          subjects={subjects}
+          parentUsers={parentUsers}
+          initial={selectedSection ? { section_id: selectedSection } : undefined}
+          onSaved={() => void refreshStudents()}
+        />
       </div>
 
       {/* Students Table */}
