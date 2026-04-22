@@ -161,6 +161,16 @@ export default function PrincipalComplaintsModule() {
             </div>
           </div>
         )}
+        {schoolId && (
+          <ComplaintThread
+            complaintId={c.id}
+            schoolId={schoolId}
+            authorRole="principal"
+            anonymousAuthors={anonymous}
+            usePrincipalView={anonymous}
+            nameLookup={anonymous ? {} : { ...senderNames, ...studentNames }}
+          />
+        )}
       </CardContent>
     </Card>
   );
