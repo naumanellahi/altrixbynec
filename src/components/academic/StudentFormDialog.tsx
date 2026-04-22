@@ -558,39 +558,53 @@ export function StudentFormDialog({
                 </Select>
               </div>
 
-              {subjects.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Subjects (optional)</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {subjects.map((s) => {
-                      const active = form.subject_ids.includes(s.id);
-                      return (
-                        <button
-                          type="button"
-                          key={s.id}
-                          onClick={() => {
-                            const next = active
-                              ? form.subject_ids.filter((x) => x !== s.id)
-                              : [...form.subject_ids, s.id];
-                            update("subject_ids", next);
-                          }}
-                          className={cn(
-                            "rounded-full border px-3 py-1 text-xs transition-colors",
-                            active
-                              ? "bg-primary text-primary-foreground border-primary"
-                              : "bg-surface hover:bg-accent",
-                          )}
-                        >
-                          {s.name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    Subjects auto-derive from the section's curriculum if left blank.
+              <div className="space-y-2">
+                <Label>Subjects (optional)</Label>
+                {!form.section_id ? (
+                  <p className="text-xs text-muted-foreground">
+                    Select a class & section first to see assigned subjects.
                   </p>
-                </div>
-              )}
+                ) : loadingSectionSubjects ? (
+                  <p className="text-xs text-muted-foreground inline-flex items-center gap-2">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Loading subjects for this class…
+                  </p>
+                ) : sectionSubjects.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    No subjects are assigned to this class yet. Add them in the Academic module first.
+                  </p>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap gap-2">
+                      {sectionSubjects.map((s) => {
+                        const active = form.subject_ids.includes(s.id);
+                        return (
+                          <button
+                            type="button"
+                            key={s.id}
+                            onClick={() => {
+                              const next = active
+                                ? form.subject_ids.filter((x) => x !== s.id)
+                                : [...form.subject_ids, s.id];
+                              update("subject_ids", next);
+                            }}
+                            className={cn(
+                              "rounded-full border px-3 py-1 text-xs transition-colors",
+                              active
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-surface hover:bg-accent",
+                            )}
+                          >
+                            {s.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Showing only subjects assigned to this class. Leave blank to inherit the full curriculum.
+                    </p>
+                  </>
+                )}
+              </div>
             </TabsContent>
 
             {/* PARENT */}
