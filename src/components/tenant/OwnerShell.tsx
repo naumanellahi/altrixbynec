@@ -182,7 +182,7 @@ export function OwnerShell({ title, subtitle, schoolSlug, children }: Props) {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[300px] p-4">
+            <SheetContent side="left" className="w-[300px] p-4 overflow-y-auto">
               <NavContent />
             </SheetContent>
           </Sheet>
