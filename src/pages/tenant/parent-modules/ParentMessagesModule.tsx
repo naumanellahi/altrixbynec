@@ -56,17 +56,26 @@ const ParentMessagesModule = ({ child, schoolId }: ParentMessagesModuleProps) =>
   }, []);
 
   const fetchMessages = useCallback(async () => {
-    if (!child || !currentUserId) return;
+    if (!currentUserId || !schoolId) return;
 
     setLoading(true);
 
-    const { data, error } = await supabase
+    // Show ALL messages where I'm sender or recipient in this school.
+    // If a child is selected, scope to that student; otherwise show everything
+    // so parents without a linked child can still see messages addressed to them.
+    let query = supabase
       .from("parent_messages")
-      .select("id,subject,content,sender_user_id,recipient_user_id,is_read,created_at")
-      .eq("student_id", child.student_id)
+      .select("id,subject,content,sender_user_id,recipient_user_id,is_read,created_at,student_id")
+      .eq("school_id", schoolId)
       .or(`sender_user_id.eq.${currentUserId},recipient_user_id.eq.${currentUserId}`)
       .order("created_at", { ascending: true })
-      .limit(100);
+      .limit(200);
+
+    if (child) {
+      query = query.eq("student_id", child.student_id);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("Failed to fetch messages:", error);
@@ -76,7 +85,7 @@ const ParentMessagesModule = ({ child, schoolId }: ParentMessagesModuleProps) =>
     }
 
     setLoading(false);
-  }, [child, currentUserId]);
+  }, [child, currentUserId, schoolId]);
 
   useEffect(() => {
     fetchMessages();
