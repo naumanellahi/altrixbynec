@@ -30,9 +30,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Send, AlertTriangle } from "lucide-react";
+import { Plus, Send, AlertTriangle, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { ComplaintThread } from "@/components/complaints/ComplaintThread";
+import { EditComplaintDialog } from "@/components/complaints/EditComplaintDialog";
 
 interface Complaint {
   id: string;
