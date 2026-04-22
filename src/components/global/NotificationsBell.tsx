@@ -74,10 +74,13 @@ export function NotificationsBell({ schoolId, schoolSlug, role }: NotificationsB
         const getRolePath = (r: string | undefined): string => {
           switch (r) {
             case "principal":
+              return "principal";
             case "vice_principal":
+              return "vice_principal";
             case "school_admin":
+              return "school_admin";
             case "academic_coordinator":
-              return "admin";
+              return "academic_coordinator";
             case "teacher":
               return "teacher";
             case "student":
@@ -93,7 +96,7 @@ export function NotificationsBell({ schoolId, schoolSlug, role }: NotificationsB
             case "school_owner":
               return "school_owner";
             default:
-              return r || "admin";
+              return r || "";
           }
         };
         
