@@ -4,7 +4,7 @@ import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, BookOpen, CalendarDays, Coins, GraduationCap, Headphones, KanbanSquare, LayoutGrid, LogOut, Megaphone, Menu, MessageSquare, Settings, ShieldCheck, Sparkles, Users, FileText, PartyPopper } from "lucide-react";
+import { BarChart3, BookOpen, CalendarDays, Coins, GraduationCap, Headphones, KanbanSquare, LayoutGrid, LogOut, Megaphone, Menu, MessageSquare, NotebookPen, Settings, ShieldAlert, ShieldCheck, Sparkles, Users, FileText, PartyPopper } from "lucide-react";
 import type { EduverseRole } from "@/lib/eduverse-roles";
 import { supabase } from "@/integrations/supabase/client";
 import { GlobalCommandPalette } from "@/components/global/GlobalCommandPalette";
@@ -54,6 +54,8 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
     { to: `/${schoolSlug}/${role}/holidays`, icon: PartyPopper, label: "Holidays", show: true, badge: 0 },
     { to: `/${schoolSlug}/${role}/finance`, icon: Coins, label: "Finance", show: ["principal", "vice_principal", "accountant", "super_admin", "school_owner"].includes(role), badge: 0 },
     { to: `/${schoolSlug}/${role}/reports`, icon: BarChart3, label: "Reports", show: true, badge: 0 },
+    { to: `/${schoolSlug}/${role}/complaints`, icon: ShieldAlert, label: "Complaints", show: ["principal", "vice_principal", "school_admin", "school_owner", "super_admin"].includes(role), badge: 0 },
+    { to: `/${schoolSlug}/${role}/parent-notes`, icon: NotebookPen, label: "Parent Notes", show: ["principal", "vice_principal", "school_admin", "school_owner", "super_admin"].includes(role), badge: 0 },
     { to: `/${schoolSlug}/${role}/support`, icon: Headphones, label: "Support", show: ["principal", "vice_principal", "super_admin", "school_owner", "hr_manager"].includes(role), badge: 0 },
     { to: `/${schoolSlug}/${role}?settings=1`, icon: Settings, label: "Settings", show: true, badge: 0 },
   ].filter(item => item.show);

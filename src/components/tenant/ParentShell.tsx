@@ -22,6 +22,7 @@ import {
   NotebookPen,
   PartyPopper,
   HeartHandshake,
+  ShieldAlert,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -93,6 +94,7 @@ export function ParentShell({
     { to: `${basePath}/holidays`, icon: PartyPopper, label: "Holidays", badge: 0 },
     { to: `${basePath}/fees`, icon: Receipt, label: "Fees", badge: 0 },
     { to: `${basePath}/messages`, icon: MessageSquare, label: "Messages", badge: unreadCount },
+    { to: `${basePath}/complaints`, icon: ShieldAlert, label: "Complaints", badge: 0 },
     { to: `${basePath}/timetable`, icon: Clock, label: "Timetable", badge: 0 },
     { to: `${basePath}/notifications`, icon: Bell, label: "Notifications", badge: 0 },
     { to: `${basePath}/support`, icon: LifeBuoy, label: "Support", badge: 0 },
