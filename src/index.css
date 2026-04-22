@@ -44,7 +44,15 @@ All colors MUST be HSL.
     --input: 220 21% 88%;
     --ring: var(--brand);
 
-    --radius: 0.85rem;
+    --radius: 1rem;
+
+    /* Status palette (semantic, HSL) */
+    --success: 152 65% 40%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 95% 52%;
+    --warning-foreground: 30 60% 12%;
+    --info: 210 100% 50%;
+    --info-foreground: 0 0% 100%;
 
     /* Typography */
     --font-display: ui-sans-serif;
@@ -165,6 +173,37 @@ All colors MUST be HSL.
   .text-balance {
     text-wrap: balance;
   }
+
+  /* Premium card utility — used across all dashboards */
+  .card-premium {
+    @apply rounded-2xl border border-border/60 bg-surface shadow-soft transition-all duration-200;
+  }
+  .card-premium-hover {
+    @apply hover:shadow-elevated hover:-translate-y-0.5 hover:border-primary/30;
+  }
+  .card-glass {
+    background: hsl(var(--surface) / 0.7);
+    backdrop-filter: saturate(140%) blur(12px);
+    -webkit-backdrop-filter: saturate(140%) blur(12px);
+    @apply rounded-2xl border border-border/50 shadow-soft;
+  }
+
+  /* Quick-action icon tile */
+  .icon-tile {
+    @apply inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-accent text-accent-foreground transition-all duration-200;
+  }
+  .icon-tile-hover {
+    @apply group-hover:scale-110 group-hover:bg-primary group-hover:text-primary-foreground;
+  }
+
+  /* Subtle entrance */
+  .animate-rise {
+    animation: enter-fade 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  /* Hide scrollbar but keep scroll */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }
 
 @media print {
