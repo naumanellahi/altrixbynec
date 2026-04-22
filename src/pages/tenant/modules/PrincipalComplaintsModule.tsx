@@ -11,6 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Shield, AlertTriangle, EyeOff } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { ComplaintThread } from "@/components/complaints/ComplaintThread";
 
 interface PrincipalComplaint {
   id: string;
