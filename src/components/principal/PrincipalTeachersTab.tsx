@@ -139,10 +139,7 @@ export function PrincipalTeachersTab({ schoolId }: PrincipalTeachersTabProps) {
           .select("user_id")
           .eq("school_id", schoolId)
           .eq("role", "teacher"),
-        supabase
-          .from("school_user_directory")
-          .select("user_id, email, display_name")
-          .eq("school_id", schoolId),
+        supabase.rpc("get_school_user_directory", { _school_id: schoolId }),
         supabase.from("academic_classes").select("id, name").eq("school_id", schoolId).order("name"),
         supabase.from("class_sections").select("id, name, class_id").eq("school_id", schoolId),
         supabase.from("subjects").select("id, name, code").eq("school_id", schoolId),
