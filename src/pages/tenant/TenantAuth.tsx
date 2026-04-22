@@ -136,7 +136,13 @@ const TenantAuth = () => {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Email</label>
-                <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@school.com" />
+                <Input
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@school.com"
+                  type="email"
+                  autoComplete="email"
+                />
               </div>
 
               <Tabs defaultValue="password">
@@ -150,27 +156,43 @@ const TenantAuth = () => {
                 </TabsList>
 
                 <TabsContent value="password" className="mt-4 space-y-3">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Password</label>
-                    <Input
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      type="password"
-                    />
-                  </div>
-                  <Button variant="hero" size="xl" className="w-full" disabled={busy} onClick={doPasswordLogin}>
-                    Sign in
-                  </Button>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!busy) void doPasswordLogin();
+                    }}
+                    className="space-y-3"
+                  >
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Password</label>
+                      <Input
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        type="password"
+                      />
+                    </div>
+                    <Button type="submit" variant="hero" size="xl" className="w-full" disabled={busy}>
+                      Sign in
+                    </Button>
+                  </form>
                 </TabsContent>
 
                 <TabsContent value="magic" className="mt-4 space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    Best for parents/guardians: receive a secure sign-in link. (No account auto-creation.)
-                  </p>
-                  <Button variant="hero" size="xl" className="w-full" disabled={busy} onClick={doMagicLink}>
-                    Send sign-in link
-                  </Button>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!busy) void doMagicLink();
+                    }}
+                    className="space-y-3"
+                  >
+                    <p className="text-sm text-muted-foreground">
+                      Best for parents/guardians: receive a secure sign-in link. (No account auto-creation.)
+                    </p>
+                    <Button type="submit" variant="hero" size="xl" className="w-full" disabled={busy}>
+                      Send sign-in link
+                    </Button>
+                  </form>
                 </TabsContent>
               </Tabs>
 
