@@ -213,9 +213,19 @@ export function StudentDigitalTwinCard({ studentId, schoolId, compact = false }:
                 </p>
               </div>
             </div>
-            <Badge className={riskLevel.color}>
-              Risk: {riskLevel.level}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge className={riskLevel.color}>Risk: {riskLevel.level}</Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={generate}
+                disabled={generating}
+                className="h-8 gap-1.5"
+              >
+                {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                {generating ? "Regenerating…" : "Regenerate"}
+              </Button>
+            </div>
           </div>
         </CardHeader>
 
