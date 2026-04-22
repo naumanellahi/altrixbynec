@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
@@ -15,6 +15,14 @@ import {
   Hand,
   Lightbulb,
   Target,
+  Sparkles,
+  CalendarDays,
+  ListChecks,
+  GraduationCap,
+  RefreshCw,
+  Loader2,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface Props {
   studentId: string;
@@ -47,6 +56,27 @@ const learningStyleColors = {
 
 export function StudentDigitalTwinCard({ studentId, schoolId, compact = false }: Props) {
   const qc = useQueryClient();
+  const [generating, setGenerating] = useState(false);
+  const [showRich, setShowRich] = useState(true);
+
+  const generate = async () => {
+    setGenerating(true);
+    const t = toast.loading("Generating heavy AI profile… analyzing attendance, grades, behavior & predictions");
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-student-analyzer", {
+        body: { schoolId, studentId, analysisType: "digital_twin" },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success("AI profile generated", { id: t });
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to generate AI profile", { id: t });
+    } finally {
+      setGenerating(false);
+      qc.invalidateQueries({ queryKey: ["ai_student_profile", studentId] });
+    }
+  };
+
   const { data: profile, isLoading } = useQuery({
     queryKey: ["ai_student_profile", studentId],
     queryFn: async () => {
@@ -118,23 +148,12 @@ export function StudentDigitalTwinCard({ studentId, schoolId, compact = false }:
             AI profile not yet generated for this student
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Profile will be created as data is collected
+            Generate a deep AI profile with study routine, 30‑day tasks & predictions
           </p>
           <div className="mt-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={async () => {
-                try {
-                  await supabase.functions.invoke("ai-student-analyzer", {
-                    body: { schoolId, studentId, analysisType: "digital_twin" },
-                  });
-                } finally {
-                  qc.invalidateQueries({ queryKey: ["ai_student_profile", studentId] });
-                }
-              }}
-            >
-              Generate AI Profile
+            <Button onClick={generate} disabled={generating} size="sm" className="gap-2">
+              {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {generating ? "Generating…" : "Generate AI Profile"}
             </Button>
           </div>
         </CardContent>
@@ -144,6 +163,7 @@ export function StudentDigitalTwinCard({ studentId, schoolId, compact = false }:
 
   const LearningIcon = learningStyleIcons[profile.learning_style as keyof typeof learningStyleIcons] || Brain;
   const learningColor = learningStyleColors[profile.learning_style as keyof typeof learningStyleColors] || "text-primary bg-primary/10";
+  const rich = (profile.analysis_data || {}) as any;
 
   if (compact) {
     return (
