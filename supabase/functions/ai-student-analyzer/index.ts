@@ -160,7 +160,7 @@ Student Analysis Data:
     "promotion_probability": 0-100,
     "academic_trajectory": "improving|stable|declining",
     "12_month_outlook": "narrative paragraph",
-    "career_pathways": ["3-5 likely career fits with reasoning"]
+    "career_pathways": ["3-5 plain string sentences, e.g. 'Software Engineer — strong logic and math fluency'. Each item MUST be a string, NOT an object."]
   },
   "interventions": [
     { "type": "academic|emotional|behavioral|skill", "action": "...", "owner": "teacher|parent|counselor|student", "urgency": "now|this_week|this_month" }
