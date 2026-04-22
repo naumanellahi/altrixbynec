@@ -3810,18 +3810,26 @@ export type Database = {
         Row: {
           address: string | null
           admission_date: string | null
+          area: string | null
           campus_id: string | null
+          city: string | null
           created_at: string | null
           date_of_birth: string | null
+          emergency_contact: string | null
           first_name: string
           gender: string | null
           id: string
           last_name: string | null
+          medical_notes: string | null
+          notes: string | null
           parent_email: string | null
           parent_name: string | null
           parent_phone: string | null
           phone: string | null
           profile_id: string | null
+          profile_image_url: string | null
+          registration_number: string | null
+          roll_number: string | null
           school_id: string
           status: string | null
           student_code: string | null
@@ -3830,18 +3838,26 @@ export type Database = {
         Insert: {
           address?: string | null
           admission_date?: string | null
+          area?: string | null
           campus_id?: string | null
+          city?: string | null
           created_at?: string | null
           date_of_birth?: string | null
+          emergency_contact?: string | null
           first_name: string
           gender?: string | null
           id?: string
           last_name?: string | null
+          medical_notes?: string | null
+          notes?: string | null
           parent_email?: string | null
           parent_name?: string | null
           parent_phone?: string | null
           phone?: string | null
           profile_id?: string | null
+          profile_image_url?: string | null
+          registration_number?: string | null
+          roll_number?: string | null
           school_id: string
           status?: string | null
           student_code?: string | null
@@ -3850,18 +3866,26 @@ export type Database = {
         Update: {
           address?: string | null
           admission_date?: string | null
+          area?: string | null
           campus_id?: string | null
+          city?: string | null
           created_at?: string | null
           date_of_birth?: string | null
+          emergency_contact?: string | null
           first_name?: string
           gender?: string | null
           id?: string
           last_name?: string | null
+          medical_notes?: string | null
+          notes?: string | null
           parent_email?: string | null
           parent_name?: string | null
           parent_phone?: string | null
           phone?: string | null
           profile_id?: string | null
+          profile_image_url?: string | null
+          registration_number?: string | null
+          roll_number?: string | null
           school_id?: string
           status?: string | null
           student_code?: string | null
@@ -4403,6 +4427,10 @@ export type Database = {
       can_manage_staff: { Args: { _school_id: string }; Returns: boolean }
       can_manage_students: { Args: { _school_id: string }; Returns: boolean }
       can_work_crm: { Args: { _school_id: string }; Returns: boolean }
+      find_parent_user_by_email: {
+        Args: { _email: string; _school_id: string }
+        Returns: string
+      }
       get_at_risk_students: {
         Args: { _class_section_id?: string; _school_id: string }
         Returns: {
@@ -4457,6 +4485,22 @@ export type Database = {
         }[]
       }
       my_children: { Args: { _school_id: string }; Returns: string[] }
+      my_children_detailed: {
+        Args: { _school_id: string }
+        Returns: {
+          class_name: string
+          class_section_id: string
+          date_of_birth: string
+          first_name: string
+          gender: string
+          last_name: string
+          profile_image_url: string
+          roll_number: string
+          section_name: string
+          student_code: string
+          student_id: string
+        }[]
+      }
       my_student_id: { Args: { _school_id: string }; Returns: string }
     }
     Enums: {

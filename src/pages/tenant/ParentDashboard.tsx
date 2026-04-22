@@ -6,6 +6,8 @@ import { useTenantOptimized } from "@/hooks/useTenantOptimized";
 import { useMyChildren, ChildInfo } from "@/hooks/useMyChildren";
 import { useUniversalPrefetch } from "@/hooks/useUniversalPrefetch";
 import { ParentShell } from "@/components/tenant/ParentShell";
+import { ActiveChildProvider } from "@/context/ActiveChildContext";
+import { ActiveChildBridge } from "@/context/ActiveChildBridge";
 
 import ParentHomeModule from "./parent-modules/ParentHomeModule";
 import ParentAttendanceModule from "./parent-modules/ParentAttendanceModule";
@@ -243,33 +245,36 @@ const ParentDashboard = () => {
   const schoolName = tenant.status === "ready" ? tenant.school.name : "School";
 
   return (
-    <ParentShell
-      schoolName={schoolName}
-      schoolSlug={schoolSlug || ""}
-      childList={childList}
-      selectedChild={selectedChild}
-      onSelectChild={setSelectedChild}
-      onLogout={handleLogout}
-    >
-      <Routes>
-        <Route index element={<ParentHomeModule child={selectedChild} schoolId={schoolId} />} />
-        <Route path="ai-insights" element={<ParentAIModule child={selectedChild} schoolId={schoolId} />} />
-        <Route path="attendance" element={<ParentAttendanceModule child={selectedChild} schoolId={schoolId} />} />
-        <Route path="grades" element={<ParentGradesModule child={selectedChild} schoolId={schoolId} />} />
-        <Route path="fees" element={<ParentFeesModule child={selectedChild} schoolId={schoolId} />} />
-        <Route path="messages" element={<ParentMessagesModule child={selectedChild} schoolId={schoolId} />} />
-        <Route path="timetable" element={<ParentTimetableModule child={selectedChild} schoolId={schoolId} />} />
-        <Route path="notifications" element={<ParentNotificationsModule child={selectedChild} schoolId={schoolId} />} />
-        <Route path="support" element={<ParentSupportModule child={selectedChild} schoolId={schoolId} />} />
-        <Route path="behavior" element={<ParentBehaviorModule child={selectedChild} schoolId={schoolId} />} />
-        <Route path="notices" element={<NoticesModule schoolId={schoolId} canManage={false} />} />
-        <Route path="holidays" element={<HolidaysModule schoolId={schoolId} canManage={false} />} />
-        <Route path="diary" element={<DiaryModule schoolId={schoolId} canManage={false} />} />
-        <Route path="exams" element={<ExamsModule schoolId={schoolId} canManage={false} />} />
-        <Route path="report-card" element={<ReportCardModule schoolId={schoolId} canManage={false} studentIdLocked={selectedChild?.student_id ?? null} />} />
-        <Route path="*" element={<Navigate to="" replace />} />
-      </Routes>
-    </ParentShell>
+    <ActiveChildProvider schoolId={schoolId} childList={childList}>
+      <ActiveChildBridge selectedChild={selectedChild} onSelectChild={setSelectedChild} />
+      <ParentShell
+        schoolName={schoolName}
+        schoolSlug={schoolSlug || ""}
+        childList={childList}
+        selectedChild={selectedChild}
+        onSelectChild={setSelectedChild}
+        onLogout={handleLogout}
+      >
+        <Routes>
+          <Route index element={<ParentHomeModule child={selectedChild} schoolId={schoolId} />} />
+          <Route path="ai-insights" element={<ParentAIModule child={selectedChild} schoolId={schoolId} />} />
+          <Route path="attendance" element={<ParentAttendanceModule child={selectedChild} schoolId={schoolId} />} />
+          <Route path="grades" element={<ParentGradesModule child={selectedChild} schoolId={schoolId} />} />
+          <Route path="fees" element={<ParentFeesModule child={selectedChild} schoolId={schoolId} />} />
+          <Route path="messages" element={<ParentMessagesModule child={selectedChild} schoolId={schoolId} />} />
+          <Route path="timetable" element={<ParentTimetableModule child={selectedChild} schoolId={schoolId} />} />
+          <Route path="notifications" element={<ParentNotificationsModule child={selectedChild} schoolId={schoolId} />} />
+          <Route path="support" element={<ParentSupportModule child={selectedChild} schoolId={schoolId} />} />
+          <Route path="behavior" element={<ParentBehaviorModule child={selectedChild} schoolId={schoolId} />} />
+          <Route path="notices" element={<NoticesModule schoolId={schoolId} canManage={false} />} />
+          <Route path="holidays" element={<HolidaysModule schoolId={schoolId} canManage={false} />} />
+          <Route path="diary" element={<DiaryModule schoolId={schoolId} canManage={false} />} />
+          <Route path="exams" element={<ExamsModule schoolId={schoolId} canManage={false} />} />
+          <Route path="report-card" element={<ReportCardModule schoolId={schoolId} canManage={false} studentIdLocked={selectedChild?.student_id ?? null} />} />
+          <Route path="*" element={<Navigate to="" replace />} />
+        </Routes>
+      </ParentShell>
+    </ActiveChildProvider>
   );
 };
 
