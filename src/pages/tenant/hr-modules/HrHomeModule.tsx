@@ -1,31 +1,78 @@
 import { useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Users, Calendar, ClipboardList, Coins, FileText, Star, RefreshCw, WifiOff } from "lucide-react";
+import { useParams } from "react-router-dom";
+import {
+  Users,
+  Calendar,
+  ClipboardList,
+  Coins,
+  FileText,
+  Star,
+  WifiOff,
+  UserPlus,
+  Headphones,
+} from "lucide-react";
 import { useTenant } from "@/hooks/useTenant";
-import { useOfflineStaffMembers, useOfflineLeaveRequests, useOfflineContracts } from "@/hooks/useOfflineData";
+import {
+  useOfflineStaffMembers,
+  useOfflineLeaveRequests,
+  useOfflineContracts,
+} from "@/hooks/useOfflineData";
 import { OfflineDataBanner } from "@/components/offline/OfflineDataBanner";
-import { Button } from "@/components/ui/button";
+import {
+  DashboardHeader,
+  QuickActionGrid,
+  StatTile,
+  SmartCard,
+  SectionTitle,
+} from "@/components/ui/dashboard-kit";
 
 export function HrHomeModule() {
   const { schoolSlug } = useParams();
-  const navigate = useNavigate();
   const tenant = useTenant(schoolSlug);
-  const schoolId = useMemo(() => tenant.status === "ready" ? tenant.schoolId : null, [tenant.status, tenant.schoolId]);
+  const schoolId = useMemo(
+    () => (tenant.status === "ready" ? tenant.schoolId : null),
+    [tenant.status, tenant.schoolId],
+  );
   const basePath = `/${schoolSlug}/hr`;
 
-  // Offline data hooks
-  const { data: staff, loading: staffLoading, isOffline, isUsingCache: staffFromCache, refresh: refreshStaff } = useOfflineStaffMembers(schoolId);
+  const {
+    data: staff,
+    loading: staffLoading,
+    isOffline,
+    isUsingCache: staffFromCache,
+    refresh: refreshStaff,
+  } = useOfflineStaffMembers(schoolId);
   const { data: leaveRequests, isUsingCache: leavesFromCache } = useOfflineLeaveRequests(schoolId);
   const { data: contracts, isUsingCache: contractsFromCache } = useOfflineContracts(schoolId);
 
-  const metrics = useMemo(() => ({
-    totalStaff: staff.length,
-    pendingLeaves: leaveRequests.filter(l => l.status === "pending").length,
-    activeContracts: contracts.filter(c => c.status === "active").length,
-  }), [staff, leaveRequests, contracts]);
+  const metrics = useMemo(
+    () => ({
+      totalStaff: staff.length,
+      pendingLeaves: leaveRequests.filter((l) => l.status === "pending").length,
+      activeContracts: contracts.filter((c) => c.status === "active").length,
+    }),
+    [staff, leaveRequests, contracts],
+  );
 
   const loading = staffLoading;
   const isUsingCache = staffFromCache || leavesFromCache || contractsFromCache;
+
+  const quickActions = [
+    { label: "Add staff", icon: UserPlus, to: `${basePath}/users`, tone: "info" as const },
+    {
+      label: "Leaves",
+      icon: Calendar,
+      to: `${basePath}/leaves`,
+      tone: "warning" as const,
+      badge: metrics.pendingLeaves,
+    },
+    { label: "Attendance", icon: ClipboardList, to: `${basePath}/attendance` },
+    { label: "Payroll", icon: Coins, to: `${basePath}/salaries`, tone: "success" as const },
+    { label: "Contracts", icon: FileText, to: `${basePath}/contracts` },
+    { label: "Reviews", icon: Star, to: `${basePath}/reviews`, tone: "info" as const },
+    { label: "Documents", icon: FileText, to: `${basePath}/documents` },
+    { label: "Support", icon: Headphones, to: `${basePath}/support` },
+  ];
 
   if (loading && !isUsingCache) {
     return (
@@ -36,56 +83,45 @@ export function HrHomeModule() {
   }
 
   return (
-    <div className="space-y-6">
-      <OfflineDataBanner isOffline={isOffline} isUsingCache={isUsingCache} onRefresh={refreshStaff} />
-      
-      {/* Quick Actions - Top for better accessibility */}
-      <div className="rounded-2xl bg-accent p-6">
-        <p className="font-display text-lg font-semibold text-accent-foreground">Quick Actions</p>
-        <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
-          {[
-            { label: "Add Staff", icon: Users, path: `${basePath}/directory` },
-            { label: "Leave Requests", icon: Calendar, path: `${basePath}/leaves` },
-            { label: "Mark Attendance", icon: ClipboardList, path: `${basePath}/attendance` },
-            { label: "Payroll", icon: Coins, path: `${basePath}/salaries` },
-            { label: "Contracts", icon: FileText, path: `${basePath}/contracts` },
-            { label: "Reviews", icon: Star, path: `${basePath}/reviews` }
-          ].map((action) => (
-            <button
-              key={action.label}
-              onClick={() => !isOffline && navigate(action.path)}
-              disabled={isOffline}
-              className="flex flex-col items-center gap-2 rounded-xl bg-background p-4 text-sm font-medium transition-all hover:scale-105 disabled:opacity-50"
-            >
-              <action.icon className="h-5 w-5" />
-              {action.label}
-            </button>
-          ))}
-        </div>
+    <div className="space-y-5 sm:space-y-6">
+      <OfflineDataBanner
+        isOffline={isOffline}
+        isUsingCache={isUsingCache}
+        onRefresh={refreshStaff}
+      />
+
+      <DashboardHeader name="HR Workspace" role="Human Resources" subtitle="People operations" />
+
+      {/* KPI Tiles */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+        <StatTile label="Total staff" value={metrics.totalStaff} icon={Users} tone="info" />
+        <StatTile
+          label="Pending leaves"
+          value={metrics.pendingLeaves}
+          icon={Calendar}
+          tone={metrics.pendingLeaves > 0 ? "warning" : "success"}
+        />
+        <StatTile
+          label="Active contracts"
+          value={metrics.activeContracts}
+          icon={FileText}
+          tone="success"
+        />
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {[
-          { label: "Total Staff", value: metrics.totalStaff, icon: Users },
-          { label: "Pending Leaves", value: metrics.pendingLeaves, icon: Calendar },
-          { label: "Active Contracts", value: metrics.activeContracts, icon: FileText }
-        ].map((kpi) => (
-          <div key={kpi.label} className="rounded-3xl bg-surface p-5 shadow-elevated">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">{kpi.label}</p>
-              <kpi.icon className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <p className="mt-3 font-display text-2xl font-semibold tracking-tight">{kpi.value}</p>
-          </div>
-        ))}
+      {/* Quick actions */}
+      <div>
+        <SectionTitle title="Quick actions" />
+        <QuickActionGrid actions={quickActions} columns={{ base: 4, sm: 4, md: 4, lg: 8 }} />
       </div>
 
       {isOffline && staff.length === 0 && (
-        <div className="rounded-2xl border bg-surface p-8 text-center">
-          <WifiOff className="mx-auto h-8 w-8 text-muted-foreground" />
-          <p className="mt-3 text-sm text-muted-foreground">No cached HR data available. Connect to the internet to load data.</p>
-        </div>
+        <SmartCard
+          title="No cached HR data"
+          subtitle="Connect to the internet to load data"
+          icon={WifiOff}
+          tone="warning"
+        />
       )}
     </div>
   );
