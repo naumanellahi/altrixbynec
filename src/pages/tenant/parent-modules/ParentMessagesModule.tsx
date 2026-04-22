@@ -25,6 +25,7 @@ interface Message {
   recipient_user_id: string;
   is_read: boolean | null;
   created_at: string;
+  student_id: string | null;
 }
 
 interface Conversation {
@@ -32,6 +33,7 @@ interface Conversation {
   otherUserId: string;
   otherName: string;
   subject: string;
+  studentId: string | null;
   messages: Message[];
   unread: number;
   lastAt: string;
@@ -56,17 +58,26 @@ const ParentMessagesModule = ({ child, schoolId }: ParentMessagesModuleProps) =>
   }, []);
 
   const fetchMessages = useCallback(async () => {
-    if (!child || !currentUserId) return;
+    if (!currentUserId || !schoolId) return;
 
     setLoading(true);
 
-    const { data, error } = await supabase
+    // Show ALL messages where I'm sender or recipient in this school.
+    // If a child is selected, scope to that student; otherwise show everything
+    // so parents without a linked child can still see messages addressed to them.
+    let query = supabase
       .from("parent_messages")
-      .select("id,subject,content,sender_user_id,recipient_user_id,is_read,created_at")
-      .eq("student_id", child.student_id)
+      .select("id,subject,content,sender_user_id,recipient_user_id,is_read,created_at,student_id")
+      .eq("school_id", schoolId)
       .or(`sender_user_id.eq.${currentUserId},recipient_user_id.eq.${currentUserId}`)
       .order("created_at", { ascending: true })
-      .limit(100);
+      .limit(200);
+
+    if (child) {
+      query = query.eq("student_id", child.student_id);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("Failed to fetch messages:", error);
@@ -76,7 +87,7 @@ const ParentMessagesModule = ({ child, schoolId }: ParentMessagesModuleProps) =>
     }
 
     setLoading(false);
-  }, [child, currentUserId]);
+  }, [child, currentUserId, schoolId]);
 
   useEffect(() => {
     fetchMessages();
@@ -99,19 +110,19 @@ const ParentMessagesModule = ({ child, schoolId }: ParentMessagesModuleProps) =>
       });
   }, [schoolId]);
 
-  // Realtime subscription
+  // Realtime subscription — listen to all parent_messages in this school
   useEffect(() => {
-    if (!child) return;
+    if (!schoolId) return;
 
     const channel = supabase
-      .channel(`parent-messages-${child.student_id}`)
+      .channel(`parent-messages-${schoolId}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "parent_messages",
-          filter: `student_id=eq.${child.student_id}`,
+          filter: `school_id=eq.${schoolId}`,
         },
         () => {
           fetchMessages();
@@ -122,7 +133,7 @@ const ParentMessagesModule = ({ child, schoolId }: ParentMessagesModuleProps) =>
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [child, fetchMessages]);
+  }, [schoolId, fetchMessages]);
 
   // Build conversations grouped by other user + subject
   const conversations: Conversation[] = (() => {
@@ -145,6 +156,7 @@ const ParentMessagesModule = ({ child, schoolId }: ParentMessagesModuleProps) =>
           otherUserId: other,
           otherName: userNames[other] || `Member ${other.slice(0, 6)}`,
           subject: subj,
+          studentId: m.student_id,
           messages: [m],
           unread: isUnread ? 1 : 0,
           lastAt: m.created_at,
@@ -157,15 +169,17 @@ const ParentMessagesModule = ({ child, schoolId }: ParentMessagesModuleProps) =>
   const selectedConv = conversations.find((c) => c.key === selectedKey) || null;
 
   const handleReply = async () => {
-    if (!selectedConv || !replyContent.trim() || !currentUserId || !child || !schoolId) return;
+    if (!selectedConv || !replyContent.trim() || !currentUserId || !schoolId) return;
 
     setSending(true);
 
     const replySubject = selectedConv.subject === "(No subject)" ? null : selectedConv.subject;
+    // Use the conversation's student context, falling back to selected child
+    const studentIdForReply = selectedConv.studentId ?? child?.student_id ?? null;
 
     const { error } = await supabase.from("parent_messages").insert({
       school_id: schoolId,
-      student_id: child.student_id,
+      student_id: studentIdForReply,
       sender_user_id: currentUserId,
       recipient_user_id: selectedConv.otherUserId,
       subject: replySubject,
@@ -192,24 +206,22 @@ const ParentMessagesModule = ({ child, schoolId }: ParentMessagesModuleProps) =>
     await supabase.from("parent_messages").update({ is_read: true }).in("id", ids);
   };
 
-  if (!child) {
-    return (
-      <div className="text-center text-muted-foreground py-12">
-        Please select a child to view messages.
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold tracking-tight">Messages</h1>
           <p className="text-sm text-muted-foreground">
-            Conversations with teachers about{" "}
-            <span className="font-medium text-foreground">
-              {child.first_name || "your child"}
-            </span>
+            {child ? (
+              <>
+                Conversations about{" "}
+                <span className="font-medium text-foreground">
+                  {child.first_name || "your child"}
+                </span>
+              </>
+            ) : (
+              "All your conversations with school staff"
+            )}
           </p>
         </div>
         <Button onClick={() => setShowNewMessage((v) => !v)} className="gap-2">
