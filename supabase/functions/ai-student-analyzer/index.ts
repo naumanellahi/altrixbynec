@@ -208,32 +208,25 @@ Base your analysis on attendance, academic trends, submission patterns, behavior
       analysis = { error: "Failed to parse AI response", raw: content };
     }
 
-    // Upsert to ai_student_profiles
+    // Upsert to ai_student_profiles (only existing columns; rest goes into analysis_data)
     if (analysis && !analysis.error) {
-      await supabase.from("ai_student_profiles").upsert({
+      const riskScore = Number(analysis.risk_score || 0);
+      const riskLevel = riskScore >= 70 ? "high" : riskScore >= 40 ? "medium" : "low";
+      const { error: upErr } = await supabase.from("ai_student_profiles").upsert({
         school_id: schoolId,
         student_id: studentId,
         learning_style: analysis.learning_style || "unknown",
-        learning_style_confidence: analysis.learning_style_confidence || 0,
-        strong_subjects: analysis.strong_subjects || [],
-        weak_subjects: analysis.weak_subjects || [],
-        attention_span_minutes: analysis.attention_span_minutes || 45,
-        best_learning_time: analysis.best_learning_time || "morning",
-        risk_score: analysis.risk_score || 0,
-        burnout_probability: analysis.burnout_probability || 0,
-        dropout_risk: analysis.dropout_risk || 0,
-        focus_drop_detected: analysis.focus_drop_detected || false,
-        learning_speed: analysis.learning_speed || "average",
-        needs_extra_support: analysis.needs_extra_support || false,
-        needs_remedial_classes: analysis.needs_remedial_classes || false,
-        needs_counseling: analysis.needs_counseling || false,
-        should_be_accelerated: analysis.should_be_accelerated || false,
-        emotional_trend: analysis.emotional_trend || "stable",
+        personality_type: (analysis.personality_traits && analysis.personality_traits[0]) || null,
+        risk_score: riskScore,
+        risk_level: riskLevel,
+        needs_counseling: !!analysis.needs_counseling,
+        needs_extra_support: !!analysis.needs_extra_support,
         strengths: analysis.strengths || [],
         weaknesses: analysis.weaknesses || [],
         analysis_data: analysis,
         last_analyzed_at: new Date().toISOString(),
       }, { onConflict: "school_id,student_id" });
+      if (upErr) console.error("upsert ai_student_profiles error:", upErr);
     }
 
     return new Response(JSON.stringify({ success: true, analysis }), {
