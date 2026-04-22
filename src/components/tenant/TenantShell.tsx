@@ -9,6 +9,7 @@ import type { EduverseRole } from "@/lib/eduverse-roles";
 import { supabase } from "@/integrations/supabase/client";
 import { GlobalCommandPalette } from "@/components/global/GlobalCommandPalette";
 import { NotificationsBell } from "@/components/global/NotificationsBell";
+import { DashboardNotificationsBanner } from "@/components/global/DashboardNotificationsBanner";
 import { useUnreadMessagesOptimized } from "@/hooks/useUnreadMessagesOptimized";
 import { useTenantOptimized } from "@/hooks/useTenantOptimized";
 import { useSession } from "@/hooks/useSession";
@@ -179,6 +180,9 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
             <p className="font-display text-2xl font-semibold tracking-tight">{title}</p>
             {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
           </header>
+          <div className="mb-4 lg:mb-5">
+            <DashboardNotificationsBanner schoolId={schoolId} schoolSlug={schoolSlug} role={role} />
+          </div>
           {children}
         </section>
       </div>
