@@ -8,6 +8,7 @@ import { AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import type { ChildInfo } from "@/hooks/useMyChildren";
 import { toast } from "sonner";
+import { ComplaintThread } from "@/components/complaints/ComplaintThread";
 
 interface Complaint {
   id: string;
