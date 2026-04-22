@@ -138,6 +138,8 @@ export function StudentFormDialog({
   const [form, setForm] = useState<StudentFormValues>({ ...EMPTY_STUDENT_FORM, ...(initial ?? {}) });
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [sectionSubjectIds, setSectionSubjectIds] = useState<string[]>([]);
+  const [loadingSectionSubjects, setLoadingSectionSubjects] = useState(false);
   const isEdit = !!studentId;
 
   useEffect(() => {
@@ -146,10 +148,51 @@ export function StudentFormDialog({
     }
   }, [open, initial]);
 
+  // Load subjects mapped to the currently selected section's class
+  useEffect(() => {
+    if (!open || !form.section_id) {
+      setSectionSubjectIds([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setLoadingSectionSubjects(true);
+      try {
+        const { data, error } = await supabase
+          .from("class_section_subjects")
+          .select("subject_id")
+          .eq("school_id", schoolId)
+          .eq("class_section_id", form.section_id);
+        if (error) throw error;
+        if (!cancelled) {
+          const ids = (data ?? []).map((r: { subject_id: string }) => r.subject_id);
+          setSectionSubjectIds(ids);
+          setForm((prev) => ({
+            ...prev,
+            subject_ids: prev.subject_ids.filter((sid) => ids.includes(sid)),
+          }));
+        }
+      } catch {
+        if (!cancelled) setSectionSubjectIds([]);
+      } finally {
+        if (!cancelled) setLoadingSectionSubjects(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, form.section_id, schoolId]);
+
   const sectionLabel = useMemo(() => {
     const map = new Map(classes.map((c) => [c.id, c.name]));
     return (s: SectionOption) => `${map.get(s.class_id) ?? "Class"} • ${s.name}`;
   }, [classes]);
+
+  const sectionSubjects = useMemo(() => {
+    if (!form.section_id) return [] as SubjectOption[];
+    const idSet = new Set(sectionSubjectIds);
+    return subjects.filter((s) => idSet.has(s.id));
+  }, [subjects, sectionSubjectIds, form.section_id]);
 
   const update = <K extends keyof StudentFormValues>(key: K, value: StudentFormValues[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
