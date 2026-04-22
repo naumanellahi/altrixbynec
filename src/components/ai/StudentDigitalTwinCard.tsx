@@ -37,6 +37,15 @@ interface Props {
   studentId: string;
   schoolId: string;
   compact?: boolean;
+  /**
+   * Controls which sections of the rich AI profile are rendered.
+   * - "learning" (default in AI Insights → Learning Profile tab): only learning-style,
+   *   focus, subjects, wellbeing, executive summary, personality, motivators,
+   *   parent/teacher guidance, milestones. Hides predictions, career pathways,
+   *   study routine and 30‑day tasks (those live in their own tabs).
+   * - "full": renders everything (used on dashboards / standalone views).
+   */
+  scope?: "learning" | "full";
 }
 
 const learningStyleIcons = {
@@ -55,7 +64,8 @@ const learningStyleColors = {
   reading: "text-emerald-500 bg-emerald-500/10",
 };
 
-export function StudentDigitalTwinCard({ studentId, schoolId, compact = false }: Props) {
+export function StudentDigitalTwinCard({ studentId, schoolId, compact = false, scope = "full" }: Props) {
+  const showFullScope = scope === "full";
   const qc = useQueryClient();
   const [generating, setGenerating] = useState(false);
   const [showRich, setShowRich] = useState(true);
