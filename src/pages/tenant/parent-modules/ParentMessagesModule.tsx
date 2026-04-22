@@ -218,66 +218,14 @@ const ParentMessagesModule = ({ child, schoolId }: ParentMessagesModuleProps) =>
         </Button>
       </div>
 
-      {showNewMessage && (
-        <Card className="border-primary/30">
-          <CardHeader>
-            <CardTitle className="text-base">Compose a message</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                To
-              </label>
-              <select
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={recipientId}
-                onChange={(e) => setRecipientId(e.target.value)}
-              >
-                <option value="">Select a teacher or staff member…</option>
-                {teachers.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Subject
-              </label>
-              <Input
-                value={newSubject}
-                onChange={(e) => setNewSubject(e.target.value)}
-                placeholder="Optional, e.g. Homework question"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Message
-              </label>
-              <Textarea
-                value={newContent}
-                onChange={(e) => setNewContent(e.target.value)}
-                placeholder="Type your message…"
-                rows={5}
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                onClick={handleSendNew}
-                disabled={sending || !recipientId || !newContent.trim()}
-                className="gap-2"
-              >
-                <Send className="h-4 w-4" />
-                {sending ? "Sending…" : "Send message"}
-              </Button>
-              <Button variant="outline" onClick={() => setShowNewMessage(false)}>
-                Cancel
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <ParentNewMessageDialog
+        open={showNewMessage}
+        onOpenChange={setShowNewMessage}
+        schoolId={schoolId}
+        studentId={child?.student_id ?? null}
+        childName={child?.first_name ?? "your child"}
+        onSent={() => fetchMessages()}
+      />
 
       <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
         {/* Conversation list */}
