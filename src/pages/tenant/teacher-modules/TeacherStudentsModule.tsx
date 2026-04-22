@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { Calendar, Plus, Search, UserPlus, WifiOff } from "lucide-react";
+import { Plus, Search, UserPlus, WifiOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { useOfflineStudents, useOfflineSections, useOfflineEnrollments, useOfflineTeacherAssignments } from "@/hooks/useOfflineData";
@@ -8,14 +8,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import {
+  StudentFormDialog,
+  type ParentUserOption,
+  type ClassOption,
+  type SectionOption,
+  type SubjectOption,
+} from "@/components/academic/StudentFormDialog";
 
 interface Section {
   id: string;
@@ -61,17 +64,11 @@ export function TeacherStudentsModule() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Add student dialog
+  // Add student dialog (full form)
   const [addStudentOpen, setAddStudentOpen] = useState(false);
-  const [newStudent, setNewStudent] = useState({
-    first_name: "",
-    last_name: "",
-    parent_name: "",
-    date_of_birth: "",
-    student_code: "",
-    status: "enrolled",
-  });
-  const [submitting, setSubmitting] = useState(false);
+  const [parentUsers, setParentUsers] = useState<ParentUserOption[]>([]);
+  const [classes, setClasses] = useState<ClassOption[]>([]);
+  const [subjects, setSubjects] = useState<SubjectOption[]>([]);
 
   // Add parent dialog
   const [addParentOpen, setAddParentOpen] = useState(false);
@@ -177,83 +174,66 @@ export function TeacherStudentsModule() {
     fetchStudents();
   }, [selectedSection, tenant.status, tenant.schoolId, sections]);
 
-  const resetNewStudentForm = () => {
-    setNewStudent({
-      first_name: "",
-      last_name: "",
-      parent_name: "",
-      date_of_birth: "",
-      student_code: "",
-      status: "enrolled",
-    });
+  // Refetch students for the currently selected section (used after StudentFormDialog save)
+  const refreshStudents = async () => {
+    if (!selectedSection || tenant.status !== "ready") return;
+    const { data: enrollments } = await supabase
+      .from("student_enrollments")
+      .select("student_id")
+      .eq("school_id", tenant.schoolId)
+      .eq("class_section_id", selectedSection);
+    const ids = (enrollments ?? []).map((e: any) => e.student_id);
+    if (ids.length === 0) {
+      setStudents([]);
+      return;
+    }
+    const { data: studentData } = await supabase
+      .from("students")
+      .select("id, first_name, last_name, parent_name, student_code, status")
+      .in("id", ids)
+      .eq("status", "enrolled");
+    const section = sections.find((s) => s.id === selectedSection);
+    setStudents(
+      (studentData || []).map((s: any) => ({
+        ...s,
+        section_id: selectedSection,
+        section_name: section?.name || "",
+      })),
+    );
   };
 
-  const handleAddStudent = async () => {
-    if (!newStudent.first_name.trim()) {
-      toast.error("First name is required");
-      return;
-    }
-    if (!newStudent.parent_name.trim()) {
-      toast.error("Parent name is required for identification");
-      return;
-    }
-    if (!selectedSection) {
-      toast.error("Please select a section first");
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const { data: student, error: studentErr } = await supabase
-        .from("students")
-        .insert({
-          school_id: tenant.schoolId,
-          first_name: newStudent.first_name.trim(),
-          last_name: newStudent.last_name.trim() || null,
-          parent_name: newStudent.parent_name.trim(),
-          date_of_birth: newStudent.date_of_birth || null,
-          student_code: newStudent.student_code.trim() || null,
-          status: newStudent.status,
-        })
-        .select()
-        .single();
-
-      if (studentErr) throw studentErr;
-
-      // Enroll in selected section
-      const { error: enrollErr } = await supabase.from("student_enrollments").insert({
-        school_id: tenant.schoolId,
-        student_id: student.id,
-        class_section_id: selectedSection,
-      });
-
-      if (enrollErr) throw enrollErr;
-
-      toast.success("Student added successfully");
-      setAddStudentOpen(false);
-      resetNewStudentForm();
-
-      // Refresh students list
-      const section = sections.find((s) => s.id === selectedSection);
-      setStudents((prev) => [
-        ...prev,
-        {
-          id: student.id,
-          first_name: student.first_name,
-          last_name: student.last_name,
-          parent_name: student.parent_name,
-          student_code: student.student_code,
-          status: student.status,
-          section_id: selectedSection,
-          section_name: section?.name || "",
-        },
-      ]);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to add student");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  // Load reference data (classes, subjects, parent users) for the StudentFormDialog
+  useEffect(() => {
+    if (tenant.status !== "ready") return;
+    const schoolIdLocal = tenant.schoolId;
+    const load = async () => {
+      const [{ data: classesData }, { data: subjectsData }, { data: parentRolesData }] =
+        await Promise.all([
+          supabase.from("academic_classes").select("id, name").eq("school_id", schoolIdLocal).order("name"),
+          supabase.from("subjects").select("id, name").eq("school_id", schoolIdLocal).order("name"),
+          supabase.from("user_roles").select("user_id").eq("school_id", schoolIdLocal).eq("role", "parent"),
+        ]);
+      setClasses((classesData ?? []) as ClassOption[]);
+      setSubjects((subjectsData ?? []) as SubjectOption[]);
+      const parentIds = new Set((parentRolesData ?? []).map((r: any) => r.user_id));
+      if (parentIds.size > 0) {
+        const { data: dir } = await (supabase as any).rpc("get_school_user_directory", {
+          _school_id: schoolIdLocal,
+        });
+        const opts: ParentUserOption[] = ((dir ?? []) as any[])
+          .filter((u) => parentIds.has(u.user_id))
+          .map((u) => ({
+            user_id: u.user_id,
+            email: u.email ?? "",
+            full_name: u.display_name ?? u.email ?? "Parent",
+          }));
+        setParentUsers(opts);
+      } else {
+        setParentUsers([]);
+      }
+    };
+    void load();
+  }, [tenant.status, tenant.schoolId]);
 
   const handleAddParent = async () => {
     if (!selectedStudentId || !newParent.full_name.trim()) {
@@ -392,127 +372,26 @@ export function TeacherStudentsModule() {
           />
         </div>
 
-        <Dialog open={addStudentOpen} onOpenChange={setAddStudentOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> Add Student
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Add New Student</DialogTitle>
-              <DialogDescription>
-                Add a new student to {sections.find((s) => s.id === selectedSection)?.class_name} - {sections.find((s) => s.id === selectedSection)?.name}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 pt-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <Label htmlFor="first_name">First Name *</Label>
-                  <Input
-                    id="first_name"
-                    value={newStudent.first_name}
-                    onChange={(e) => setNewStudent((p) => ({ ...p, first_name: e.target.value }))}
-                    placeholder="e.g., Ahmed"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="last_name">Last Name</Label>
-                  <Input
-                    id="last_name"
-                    value={newStudent.last_name}
-                    onChange={(e) => setNewStudent((p) => ({ ...p, last_name: e.target.value }))}
-                    placeholder="e.g., Khan"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="parent_name">Parent/Guardian Name *</Label>
-                <Input
-                  id="parent_name"
-                  value={newStudent.parent_name}
-                  onChange={(e) => setNewStudent((p) => ({ ...p, parent_name: e.target.value }))}
-                  placeholder="Required for identification"
-                />
-                <p className="mt-1 text-xs text-muted-foreground">
-                  This helps differentiate students with the same name
-                </p>
-              </div>
+        <Button onClick={() => setAddStudentOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" /> Add Student
+        </Button>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <Label>Date of Birth</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !newStudent.date_of_birth && "text-muted-foreground"
-                        )}
-                      >
-                        <Calendar className="mr-2 h-4 w-4" />
-                        {newStudent.date_of_birth
-                          ? format(new Date(newStudent.date_of_birth), "PPP")
-                          : "Pick a date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <CalendarComponent
-                        mode="single"
-                        selected={newStudent.date_of_birth ? new Date(newStudent.date_of_birth) : undefined}
-                        onSelect={(date) =>
-                          setNewStudent((p) => ({
-                            ...p,
-                            date_of_birth: date ? format(date, "yyyy-MM-dd") : "",
-                          }))
-                        }
-                        disabled={(date) => date > new Date() || date < new Date("1990-01-01")}
-                        initialFocus
-                        className="p-3 pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div>
-                  <Label htmlFor="student_code">Student Code</Label>
-                  <Input
-                    id="student_code"
-                    value={newStudent.student_code}
-                    onChange={(e) => setNewStudent((p) => ({ ...p, student_code: e.target.value }))}
-                    placeholder="Optional ID/Code"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label>Status</Label>
-                <Select
-                  value={newStudent.status}
-                  onValueChange={(v) => setNewStudent((p) => ({ ...p, status: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="enrolled">Enrolled</SelectItem>
-                    <SelectItem value="inquiry">Inquiry</SelectItem>
-                    <SelectItem value="withdrawn">Withdrawn</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter className="mt-4">
-              <Button variant="outline" onClick={() => setAddStudentOpen(false)} disabled={submitting}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddStudent} disabled={submitting}>
-                {submitting ? "Adding..." : "Add Student"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <StudentFormDialog
+          open={addStudentOpen}
+          onOpenChange={setAddStudentOpen}
+          schoolId={tenant.status === "ready" ? tenant.schoolId : ""}
+          classes={classes}
+          sections={sections.map((s) => ({
+            id: s.id,
+            name: s.name,
+            // best-effort: we don't keep class_id locally, fall back to class_name lookup
+            class_id: classes.find((c) => c.name === s.class_name)?.id ?? "",
+          }))}
+          subjects={subjects}
+          parentUsers={parentUsers}
+          initial={selectedSection ? { section_id: selectedSection } : undefined}
+          onSaved={() => void refreshStudents()}
+        />
       </div>
 
       {/* Students Table */}

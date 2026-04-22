@@ -140,6 +140,8 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
         { data: sectionsData },
         { data: enrollmentsData },
         { data: attendanceData },
+        { data: subjectsData },
+        { data: parentRolesData },
       ] = await Promise.all([
         (supabase as any)
           .from("students")
@@ -154,12 +156,33 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
           .select("student_id, status")
           .eq("school_id", schoolId)
           .gte("created_at", sevenDaysAgo),
+        supabase.from("subjects").select("id, name").eq("school_id", schoolId).order("name"),
+        supabase.from("user_roles").select("user_id").eq("school_id", schoolId).eq("role", "parent"),
       ]);
 
       setStudents((studentsData ?? []) as unknown as Student[]);
       setClasses((classesData ?? []) as ClassRow[]);
       setSections((sectionsData ?? []) as SectionRow[]);
       setEnrollments((enrollmentsData ?? []) as Enrollment[]);
+      setSubjects((subjectsData ?? []) as { id: string; name: string }[]);
+
+      // Load parent user options via directory RPC, filtered by parent role
+      const parentIds = new Set((parentRolesData ?? []).map((r: any) => r.user_id));
+      if (parentIds.size > 0) {
+        const { data: dir } = await (supabase as any).rpc("get_school_user_directory", {
+          _school_id: schoolId,
+        });
+        const opts: ParentUserOption[] = ((dir ?? []) as any[])
+          .filter((u) => parentIds.has(u.user_id))
+          .map((u) => ({
+            user_id: u.user_id,
+            email: u.email ?? "",
+            full_name: u.display_name ?? u.email ?? "Parent",
+          }));
+        setParentUsers(opts);
+      } else {
+        setParentUsers([]);
+      }
 
       // Process attendance stats
       const statsMap = new Map<string, AttendanceStats>();
@@ -423,18 +446,29 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
   };
 
   const openEditDialog = (student: typeof enrichedStudents[0]) => {
-    setEditingStudent(student);
-    setFormData({
+    setEditingStudent(student as unknown as Student);
+    setEditInitial({
       first_name: student.first_name,
       last_name: student.last_name || "",
-      parent_name: student.parent_name || "",
       date_of_birth: student.date_of_birth || "",
       section_id: student.sectionId || "",
       status: student.status,
+      student_code: student.student_code || "",
       address: (student as any).address || "",
+      city: (student as any).city || "",
+      area: (student as any).area || "",
       phone: (student as any).phone || "",
+      parent_full_name: student.parent_name || "",
       parent_phone: (student as any).parent_phone || "",
       parent_email: (student as any).parent_email || "",
+      profile_image_url: (student as any).profile_image_url || "",
+      roll_number: (student as any).roll_number || "",
+      registration_number: (student as any).registration_number || "",
+      admission_date: (student as any).admission_date || "",
+      gender: (student as any).gender || "",
+      emergency_contact: (student as any).emergency_contact || "",
+      medical_notes: (student as any).medical_notes || "",
+      notes: (student as any).notes || "",
     });
     setShowEditDialog(true);
   };
@@ -705,225 +739,37 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
         </Card>
       </div>
 
-      {/* Add Student Dialog */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Add New Student</DialogTitle>
-            <DialogDescription>
-              Add a new student to the school. Parent name is required for identification.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>First Name *</Label>
-                <Input
-                  value={formData.first_name}
-                  onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                  placeholder="First name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Last Name</Label>
-                <Input
-                  value={formData.last_name}
-                  onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                  placeholder="Last name"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Parent/Guardian Name *</Label>
-              <Input
-                value={formData.parent_name}
-                onChange={(e) => setFormData({ ...formData, parent_name: e.target.value })}
-                placeholder="Parent or guardian's full name"
-              />
-              <p className="text-xs text-muted-foreground">
-                Required to differentiate students with similar names
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Date of Birth</Label>
-                <Input
-                  type="date"
-                  value={formData.date_of_birth}
-                  onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(v) => setFormData({ ...formData, status: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="enrolled">Enrolled</SelectItem>
-                    <SelectItem value="inquiry">Inquiry</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Student Phone</Label>
-                <Input value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="+1 555 1234" />
-              </div>
-              <div className="space-y-2">
-                <Label>Parent Phone</Label>
-                <Input value={formData.parent_phone} onChange={(e) => setFormData({ ...formData, parent_phone: e.target.value })} placeholder="+1 555 5678" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Parent Email</Label>
-              <Input type="email" value={formData.parent_email} onChange={(e) => setFormData({ ...formData, parent_email: e.target.value })} placeholder="parent@example.com" />
-            </div>
-            <div className="space-y-2">
-              <Label>Home Address</Label>
-              <Input value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} placeholder="Street, City, State" />
-            </div>
-            <div className="space-y-2">
-              <Label>Section *</Label>
-              <Select
-                value={formData.section_id}
-                onValueChange={(v) => setFormData({ ...formData, section_id: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select section" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sections.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {getSectionLabel(s.id)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddStudent} disabled={submitting}>
-              {submitting ? "Adding..." : "Add Student"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Add Student Dialog (full form) */}
+      <StudentFormDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        schoolId={schoolId}
+        classes={classes}
+        sections={sections}
+        subjects={subjects}
+        parentUsers={parentUsers}
+        onSaved={() => void fetchData()}
+      />
 
-      {/* Edit Student Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Edit Student</DialogTitle>
-            <DialogDescription>Update student information.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>First Name *</Label>
-                <Input
-                  value={formData.first_name}
-                  onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                  placeholder="First name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Last Name</Label>
-                <Input
-                  value={formData.last_name}
-                  onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                  placeholder="Last name"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Parent/Guardian Name *</Label>
-              <Input
-                value={formData.parent_name}
-                onChange={(e) => setFormData({ ...formData, parent_name: e.target.value })}
-                placeholder="Parent or guardian's full name"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Date of Birth</Label>
-                <Input
-                  type="date"
-                  value={formData.date_of_birth}
-                  onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(v) => setFormData({ ...formData, status: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="enrolled">Enrolled</SelectItem>
-                    <SelectItem value="inquiry">Inquiry</SelectItem>
-                    <SelectItem value="withdrawn">Withdrawn</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Student Phone</Label>
-                <Input value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Parent Phone</Label>
-                <Input value={formData.parent_phone} onChange={(e) => setFormData({ ...formData, parent_phone: e.target.value })} />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Parent Email</Label>
-              <Input type="email" value={formData.parent_email} onChange={(e) => setFormData({ ...formData, parent_email: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label>Home Address</Label>
-              <Input value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label>Section</Label>
-              <Select
-                value={formData.section_id}
-                onValueChange={(v) => setFormData({ ...formData, section_id: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select section" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sections.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {getSectionLabel(s.id)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleEditStudent} disabled={submitting}>
-              {submitting ? "Saving..." : "Save Changes"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Edit Student Dialog (full form) */}
+      <StudentFormDialog
+        open={showEditDialog}
+        onOpenChange={(o) => {
+          setShowEditDialog(o);
+          if (!o) {
+            setEditingStudent(null);
+            setEditInitial(null);
+          }
+        }}
+        schoolId={schoolId}
+        studentId={editingStudent?.id ?? null}
+        initial={editInitial ?? undefined}
+        classes={classes}
+        sections={sections}
+        subjects={subjects}
+        parentUsers={parentUsers}
+        onSaved={() => void fetchData()}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
