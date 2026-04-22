@@ -35,6 +35,21 @@ interface Student {
   status: string;
   section_id: string;
   section_name: string;
+  date_of_birth?: string | null;
+  gender?: string | null;
+  roll_number?: string | null;
+  registration_number?: string | null;
+  admission_date?: string | null;
+  address?: string | null;
+  city?: string | null;
+  area?: string | null;
+  phone?: string | null;
+  parent_phone?: string | null;
+  parent_email?: string | null;
+  emergency_contact?: string | null;
+  medical_notes?: string | null;
+  notes?: string | null;
+  profile_image_url?: string | null;
 }
 
 interface Guardian {
@@ -60,9 +75,11 @@ export function TeacherStudentsModule() {
 
   const [sections, setSections] = useState<Section[]>([]);
   const [selectedSection, setSelectedSection] = useState<string>("");
+  const [filterStatus, setFilterStatus] = useState<string>("enrolled");
   const [students, setStudents] = useState<Student[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [detailStudent, setDetailStudent] = useState<Student | null>(null);
 
   // Add student dialog (full form)
   const [addStudentOpen, setAddStudentOpen] = useState(false);
@@ -155,24 +172,29 @@ export function TeacherStudentsModule() {
       }
 
       const studentIds = enrollments.map((e) => e.student_id);
-      const { data: studentData } = await supabase
+      let query = (supabase as any)
         .from("students")
-        .select("id, first_name, last_name, parent_name, student_code, status")
-        .in("id", studentIds)
-        .eq("status", "enrolled"); // Only show enrolled students to teachers
+        .select(
+          "id, first_name, last_name, parent_name, student_code, status, date_of_birth, gender, roll_number, registration_number, admission_date, address, city, area, phone, parent_phone, parent_email, emergency_contact, medical_notes, notes, profile_image_url",
+        )
+        .in("id", studentIds);
+      if (filterStatus !== "all") {
+        query = query.eq("status", filterStatus);
+      }
+      const { data: studentData } = await query;
 
       const section = sections.find((s) => s.id === selectedSection);
-      const mapped = (studentData || []).map((s) => ({
+      const mapped = (studentData || []).map((s: any) => ({
         ...s,
         section_id: selectedSection,
         section_name: section?.name || "",
       }));
 
-      setStudents(mapped);
+      setStudents(mapped as Student[]);
     };
 
     fetchStudents();
-  }, [selectedSection, tenant.status, tenant.schoolId, sections]);
+  }, [selectedSection, filterStatus, tenant.status, tenant.schoolId, sections]);
 
   // Refetch students for the currently selected section (used after StudentFormDialog save)
   const refreshStudents = async () => {
@@ -187,18 +209,21 @@ export function TeacherStudentsModule() {
       setStudents([]);
       return;
     }
-    const { data: studentData } = await supabase
+    let query = (supabase as any)
       .from("students")
-      .select("id, first_name, last_name, parent_name, student_code, status")
-      .in("id", ids)
-      .eq("status", "enrolled");
+      .select(
+        "id, first_name, last_name, parent_name, student_code, status, date_of_birth, gender, roll_number, registration_number, admission_date, address, city, area, phone, parent_phone, parent_email, emergency_contact, medical_notes, notes, profile_image_url",
+      )
+      .in("id", ids);
+    if (filterStatus !== "all") query = query.eq("status", filterStatus);
+    const { data: studentData } = await query;
     const section = sections.find((s) => s.id === selectedSection);
     setStudents(
       (studentData || []).map((s: any) => ({
         ...s,
         section_id: selectedSection,
         section_name: section?.name || "",
-      })),
+      })) as Student[],
     );
   };
 
@@ -281,10 +306,15 @@ export function TeacherStudentsModule() {
     const fullName = `${s.first_name} ${s.last_name || ""}`.toLowerCase();
     const parentName = (s.parent_name || "").toLowerCase();
     const query = searchQuery.toLowerCase();
+    if (!query) return true;
     return (
       fullName.includes(query) ||
       parentName.includes(query) ||
-      (s.student_code?.toLowerCase().includes(query))
+      (s.student_code?.toLowerCase().includes(query)) ||
+      (s.roll_number?.toLowerCase().includes(query)) ||
+      (s.parent_email?.toLowerCase().includes(query)) ||
+      (s.parent_phone?.toLowerCase().includes(query)) ||
+      (s.phone?.toLowerCase().includes(query))
     );
   });
 
