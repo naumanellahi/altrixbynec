@@ -68,6 +68,8 @@ export function TeacherComplaintsModule() {
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("Behavior");
   const [sending, setSending] = useState(false);
+  const [editing, setEditing] = useState<Complaint | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   // Build students in teacher's sections
   const myStudents = useMemo(() => {
