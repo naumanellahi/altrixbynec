@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { Plus, Search, UserPlus, WifiOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,6 +35,21 @@ interface Student {
   status: string;
   section_id: string;
   section_name: string;
+  date_of_birth?: string | null;
+  gender?: string | null;
+  roll_number?: string | null;
+  registration_number?: string | null;
+  admission_date?: string | null;
+  address?: string | null;
+  city?: string | null;
+  area?: string | null;
+  phone?: string | null;
+  parent_phone?: string | null;
+  parent_email?: string | null;
+  emergency_contact?: string | null;
+  medical_notes?: string | null;
+  notes?: string | null;
+  profile_image_url?: string | null;
 }
 
 interface Guardian {
@@ -60,9 +75,11 @@ export function TeacherStudentsModule() {
 
   const [sections, setSections] = useState<Section[]>([]);
   const [selectedSection, setSelectedSection] = useState<string>("");
+  const [filterStatus, setFilterStatus] = useState<string>("enrolled");
   const [students, setStudents] = useState<Student[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [detailStudent, setDetailStudent] = useState<Student | null>(null);
 
   // Add student dialog (full form)
   const [addStudentOpen, setAddStudentOpen] = useState(false);
@@ -155,24 +172,29 @@ export function TeacherStudentsModule() {
       }
 
       const studentIds = enrollments.map((e) => e.student_id);
-      const { data: studentData } = await supabase
+      let query = (supabase as any)
         .from("students")
-        .select("id, first_name, last_name, parent_name, student_code, status")
-        .in("id", studentIds)
-        .eq("status", "enrolled"); // Only show enrolled students to teachers
+        .select(
+          "id, first_name, last_name, parent_name, student_code, status, date_of_birth, gender, roll_number, registration_number, admission_date, address, city, area, phone, parent_phone, parent_email, emergency_contact, medical_notes, notes, profile_image_url",
+        )
+        .in("id", studentIds);
+      if (filterStatus !== "all") {
+        query = query.eq("status", filterStatus);
+      }
+      const { data: studentData } = await query;
 
       const section = sections.find((s) => s.id === selectedSection);
-      const mapped = (studentData || []).map((s) => ({
+      const mapped = (studentData || []).map((s: any) => ({
         ...s,
         section_id: selectedSection,
         section_name: section?.name || "",
       }));
 
-      setStudents(mapped);
+      setStudents(mapped as Student[]);
     };
 
     fetchStudents();
-  }, [selectedSection, tenant.status, tenant.schoolId, sections]);
+  }, [selectedSection, filterStatus, tenant.status, tenant.schoolId, sections]);
 
   // Refetch students for the currently selected section (used after StudentFormDialog save)
   const refreshStudents = async () => {
@@ -187,18 +209,21 @@ export function TeacherStudentsModule() {
       setStudents([]);
       return;
     }
-    const { data: studentData } = await supabase
+    let query = (supabase as any)
       .from("students")
-      .select("id, first_name, last_name, parent_name, student_code, status")
-      .in("id", ids)
-      .eq("status", "enrolled");
+      .select(
+        "id, first_name, last_name, parent_name, student_code, status, date_of_birth, gender, roll_number, registration_number, admission_date, address, city, area, phone, parent_phone, parent_email, emergency_contact, medical_notes, notes, profile_image_url",
+      )
+      .in("id", ids);
+    if (filterStatus !== "all") query = query.eq("status", filterStatus);
+    const { data: studentData } = await query;
     const section = sections.find((s) => s.id === selectedSection);
     setStudents(
       (studentData || []).map((s: any) => ({
         ...s,
         section_id: selectedSection,
         section_name: section?.name || "",
-      })),
+      })) as Student[],
     );
   };
 
@@ -281,10 +306,15 @@ export function TeacherStudentsModule() {
     const fullName = `${s.first_name} ${s.last_name || ""}`.toLowerCase();
     const parentName = (s.parent_name || "").toLowerCase();
     const query = searchQuery.toLowerCase();
+    if (!query) return true;
     return (
       fullName.includes(query) ||
       parentName.includes(query) ||
-      (s.student_code?.toLowerCase().includes(query))
+      (s.student_code?.toLowerCase().includes(query)) ||
+      (s.roll_number?.toLowerCase().includes(query)) ||
+      (s.parent_email?.toLowerCase().includes(query)) ||
+      (s.parent_phone?.toLowerCase().includes(query)) ||
+      (s.phone?.toLowerCase().includes(query))
     );
   });
 
@@ -362,15 +392,38 @@ export function TeacherStudentsModule() {
           </SelectContent>
         </Select>
 
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="enrolled">Enrolled</SelectItem>
+            <SelectItem value="inquiry">Inquiry</SelectItem>
+            <SelectItem value="withdrawn">Withdrawn</SelectItem>
+            <SelectItem value="graduated">Graduated</SelectItem>
+          </SelectContent>
+        </Select>
+
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search by name, parent, or code..."
+            placeholder="Search by name, parent, code, roll, phone, email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
           />
         </div>
+
+        {(searchQuery || filterStatus !== "enrolled") && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { setSearchQuery(""); setFilterStatus("enrolled"); }}
+          >
+            Clear
+          </Button>
+        )}
 
         <Button onClick={() => setAddStudentOpen(true)}>
           <Plus className="mr-2 h-4 w-4" /> Add Student
@@ -384,7 +437,6 @@ export function TeacherStudentsModule() {
           sections={sections.map((s) => ({
             id: s.id,
             name: s.name,
-            // best-effort: we don't keep class_id locally, fall back to class_name lookup
             class_id: classes.find((c) => c.name === s.class_name)?.id ?? "",
           }))}
           subjects={subjects}
@@ -416,9 +468,22 @@ export function TeacherStudentsModule() {
                 </TableHeader>
                 <TableBody>
                   {filteredStudents.map((s) => (
-                    <TableRow key={s.id}>
+                    <TableRow
+                      key={s.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => setDetailStudent(s)}
+                    >
                       <TableCell className="font-medium">
-                        {s.first_name} {s.last_name}
+                        <button
+                          type="button"
+                          className="text-left hover:underline"
+                          onClick={(e) => { e.stopPropagation(); setDetailStudent(s); }}
+                        >
+                          {s.first_name} {s.last_name}
+                        </button>
+                        {s.roll_number && (
+                          <span className="ml-2 text-xs text-muted-foreground">#{s.roll_number}</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {s.parent_name || "—"}
@@ -428,7 +493,7 @@ export function TeacherStudentsModule() {
                         <span className="rounded-full bg-accent px-2 py-1 text-xs capitalize">{s.status}</span>
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                           <Button size="sm" variant="outline" onClick={() => openAddParent(s.id)}>
                             <UserPlus className="mr-1 h-3 w-3" /> Add Parent
                           </Button>
@@ -530,6 +595,107 @@ export function TeacherStudentsModule() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Student Details Dialog */}
+      <Dialog open={!!detailStudent} onOpenChange={(o) => !o && setDetailStudent(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {detailStudent ? `${detailStudent.first_name} ${detailStudent.last_name ?? ""}` : "Student"}
+            </DialogTitle>
+          </DialogHeader>
+          {detailStudent && (
+            <div className="space-y-5 pt-2">
+              <div className="flex items-start gap-4">
+                {detailStudent.profile_image_url ? (
+                  <img
+                    src={detailStudent.profile_image_url}
+                    alt={detailStudent.first_name}
+                    className="h-20 w-20 rounded-full object-cover border"
+                  />
+                ) : (
+                  <div className="h-20 w-20 rounded-full bg-primary/10 grid place-items-center text-2xl font-semibold text-primary">
+                    {detailStudent.first_name.charAt(0)}
+                  </div>
+                )}
+                <div className="flex-1">
+                  <p className="text-lg font-semibold">
+                    {detailStudent.first_name} {detailStudent.last_name}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {detailStudent.section_name} • {detailStudent.status}
+                  </p>
+                  {detailStudent.roll_number && (
+                    <p className="text-xs text-muted-foreground mt-1">Roll #{detailStudent.roll_number}</p>
+                  )}
+                </div>
+              </div>
+
+              <Section title="Identification">
+                <Field label="Student Code" value={detailStudent.student_code} />
+                <Field label="Registration #" value={detailStudent.registration_number} />
+                <Field label="Roll Number" value={detailStudent.roll_number} />
+                <Field label="Admission Date" value={detailStudent.admission_date} />
+              </Section>
+
+              <Section title="Personal">
+                <Field label="Date of Birth" value={detailStudent.date_of_birth} />
+                <Field label="Gender" value={detailStudent.gender} />
+                <Field label="Phone" value={detailStudent.phone} />
+                <Field label="Emergency Contact" value={detailStudent.emergency_contact} />
+              </Section>
+
+              <Section title="Address">
+                <Field label="Address" value={detailStudent.address} className="sm:col-span-2" />
+                <Field label="City" value={detailStudent.city} />
+                <Field label="Area" value={detailStudent.area} />
+              </Section>
+
+              <Section title="Parent / Guardian">
+                <Field label="Parent Name" value={detailStudent.parent_name} />
+                <Field label="Parent Phone" value={detailStudent.parent_phone} />
+                <Field label="Parent Email" value={detailStudent.parent_email} className="sm:col-span-2" />
+              </Section>
+
+              {(detailStudent.medical_notes || detailStudent.notes) && (
+                <Section title="Notes">
+                  <Field label="Medical Notes" value={detailStudent.medical_notes} className="sm:col-span-2" />
+                  <Field label="Other Notes" value={detailStudent.notes} className="sm:col-span-2" />
+                </Section>
+              )}
+
+              <div className="flex flex-wrap gap-2 pt-2">
+                <Button size="sm" variant="outline" onClick={() => { openAddParent(detailStudent.id); }}>
+                  <UserPlus className="mr-1 h-3 w-3" /> Add Parent
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => viewStudentGuardians(detailStudent.id)}>
+                  View All Parents
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h4 className="mb-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide">{title}</h4>
+      <div className="grid gap-3 sm:grid-cols-2 rounded-lg border bg-surface p-3">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, value, className = "" }: { label: string; value?: string | null; className?: string }) {
+  return (
+    <div className={className}>
+      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
+      <p className="text-sm font-medium">{value || "—"}</p>
     </div>
   );
 }

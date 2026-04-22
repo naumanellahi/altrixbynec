@@ -103,8 +103,10 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
   const [attendanceStats, setAttendanceStats] = useState<Map<string, AttendanceStats>>(new Map());
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterClass, setFilterClass] = useState<string>("all");
   const [filterSection, setFilterSection] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterAttendance, setFilterAttendance] = useState<string>("all");
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
 
   // Form states for add/edit
@@ -258,8 +260,16 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
           s.first_name.toLowerCase().includes(q) ||
           s.last_name?.toLowerCase().includes(q) ||
           s.parent_name?.toLowerCase().includes(q) ||
-          s.student_code?.toLowerCase().includes(q)
+          s.student_code?.toLowerCase().includes(q) ||
+          s.parent_email?.toLowerCase().includes(q) ||
+          s.parent_phone?.toLowerCase().includes(q) ||
+          s.phone?.toLowerCase().includes(q),
       );
+    }
+
+    if (filterClass !== "all") {
+      const classSectionIds = new Set(sections.filter((s) => s.class_id === filterClass).map((s) => s.id));
+      result = result.filter((s) => s.sectionId && classSectionIds.has(s.sectionId));
     }
 
     if (filterSection !== "all") {
@@ -270,8 +280,18 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
       result = result.filter((s) => s.status === filterStatus);
     }
 
+    if (filterAttendance !== "all") {
+      result = result.filter((s) => {
+        if (s.attendanceRate === null) return filterAttendance === "no_data";
+        if (filterAttendance === "low") return s.attendanceRate < 75;
+        if (filterAttendance === "good") return s.attendanceRate >= 75 && s.attendanceRate < 90;
+        if (filterAttendance === "excellent") return s.attendanceRate >= 90;
+        return true;
+      });
+    }
+
     return result;
-  }, [enrichedStudents, searchQuery, filterSection, filterStatus]);
+  }, [enrichedStudents, searchQuery, filterClass, filterSection, filterStatus, filterAttendance, sections]);
 
   const selectedStudent = useMemo(() => {
     return enrichedStudents.find((s) => s.id === selectedStudentId) ?? null;
@@ -520,17 +540,30 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
           />
         </div>
         <div className="flex flex-wrap gap-2">
+          <Select value={filterClass} onValueChange={(v) => { setFilterClass(v); setFilterSection("all"); }}>
+            <SelectTrigger className="flex-1 sm:w-[140px] sm:flex-none">
+              <SelectValue placeholder="All Classes" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Classes</SelectItem>
+              {classes.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={filterSection} onValueChange={setFilterSection}>
             <SelectTrigger className="flex-1 sm:w-[160px] sm:flex-none">
               <SelectValue placeholder="All Sections" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Sections</SelectItem>
-              {sections.map((s) => (
-                <SelectItem key={s.id} value={s.id}>
-                  {getSectionLabel(s.id)}
-                </SelectItem>
-              ))}
+              {sections
+                .filter((s) => filterClass === "all" || s.class_id === filterClass)
+                .map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {getSectionLabel(s.id)}
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
           <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -544,6 +577,33 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
               <SelectItem value="withdrawn">Withdrawn</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={filterAttendance} onValueChange={setFilterAttendance}>
+            <SelectTrigger className="flex-1 sm:w-[150px] sm:flex-none">
+              <SelectValue placeholder="Attendance" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Any Attendance</SelectItem>
+              <SelectItem value="excellent">Excellent (≥90%)</SelectItem>
+              <SelectItem value="good">Good (75–89%)</SelectItem>
+              <SelectItem value="low">Low (&lt;75%)</SelectItem>
+              <SelectItem value="no_data">No Data</SelectItem>
+            </SelectContent>
+          </Select>
+          {(searchQuery || filterClass !== "all" || filterSection !== "all" || filterStatus !== "all" || filterAttendance !== "all") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSearchQuery("");
+                setFilterClass("all");
+                setFilterSection("all");
+                setFilterStatus("all");
+                setFilterAttendance("all");
+              }}
+            >
+              Clear
+            </Button>
+          )}
           <Button onClick={() => setShowAddDialog(true)} size="sm" className="flex-1 sm:flex-none">
             <Plus className="mr-1 h-4 w-4" /> 
             <span className="hidden sm:inline">Add Student</span>
