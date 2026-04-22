@@ -169,15 +169,17 @@ const ParentMessagesModule = ({ child, schoolId }: ParentMessagesModuleProps) =>
   const selectedConv = conversations.find((c) => c.key === selectedKey) || null;
 
   const handleReply = async () => {
-    if (!selectedConv || !replyContent.trim() || !currentUserId || !child || !schoolId) return;
+    if (!selectedConv || !replyContent.trim() || !currentUserId || !schoolId) return;
 
     setSending(true);
 
     const replySubject = selectedConv.subject === "(No subject)" ? null : selectedConv.subject;
+    // Use the conversation's student context, falling back to selected child
+    const studentIdForReply = selectedConv.studentId ?? child?.student_id ?? null;
 
     const { error } = await supabase.from("parent_messages").insert({
       school_id: schoolId,
-      student_id: child.student_id,
+      student_id: studentIdForReply,
       sender_user_id: currentUserId,
       recipient_user_id: selectedConv.otherUserId,
       subject: replySubject,
@@ -203,14 +205,6 @@ const ParentMessagesModule = ({ child, schoolId }: ParentMessagesModuleProps) =>
     if (ids.length === 0) return;
     await supabase.from("parent_messages").update({ is_read: true }).in("id", ids);
   };
-
-  if (!child) {
-    return (
-      <div className="text-center text-muted-foreground py-12">
-        Please select a child to view messages.
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
