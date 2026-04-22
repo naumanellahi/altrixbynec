@@ -140,6 +140,8 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
         { data: sectionsData },
         { data: enrollmentsData },
         { data: attendanceData },
+        { data: subjectsData },
+        { data: parentRolesData },
       ] = await Promise.all([
         (supabase as any)
           .from("students")
@@ -154,12 +156,33 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
           .select("student_id, status")
           .eq("school_id", schoolId)
           .gte("created_at", sevenDaysAgo),
+        supabase.from("subjects").select("id, name").eq("school_id", schoolId).order("name"),
+        supabase.from("user_roles").select("user_id").eq("school_id", schoolId).eq("role", "parent"),
       ]);
 
       setStudents((studentsData ?? []) as unknown as Student[]);
       setClasses((classesData ?? []) as ClassRow[]);
       setSections((sectionsData ?? []) as SectionRow[]);
       setEnrollments((enrollmentsData ?? []) as Enrollment[]);
+      setSubjects((subjectsData ?? []) as { id: string; name: string }[]);
+
+      // Load parent user options via directory RPC, filtered by parent role
+      const parentIds = new Set((parentRolesData ?? []).map((r: any) => r.user_id));
+      if (parentIds.size > 0) {
+        const { data: dir } = await (supabase as any).rpc("get_school_user_directory", {
+          _school_id: schoolId,
+        });
+        const opts: ParentUserOption[] = ((dir ?? []) as any[])
+          .filter((u) => parentIds.has(u.user_id))
+          .map((u) => ({
+            user_id: u.user_id,
+            email: u.email ?? "",
+            full_name: u.display_name ?? u.email ?? "Parent",
+          }));
+        setParentUsers(opts);
+      } else {
+        setParentUsers([]);
+      }
 
       // Process attendance stats
       const statsMap = new Map<string, AttendanceStats>();
