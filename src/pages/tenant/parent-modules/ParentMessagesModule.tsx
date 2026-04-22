@@ -10,6 +10,7 @@ import { ChildInfo } from "@/hooks/useMyChildren";
 import { format } from "date-fns";
 import { Send, MessageSquarePlus, Inbox, User as UserIcon } from "lucide-react";
 import { toast } from "sonner";
+import { ParentNewMessageDialog } from "@/components/parent/ParentNewMessageDialog";
 
 interface ParentMessagesModuleProps {
   child: ChildInfo | null;
@@ -45,12 +46,8 @@ const ParentMessagesModule = ({ child, schoolId }: ParentMessagesModuleProps) =>
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [userNames, setUserNames] = useState<Record<string, string>>({});
 
-  // New message form
+  // New message dialog
   const [showNewMessage, setShowNewMessage] = useState(false);
-  const [newSubject, setNewSubject] = useState("");
-  const [newContent, setNewContent] = useState("");
-  const [recipientId, setRecipientId] = useState("");
-  const [teachers, setTeachers] = useState<{ id: string; label: string }[]>([]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -85,46 +82,21 @@ const ParentMessagesModule = ({ child, schoolId }: ParentMessagesModuleProps) =>
     fetchMessages();
   }, [fetchMessages]);
 
-  // Fetch teachers (with names) for sending new messages
+  // Fetch directory names for conversation labels
   useEffect(() => {
     if (!schoolId) return;
-
-    const fetchTeachers = async () => {
-      try {
-        const { data: dir } = await supabase.rpc("get_school_user_directory", {
-          _school_id: schoolId,
-        });
-        const { data: roles } = await supabase
-          .from("user_roles")
-          .select("user_id, role")
-          .eq("school_id", schoolId)
-          .in("role", ["teacher", "principal", "vice_principal", "academic_coordinator"]);
-
-        const dirMap = new Map<string, string>();
-        (dir ?? []).forEach((d: any) => dirMap.set(d.user_id, d.display_name || d.email || "Member"));
-
-        const seen = new Set<string>();
-        const list: { id: string; label: string }[] = [];
-        (roles ?? []).forEach((r: any) => {
-          if (seen.has(r.user_id)) return;
-          seen.add(r.user_id);
-          const name = dirMap.get(r.user_id) || `Member ${r.user_id.slice(0, 6)}`;
-          const roleTag = r.role === "teacher" ? "Teacher" : r.role.replace("_", " ");
-          list.push({ id: r.user_id, label: `${name} • ${roleTag}` });
-        });
-        setTeachers(list);
-        // also feed names cache
+    supabase
+      .rpc("get_school_user_directory", { _school_id: schoolId })
+      .then(({ data }) => {
+        if (!data) return;
         setUserNames((prev) => {
           const next = { ...prev };
-          dirMap.forEach((v, k) => (next[k] = v));
+          (data as any[]).forEach((d) => {
+            next[d.user_id] = d.display_name || d.email || "Member";
+          });
           return next;
         });
-      } catch (e) {
-        console.error("Failed to load teacher list", e);
-      }
-    };
-
-    fetchTeachers();
+      });
   }, [schoolId]);
 
   // Realtime subscription
@@ -205,35 +177,6 @@ const ParentMessagesModule = ({ child, schoolId }: ParentMessagesModuleProps) =>
       toast.error(error.message || "Failed to send reply");
     } else {
       setReplyContent("");
-      await fetchMessages();
-    }
-
-    setSending(false);
-  };
-
-  const handleSendNew = async () => {
-    if (!newContent.trim() || !recipientId || !currentUserId || !child || !schoolId) return;
-
-    setSending(true);
-
-    const { error } = await supabase.from("parent_messages").insert({
-      school_id: schoolId,
-      student_id: child.student_id,
-      sender_user_id: currentUserId,
-      recipient_user_id: recipientId,
-      subject: newSubject.trim() || null,
-      content: newContent.trim(),
-    });
-
-    if (error) {
-      console.error("Failed to send message:", error);
-      toast.error(error.message || "Failed to send message");
-    } else {
-      toast.success("Message sent");
-      setNewSubject("");
-      setNewContent("");
-      setRecipientId("");
-      setShowNewMessage(false);
       await fetchMessages();
     }
 
