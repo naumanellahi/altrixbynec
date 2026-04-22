@@ -26,6 +26,8 @@ import { TeacherProgressModule } from "@/pages/tenant/teacher-modules/TeacherPro
 import { TeacherLessonPlannerModule } from "@/pages/tenant/teacher-modules/TeacherLessonPlannerModule";
 import { TeacherLeavesModule } from "@/pages/tenant/teacher-modules/TeacherLeavesModule";
 import { TeacherAIModule } from "@/pages/tenant/teacher-modules/TeacherAIModule";
+import { TeacherComplaintsModule } from "@/pages/tenant/teacher-modules/TeacherComplaintsModule";
+import { TeacherParentNotesModule } from "@/pages/tenant/teacher-modules/TeacherParentNotesModule";
 import NoticesModule from "@/pages/tenant/modules/NoticesModule";
 import HolidaysModule from "@/pages/tenant/modules/HolidaysModule";
 import DiaryModule from "@/pages/tenant/modules/DiaryModule";
@@ -152,6 +154,8 @@ const TeacherDashboard = () => {
             <Route path="ai-insights" element={<TeacherAIModule />} />
             <Route path="messages" element={<TeacherWorkspaceMessagesModule />} />
             <Route path="admin-inbox" element={<TeacherAdminInboxModule />} />
+            <Route path="complaints" element={<TeacherComplaintsModule />} />
+            <Route path="parent-notes" element={<TeacherParentNotesModule />} />
             <Route path="*" element={<Navigate to={`/${tenant.slug}/teacher`} replace />} />
           </Routes>
         )}
