@@ -49,6 +49,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { format, subDays } from "date-fns";
+import { StudentFormDialog, EMPTY_STUDENT_FORM, type StudentFormValues, type ParentUserOption } from "@/components/academic/StudentFormDialog";
 
 interface Student {
   id: string;
