@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { Calendar, Plus, Search, UserPlus, WifiOff } from "lucide-react";
+import { Plus, Search, UserPlus, WifiOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { useOfflineStudents, useOfflineSections, useOfflineEnrollments, useOfflineTeacherAssignments } from "@/hooks/useOfflineData";
@@ -8,14 +8,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import {
+  StudentFormDialog,
+  type ParentUserOption,
+  type ClassOption,
+  type SectionOption,
+  type SubjectOption,
+} from "@/components/academic/StudentFormDialog";
 
 interface Section {
   id: string;
