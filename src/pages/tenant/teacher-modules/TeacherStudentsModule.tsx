@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { Plus, Search, UserPlus, WifiOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
