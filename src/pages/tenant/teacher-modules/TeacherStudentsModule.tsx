@@ -392,15 +392,38 @@ export function TeacherStudentsModule() {
           </SelectContent>
         </Select>
 
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="enrolled">Enrolled</SelectItem>
+            <SelectItem value="inquiry">Inquiry</SelectItem>
+            <SelectItem value="withdrawn">Withdrawn</SelectItem>
+            <SelectItem value="graduated">Graduated</SelectItem>
+          </SelectContent>
+        </Select>
+
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search by name, parent, or code..."
+            placeholder="Search by name, parent, code, roll, phone, email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
           />
         </div>
+
+        {(searchQuery || filterStatus !== "enrolled") && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { setSearchQuery(""); setFilterStatus("enrolled"); }}
+          >
+            Clear
+          </Button>
+        )}
 
         <Button onClick={() => setAddStudentOpen(true)}>
           <Plus className="mr-2 h-4 w-4" /> Add Student
@@ -414,7 +437,6 @@ export function TeacherStudentsModule() {
           sections={sections.map((s) => ({
             id: s.id,
             name: s.name,
-            // best-effort: we don't keep class_id locally, fall back to class_name lookup
             class_id: classes.find((c) => c.name === s.class_name)?.id ?? "",
           }))}
           subjects={subjects}
@@ -446,9 +468,22 @@ export function TeacherStudentsModule() {
                 </TableHeader>
                 <TableBody>
                   {filteredStudents.map((s) => (
-                    <TableRow key={s.id}>
+                    <TableRow
+                      key={s.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => setDetailStudent(s)}
+                    >
                       <TableCell className="font-medium">
-                        {s.first_name} {s.last_name}
+                        <button
+                          type="button"
+                          className="text-left hover:underline"
+                          onClick={(e) => { e.stopPropagation(); setDetailStudent(s); }}
+                        >
+                          {s.first_name} {s.last_name}
+                        </button>
+                        {s.roll_number && (
+                          <span className="ml-2 text-xs text-muted-foreground">#{s.roll_number}</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {s.parent_name || "—"}
@@ -458,7 +493,7 @@ export function TeacherStudentsModule() {
                         <span className="rounded-full bg-accent px-2 py-1 text-xs capitalize">{s.status}</span>
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                           <Button size="sm" variant="outline" onClick={() => openAddParent(s.id)}>
                             <UserPlus className="mr-1 h-3 w-3" /> Add Parent
                           </Button>
