@@ -156,6 +156,7 @@ const ParentMessagesModule = ({ child, schoolId }: ParentMessagesModuleProps) =>
           otherUserId: other,
           otherName: userNames[other] || `Member ${other.slice(0, 6)}`,
           subject: subj,
+          studentId: m.student_id,
           messages: [m],
           unread: isUnread ? 1 : 0,
           lastAt: m.created_at,
