@@ -123,35 +123,70 @@ export default function StudentComplaintsModule({ schoolId }: { schoolId: string
           {items.length === 0 && (
             <p className="text-sm text-muted-foreground">You haven't filed any complaints.</p>
           )}
-          {items.map((c) => (
-            <div key={c.id} className="rounded-lg border p-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="font-medium">{c.subject}</p>
-                {c.category && (
-                  <Badge variant="outline" className="text-[10px]">
-                    {c.category}
+          {items.map((c) => {
+            const editable = c.status !== "resolved" && c.status !== "dismissed";
+            const isOpen = expanded === c.id;
+            return (
+              <div key={c.id} className="rounded-lg border p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-medium">{c.subject}</p>
+                  {c.category && (
+                    <Badge variant="outline" className="text-[10px]">
+                      {c.category}
+                    </Badge>
+                  )}
+                  <Badge
+                    variant={c.status === "resolved" ? "default" : "secondary"}
+                    className="text-[10px] capitalize"
+                  >
+                    {c.status.replace("_", " ")}
                   </Badge>
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    {format(new Date(c.created_at), "MMM d, yyyy")}
+                  </span>
+                </div>
+                <p className="mt-2 whitespace-pre-wrap text-sm">{c.content}</p>
+                {c.resolution_note && (
+                  <p className="mt-2 rounded bg-muted/50 p-2 text-sm">
+                    <strong>Principal's note:</strong> {c.resolution_note}
+                  </p>
                 )}
-                <Badge
-                  variant={c.status === "resolved" ? "default" : "secondary"}
-                  className="text-[10px] capitalize"
-                >
-                  {c.status.replace("_", " ")}
-                </Badge>
-                <span className="ml-auto text-xs text-muted-foreground">
-                  {format(new Date(c.created_at), "MMM d, yyyy")}
-                </span>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {editable && (
+                    <Button size="sm" variant="outline" onClick={() => setEditing(c)} className="gap-1.5">
+                      <Pencil className="h-3.5 w-3.5" /> Edit
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setExpanded(isOpen ? null : c.id)}
+                  >
+                    {isOpen ? "Hide" : "Show"} feedback
+                  </Button>
+                </div>
+                {isOpen && schoolId && (
+                  <div className="mt-3">
+                    <ComplaintThread
+                      complaintId={c.id}
+                      schoolId={schoolId}
+                      authorRole="sender"
+                    />
+                  </div>
+                )}
               </div>
-              <p className="mt-2 whitespace-pre-wrap text-sm">{c.content}</p>
-              {c.resolution_note && (
-                <p className="mt-2 rounded bg-muted/50 p-2 text-sm">
-                  <strong>Principal's note:</strong> {c.resolution_note}
-                </p>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </CardContent>
       </Card>
+
+      <EditComplaintDialog
+        open={!!editing}
+        onOpenChange={(v) => !v && setEditing(null)}
+        complaint={editing}
+        categories={CATEGORIES}
+        onSaved={load}
+      />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
