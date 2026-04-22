@@ -136,27 +136,84 @@ export function ParentShell({
       </div>
 
       {/* Child Selector */}
-      {childList.length > 1 && (
+      {childList.length > 0 && (
         <div className="mt-4">
-          <p className="text-xs font-medium text-muted-foreground mb-2">Viewing Child</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">
+            {childList.length > 1 ? "Viewing child" : "Your child"}
+          </p>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full justify-between">
-                <span className="truncate">
-                  {selectedChild ? formatChildName(selectedChild) : "Select child"}
+            <DropdownMenuTrigger asChild disabled={childList.length <= 1}>
+              <button
+                className="w-full flex items-center gap-3 rounded-2xl border border-border/60 bg-surface px-3 py-2.5 text-left transition-colors hover:bg-accent disabled:opacity-90 disabled:cursor-default"
+                aria-label="Switch child"
+              >
+                <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                  {selectedChild?.profile_image_url ? (
+                    <img
+                      src={selectedChild.profile_image_url}
+                      alt={selectedChild.first_name ?? "Child"}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    (selectedChild?.first_name?.[0] ?? "S").toUpperCase()
+                  )}
                 </span>
-                <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
-              </Button>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold text-foreground">
+                    {selectedChild
+                      ? [selectedChild.first_name, selectedChild.last_name]
+                          .filter(Boolean)
+                          .join(" ")
+                      : "Select child"}
+                  </span>
+                  <span className="block truncate text-[11px] text-muted-foreground">
+                    {selectedChild
+                      ? [selectedChild.class_name, selectedChild.section_name]
+                          .filter(Boolean)
+                          .join(" • ") || (selectedChild.roll_number ? `Roll ${selectedChild.roll_number}` : "Student")
+                      : ""}
+                  </span>
+                </span>
+                {childList.length > 1 && (
+                  <ChevronDown className="h-4 w-4 shrink-0 opacity-60" />
+                )}
+              </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
-              {childList.map((child) => (
-                <DropdownMenuItem
-                  key={child.student_id}
-                  onClick={() => onSelectChild(child)}
-                >
-                  {formatChildName(child)}
-                </DropdownMenuItem>
-              ))}
+            <DropdownMenuContent align="start" className="w-64">
+              {childList.map((child) => {
+                const isActive = child.student_id === selectedChild?.student_id;
+                return (
+                  <DropdownMenuItem
+                    key={child.student_id}
+                    onClick={() => onSelectChild(child)}
+                    className="gap-3 py-2"
+                  >
+                    <span className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                      {child.profile_image_url ? (
+                        <img
+                          src={child.profile_image_url}
+                          alt={child.first_name ?? "Child"}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        (child.first_name?.[0] ?? "S").toUpperCase()
+                      )}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium">
+                        {[child.first_name, child.last_name].filter(Boolean).join(" ") || "Student"}
+                      </span>
+                      <span className="block truncate text-[11px] text-muted-foreground">
+                        {[child.class_name, child.section_name].filter(Boolean).join(" • ") ||
+                          (child.roll_number ? `Roll ${child.roll_number}` : "")}
+                      </span>
+                    </span>
+                    {isActive && (
+                      <Badge className="bg-primary/15 text-primary text-[10px] h-5 px-1.5">Active</Badge>
+                    )}
+                  </DropdownMenuItem>
+                );
+              })}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
