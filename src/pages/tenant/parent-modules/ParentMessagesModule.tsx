@@ -109,19 +109,19 @@ const ParentMessagesModule = ({ child, schoolId }: ParentMessagesModuleProps) =>
       });
   }, [schoolId]);
 
-  // Realtime subscription
+  // Realtime subscription — listen to all parent_messages in this school
   useEffect(() => {
-    if (!child) return;
+    if (!schoolId) return;
 
     const channel = supabase
-      .channel(`parent-messages-${child.student_id}`)
+      .channel(`parent-messages-${schoolId}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "parent_messages",
-          filter: `student_id=eq.${child.student_id}`,
+          filter: `school_id=eq.${schoolId}`,
         },
         () => {
           fetchMessages();
@@ -132,7 +132,7 @@ const ParentMessagesModule = ({ child, schoolId }: ParentMessagesModuleProps) =>
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [child, fetchMessages]);
+  }, [schoolId, fetchMessages]);
 
   // Build conversations grouped by other user + subject
   const conversations: Conversation[] = (() => {
