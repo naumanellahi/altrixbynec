@@ -85,6 +85,7 @@ const ParentAIModule = ({ child, schoolId }: Props) => {
             <StudentDigitalTwinCard
               studentId={child.student_id}
               schoolId={schoolId}
+              scope="learning"
             />
           </AISafeBoundary>
         </TabsContent>

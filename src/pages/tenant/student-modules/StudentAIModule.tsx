@@ -77,6 +77,7 @@ export function StudentAIModule({ myStudent, schoolId }: Props) {
             <StudentDigitalTwinCard
               studentId={myStudent.studentId!}
               schoolId={schoolId}
+              scope="learning"
             />
           </AISafeBoundary>
         </TabsContent>
