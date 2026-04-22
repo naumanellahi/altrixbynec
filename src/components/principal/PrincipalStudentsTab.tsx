@@ -446,18 +446,29 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
   };
 
   const openEditDialog = (student: typeof enrichedStudents[0]) => {
-    setEditingStudent(student);
-    setFormData({
+    setEditingStudent(student as unknown as Student);
+    setEditInitial({
       first_name: student.first_name,
       last_name: student.last_name || "",
-      parent_name: student.parent_name || "",
       date_of_birth: student.date_of_birth || "",
       section_id: student.sectionId || "",
       status: student.status,
+      student_code: student.student_code || "",
       address: (student as any).address || "",
+      city: (student as any).city || "",
+      area: (student as any).area || "",
       phone: (student as any).phone || "",
+      parent_full_name: student.parent_name || "",
       parent_phone: (student as any).parent_phone || "",
       parent_email: (student as any).parent_email || "",
+      profile_image_url: (student as any).profile_image_url || "",
+      roll_number: (student as any).roll_number || "",
+      registration_number: (student as any).registration_number || "",
+      admission_date: (student as any).admission_date || "",
+      gender: (student as any).gender || "",
+      emergency_contact: (student as any).emergency_contact || "",
+      medical_notes: (student as any).medical_notes || "",
+      notes: (student as any).notes || "",
     });
     setShowEditDialog(true);
   };
