@@ -431,7 +431,7 @@ export function StudentDigitalTwinCard({ studentId, schoolId, compact = false, s
           )}
 
           {/* Heavy AI Profile (study routine, tasks, predictions) */}
-          {(rich.executive_summary || rich.study_routine || rich.next_30_days_tasks || rich.predictions) && (
+          {showFullScope && (rich.executive_summary || rich.study_routine || rich.next_30_days_tasks || rich.predictions) && (
             <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-4 space-y-4">
               <button
                 type="button"
