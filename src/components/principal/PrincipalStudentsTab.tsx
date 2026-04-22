@@ -125,6 +125,9 @@ export function PrincipalStudentsTab({ schoolId }: PrincipalStudentsTabProps) {
   });
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [parentUsers, setParentUsers] = useState<ParentUserOption[]>([]);
+  const [subjects, setSubjects] = useState<{ id: string; name: string }[]>([]);
+  const [editInitial, setEditInitial] = useState<Partial<StudentFormValues> | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
