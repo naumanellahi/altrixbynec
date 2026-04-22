@@ -114,6 +114,8 @@ export function PrincipalTeachersTab({ schoolId }: PrincipalTeachersTabProps) {
   const [periods, setPeriods] = useState<Period[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterSection, setFilterSection] = useState<string>("all");
+  const [filterClass, setFilterClass] = useState<string>("all");
   const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"daily" | "weekly" | "monthly">("weekly");
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -233,14 +235,24 @@ export function PrincipalTeachersTab({ schoolId }: PrincipalTeachersTabProps) {
   }, [teachers, teacherAssignments, teacherSubjectAssignments, timetableEntries, getSectionLabel, getSubjectName]);
 
   const filteredTeachers = useMemo(() => {
-    if (!searchQuery) return teacherDetails;
-    const q = searchQuery.toLowerCase();
-    return teacherDetails.filter(
-      (t) =>
-        t.display_name?.toLowerCase().includes(q) ||
-        t.email.toLowerCase().includes(q)
-    );
-  }, [teacherDetails, searchQuery]);
+    let result = teacherDetails;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (t) =>
+          t.display_name?.toLowerCase().includes(q) ||
+          t.email.toLowerCase().includes(q),
+      );
+    }
+    if (filterSection !== "all") {
+      result = result.filter((t) => t.sectionDetails.some((s) => s.sectionId === filterSection));
+    }
+    if (filterClass !== "all") {
+      const classSectionIds = new Set(sections.filter((s) => s.class_id === filterClass).map((s) => s.id));
+      result = result.filter((t) => t.sectionDetails.some((s) => classSectionIds.has(s.sectionId)));
+    }
+    return result;
+  }, [teacherDetails, searchQuery, filterSection, filterClass, sections]);
 
   const selectedTeacher = useMemo(() => {
     return teacherDetails.find((t) => t.user_id === selectedTeacherId) ?? null;
@@ -330,15 +342,50 @@ export function PrincipalTeachersTab({ schoolId }: PrincipalTeachersTabProps) {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Search teachers by name or email..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9 text-sm"
-        />
+      {/* Search + Filters */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search teachers by name or email..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 text-sm"
+          />
+        </div>
+        <Select value={filterClass} onValueChange={(v) => { setFilterClass(v); setFilterSection("all"); }}>
+          <SelectTrigger className="w-full sm:w-[160px]">
+            <SelectValue placeholder="All Classes" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Classes</SelectItem>
+            {classes.map((c) => (
+              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={filterSection} onValueChange={setFilterSection}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue placeholder="All Sections" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Sections</SelectItem>
+            {sections
+              .filter((s) => filterClass === "all" || s.class_id === filterClass)
+              .map((s) => (
+                <SelectItem key={s.id} value={s.id}>{getSectionLabel(s.id)}</SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+        {(searchQuery || filterSection !== "all" || filterClass !== "all") && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { setSearchQuery(""); setFilterSection("all"); setFilterClass("all"); }}
+          >
+            Clear
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-col gap-3 lg:grid lg:grid-cols-3 lg:gap-4">
