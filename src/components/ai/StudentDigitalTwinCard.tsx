@@ -37,6 +37,15 @@ interface Props {
   studentId: string;
   schoolId: string;
   compact?: boolean;
+  /**
+   * Controls which sections of the rich AI profile are rendered.
+   * - "learning" (default in AI Insights → Learning Profile tab): only learning-style,
+   *   focus, subjects, wellbeing, executive summary, personality, motivators,
+   *   parent/teacher guidance, milestones. Hides predictions, career pathways,
+   *   study routine and 30‑day tasks (those live in their own tabs).
+   * - "full": renders everything (used on dashboards / standalone views).
+   */
+  scope?: "learning" | "full";
 }
 
 const learningStyleIcons = {
@@ -55,7 +64,8 @@ const learningStyleColors = {
   reading: "text-emerald-500 bg-emerald-500/10",
 };
 
-export function StudentDigitalTwinCard({ studentId, schoolId, compact = false }: Props) {
+export function StudentDigitalTwinCard({ studentId, schoolId, compact = false, scope = "full" }: Props) {
+  const showFullScope = scope === "full";
   const qc = useQueryClient();
   const [generating, setGenerating] = useState(false);
   const [showRich, setShowRich] = useState(true);
@@ -420,8 +430,65 @@ export function StudentDigitalTwinCard({ studentId, schoolId, compact = false }:
             </p>
           )}
 
-          {/* Heavy AI Profile (study routine, tasks, predictions) */}
-          {(rich.executive_summary || rich.study_routine || rich.next_30_days_tasks || rich.predictions) && (
+          {/* Learning-only summary (shown in AI Insights → Learning Profile tab) */}
+          {!showFullScope && (rich.executive_summary || rich.personality_traits || rich.motivators || rich.parent_guidance || rich.teacher_guidance || rich.milestones_3_months) && (
+            <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-4 space-y-4">
+              <p className="text-sm font-semibold text-primary flex items-center gap-2">
+                <Sparkles className="h-4 w-4" /> Learning Profile Summary
+              </p>
+              {rich.executive_summary && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Executive Summary</p>
+                  <p className="text-sm leading-relaxed whitespace-pre-line">{rich.executive_summary}</p>
+                </div>
+              )}
+              {Array.isArray(rich.personality_traits) && rich.personality_traits.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Personality</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {rich.personality_traits.map((t: string, i: number) => (
+                      <Badge key={i} variant="secondary" className="text-[10px]">{t}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {Array.isArray(rich.motivators) && rich.motivators.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Motivators</p>
+                  <ul className="text-sm list-disc list-inside space-y-0.5">
+                    {rich.motivators.map((m: string, i: number) => <li key={i}>{m}</li>)}
+                  </ul>
+                </div>
+              )}
+              {Array.isArray(rich.parent_guidance) && rich.parent_guidance.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">For Parents</p>
+                  <ul className="text-sm list-disc list-inside space-y-0.5">
+                    {rich.parent_guidance.map((m: string, i: number) => <li key={i}>{m}</li>)}
+                  </ul>
+                </div>
+              )}
+              {Array.isArray(rich.teacher_guidance) && rich.teacher_guidance.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">For Teachers</p>
+                  <ul className="text-sm list-disc list-inside space-y-0.5">
+                    {rich.teacher_guidance.map((m: string, i: number) => <li key={i}>{m}</li>)}
+                  </ul>
+                </div>
+              )}
+              {Array.isArray(rich.milestones_3_months) && rich.milestones_3_months.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">3‑Month Milestones</p>
+                  <ul className="text-sm list-disc list-inside space-y-0.5">
+                    {rich.milestones_3_months.map((m: string, i: number) => <li key={i}>{m}</li>)}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Heavy AI Profile (study routine, tasks, predictions) — full scope only */}
+          {showFullScope && (rich.executive_summary || rich.study_routine || rich.next_30_days_tasks || rich.predictions) && (
             <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-4 space-y-4">
               <button
                 type="button"
