@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { HrLeavesModule } from "@/pages/tenant/hr-modules/HrLeavesModule";
 import { ParentChildLinkingTab } from "@/components/principal/ParentChildLinkingTab";
+import PrincipalComplaintsModule from "@/pages/tenant/modules/PrincipalComplaintsModule";
+import PrincipalParentNotesModule from "@/pages/tenant/modules/PrincipalParentNotesModule";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   BarChart3,
@@ -215,7 +217,7 @@ export function PrincipalHome() {
 
   return (
     <Tabs defaultValue="overview" className="space-y-4 lg:space-y-6">
-      <TabsList className="flex w-full gap-1 p-1 sm:gap-2">
+      <TabsList className="flex w-full flex-wrap gap-1 p-1 sm:gap-2">
         <TabsTrigger value="overview" className="flex-1 px-2 py-2 text-xs sm:px-4 sm:text-sm">
           Overview
         </TabsTrigger>
@@ -230,6 +232,12 @@ export function PrincipalHome() {
         </TabsTrigger>
         <TabsTrigger value="parents" className="flex-1 px-2 py-2 text-xs sm:px-4 sm:text-sm">
           Parents
+        </TabsTrigger>
+        <TabsTrigger value="complaints" className="flex-1 px-2 py-2 text-xs sm:px-4 sm:text-sm">
+          Complaints
+        </TabsTrigger>
+        <TabsTrigger value="parent-notes" className="flex-1 px-2 py-2 text-xs sm:px-4 sm:text-sm">
+          Parent Notes
         </TabsTrigger>
       </TabsList>
 
@@ -646,6 +654,16 @@ export function PrincipalHome() {
       {/* Parent-Child Linking Tab */}
       <TabsContent value="parents">
         {schoolId && <ParentChildLinkingTab schoolId={schoolId} />}
+      </TabsContent>
+
+      {/* Complaints Tab */}
+      <TabsContent value="complaints">
+        <PrincipalComplaintsModule />
+      </TabsContent>
+
+      {/* Parent Notes Tab */}
+      <TabsContent value="parent-notes">
+        <PrincipalParentNotesModule />
       </TabsContent>
     </Tabs>
   );

@@ -33,6 +33,8 @@ import HolidaysModule from "@/pages/tenant/modules/HolidaysModule";
 import DiaryModule from "@/pages/tenant/modules/DiaryModule";
 import ExamsModule from "@/pages/tenant/modules/ExamsModule";
 import ReportCardModule from "@/pages/tenant/modules/ReportCardModule";
+import PrincipalComplaintsModule from "@/pages/tenant/modules/PrincipalComplaintsModule";
+import PrincipalParentNotesModule from "@/pages/tenant/modules/PrincipalParentNotesModule";
 
 const TenantDashboard = () => {
   const { schoolSlug, role: roleParam } = useParams();
@@ -456,6 +458,8 @@ const TenantDashboard = () => {
             <Route path="exams" element={<ExamsModule schoolId={tenant.schoolId} canManage={["teacher","principal","vice_principal","school_admin","academic_coordinator","school_owner"].includes(role || "")} />} />
             <Route path="report-cards" element={<ReportCardModule schoolId={tenant.schoolId} canManage={["teacher","principal","vice_principal","school_admin","academic_coordinator"].includes(role || "")} />} />
             <Route path="support" element={<SupportModule schoolId={tenant.schoolId} />} />
+            <Route path="complaints" element={<PrincipalComplaintsModule />} />
+            <Route path="parent-notes" element={<PrincipalParentNotesModule />} />
             <Route path="*" element={<Navigate to={`/${tenant.slug}/${role}`} replace />} />
           </Routes>
         )}

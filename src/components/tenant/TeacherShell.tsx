@@ -19,11 +19,13 @@ import {
   MessageSquare,
   NotebookPen,
   PartyPopper,
+  ShieldAlert,
   Sparkles,
   TableIcon,
   TrendingUp,
   Umbrella,
   Users,
+  HeartHandshake,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GlobalCommandPalette } from "@/components/global/GlobalCommandPalette";
@@ -65,6 +67,8 @@ export function TeacherShell({ title, subtitle, schoolSlug, children }: Props) {
     { to: `${basePath}/homework`, icon: BookOpen, label: "Homework", badge: 0 },
     { to: `${basePath}/assignments`, icon: FileText, label: "Assignments", badge: badges.pendingAssignments },
     { to: `${basePath}/behavior`, icon: NotebookPen, label: "Behavior Notes", badge: 0 },
+    { to: `${basePath}/parent-notes`, icon: HeartHandshake, label: "Parent Notes", badge: 0 },
+    { to: `${basePath}/complaints`, icon: ShieldAlert, label: "Complaints", badge: 0 },
     { to: `${basePath}/gradebook`, icon: TableIcon, label: "Gradebook", badge: 0 },
     { to: `${basePath}/progress`, icon: TrendingUp, label: "Student Progress", badge: 0 },
     { to: `${basePath}/lesson-plans`, icon: BookCheck, label: "Lesson Planner", badge: 0 },

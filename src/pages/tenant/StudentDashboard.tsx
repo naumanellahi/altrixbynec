@@ -16,6 +16,7 @@ import { StudentCertificatesModule } from "@/pages/tenant/student-modules/Studen
 import { StudentSupportModule } from "@/pages/tenant/student-modules/StudentSupportModule";
 import { StudentMessagesModule } from "@/pages/tenant/student-modules/StudentMessagesModule";
 import { StudentAIModule } from "@/pages/tenant/student-modules/StudentAIModule";
+import StudentComplaintsModule from "@/pages/tenant/student-modules/StudentComplaintsModule";
 import NoticesModule from "@/pages/tenant/modules/NoticesModule";
 import HolidaysModule from "@/pages/tenant/modules/HolidaysModule";
 import DiaryModule from "@/pages/tenant/modules/DiaryModule";
@@ -222,6 +223,7 @@ const StudentDashboard = () => {
         <Route path="diary" element={<DiaryModule schoolId={schoolId} canManage={false} />} />
         <Route path="exams" element={<ExamsModule schoolId={schoolId} canManage={false} />} />
         <Route path="report-card" element={<ReportCardModule schoolId={schoolId} canManage={false} studentIdLocked={myStudent.status === "ready" ? myStudent.studentId : null} />} />
+        <Route path="complaints" element={<StudentComplaintsModule schoolId={schoolId} />} />
         <Route path="*" element={<Navigate to={`/${tenant.slug}/student`} replace />} />
       </Routes>
     </StudentShell>

@@ -19,6 +19,7 @@ import ParentNotificationsModule from "./parent-modules/ParentNotificationsModul
 import ParentSupportModule from "./parent-modules/ParentSupportModule";
 import ParentAIModule from "./parent-modules/ParentAIModule";
 import ParentBehaviorModule from "./parent-modules/ParentBehaviorModule";
+import ParentComplaintsModule from "./parent-modules/ParentComplaintsModule";
 import NoticesModule from "./modules/NoticesModule";
 import HolidaysModule from "./modules/HolidaysModule";
 import DiaryModule from "./modules/DiaryModule";
@@ -271,6 +272,7 @@ const ParentDashboard = () => {
           <Route path="diary" element={<DiaryModule schoolId={schoolId} canManage={false} />} />
           <Route path="exams" element={<ExamsModule schoolId={schoolId} canManage={false} />} />
           <Route path="report-card" element={<ReportCardModule schoolId={schoolId} canManage={false} studentIdLocked={selectedChild?.student_id ?? null} />} />
+          <Route path="complaints" element={<ParentComplaintsModule child={selectedChild} schoolId={schoolId} />} />
           <Route path="*" element={<Navigate to="" replace />} />
         </Routes>
       </ParentShell>
