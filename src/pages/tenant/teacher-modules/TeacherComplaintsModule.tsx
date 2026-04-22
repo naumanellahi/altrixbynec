@@ -30,8 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MessageWarning, Plus, Send } from "lucide-react";
-import { AlertTriangle } from "lucide-react";
+import { Plus, Send, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
