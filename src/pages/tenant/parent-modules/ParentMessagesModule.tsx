@@ -25,6 +25,7 @@ interface Message {
   recipient_user_id: string;
   is_read: boolean | null;
   created_at: string;
+  student_id: string | null;
 }
 
 interface Conversation {
