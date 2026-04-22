@@ -174,83 +174,66 @@ export function TeacherStudentsModule() {
     fetchStudents();
   }, [selectedSection, tenant.status, tenant.schoolId, sections]);
 
-  const resetNewStudentForm = () => {
-    setNewStudent({
-      first_name: "",
-      last_name: "",
-      parent_name: "",
-      date_of_birth: "",
-      student_code: "",
-      status: "enrolled",
-    });
+  // Refetch students for the currently selected section (used after StudentFormDialog save)
+  const refreshStudents = async () => {
+    if (!selectedSection || tenant.status !== "ready") return;
+    const { data: enrollments } = await supabase
+      .from("student_enrollments")
+      .select("student_id")
+      .eq("school_id", tenant.schoolId)
+      .eq("class_section_id", selectedSection);
+    const ids = (enrollments ?? []).map((e: any) => e.student_id);
+    if (ids.length === 0) {
+      setStudents([]);
+      return;
+    }
+    const { data: studentData } = await supabase
+      .from("students")
+      .select("id, first_name, last_name, parent_name, student_code, status")
+      .in("id", ids)
+      .eq("status", "enrolled");
+    const section = sections.find((s) => s.id === selectedSection);
+    setStudents(
+      (studentData || []).map((s: any) => ({
+        ...s,
+        section_id: selectedSection,
+        section_name: section?.name || "",
+      })),
+    );
   };
 
-  const handleAddStudent = async () => {
-    if (!newStudent.first_name.trim()) {
-      toast.error("First name is required");
-      return;
-    }
-    if (!newStudent.parent_name.trim()) {
-      toast.error("Parent name is required for identification");
-      return;
-    }
-    if (!selectedSection) {
-      toast.error("Please select a section first");
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const { data: student, error: studentErr } = await supabase
-        .from("students")
-        .insert({
-          school_id: tenant.schoolId,
-          first_name: newStudent.first_name.trim(),
-          last_name: newStudent.last_name.trim() || null,
-          parent_name: newStudent.parent_name.trim(),
-          date_of_birth: newStudent.date_of_birth || null,
-          student_code: newStudent.student_code.trim() || null,
-          status: newStudent.status,
-        })
-        .select()
-        .single();
-
-      if (studentErr) throw studentErr;
-
-      // Enroll in selected section
-      const { error: enrollErr } = await supabase.from("student_enrollments").insert({
-        school_id: tenant.schoolId,
-        student_id: student.id,
-        class_section_id: selectedSection,
-      });
-
-      if (enrollErr) throw enrollErr;
-
-      toast.success("Student added successfully");
-      setAddStudentOpen(false);
-      resetNewStudentForm();
-
-      // Refresh students list
-      const section = sections.find((s) => s.id === selectedSection);
-      setStudents((prev) => [
-        ...prev,
-        {
-          id: student.id,
-          first_name: student.first_name,
-          last_name: student.last_name,
-          parent_name: student.parent_name,
-          student_code: student.student_code,
-          status: student.status,
-          section_id: selectedSection,
-          section_name: section?.name || "",
-        },
-      ]);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to add student");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  // Load reference data (classes, subjects, parent users) for the StudentFormDialog
+  useEffect(() => {
+    if (tenant.status !== "ready") return;
+    const schoolIdLocal = tenant.schoolId;
+    const load = async () => {
+      const [{ data: classesData }, { data: subjectsData }, { data: parentRolesData }] =
+        await Promise.all([
+          supabase.from("academic_classes").select("id, name").eq("school_id", schoolIdLocal).order("name"),
+          supabase.from("subjects").select("id, name").eq("school_id", schoolIdLocal).order("name"),
+          supabase.from("user_roles").select("user_id").eq("school_id", schoolIdLocal).eq("role", "parent"),
+        ]);
+      setClasses((classesData ?? []) as ClassOption[]);
+      setSubjects((subjectsData ?? []) as SubjectOption[]);
+      const parentIds = new Set((parentRolesData ?? []).map((r: any) => r.user_id));
+      if (parentIds.size > 0) {
+        const { data: dir } = await (supabase as any).rpc("get_school_user_directory", {
+          _school_id: schoolIdLocal,
+        });
+        const opts: ParentUserOption[] = ((dir ?? []) as any[])
+          .filter((u) => parentIds.has(u.user_id))
+          .map((u) => ({
+            user_id: u.user_id,
+            email: u.email ?? "",
+            full_name: u.display_name ?? u.email ?? "Parent",
+          }));
+        setParentUsers(opts);
+      } else {
+        setParentUsers([]);
+      }
+    };
+    void load();
+  }, [tenant.status, tenant.schoolId]);
 
   const handleAddParent = async () => {
     if (!selectedStudentId || !newParent.full_name.trim()) {
