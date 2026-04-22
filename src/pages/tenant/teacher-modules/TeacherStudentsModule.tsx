@@ -595,6 +595,107 @@ export function TeacherStudentsModule() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Student Details Dialog */}
+      <Dialog open={!!detailStudent} onOpenChange={(o) => !o && setDetailStudent(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {detailStudent ? `${detailStudent.first_name} ${detailStudent.last_name ?? ""}` : "Student"}
+            </DialogTitle>
+          </DialogHeader>
+          {detailStudent && (
+            <div className="space-y-5 pt-2">
+              <div className="flex items-start gap-4">
+                {detailStudent.profile_image_url ? (
+                  <img
+                    src={detailStudent.profile_image_url}
+                    alt={detailStudent.first_name}
+                    className="h-20 w-20 rounded-full object-cover border"
+                  />
+                ) : (
+                  <div className="h-20 w-20 rounded-full bg-primary/10 grid place-items-center text-2xl font-semibold text-primary">
+                    {detailStudent.first_name.charAt(0)}
+                  </div>
+                )}
+                <div className="flex-1">
+                  <p className="text-lg font-semibold">
+                    {detailStudent.first_name} {detailStudent.last_name}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {detailStudent.section_name} • {detailStudent.status}
+                  </p>
+                  {detailStudent.roll_number && (
+                    <p className="text-xs text-muted-foreground mt-1">Roll #{detailStudent.roll_number}</p>
+                  )}
+                </div>
+              </div>
+
+              <Section title="Identification">
+                <Field label="Student Code" value={detailStudent.student_code} />
+                <Field label="Registration #" value={detailStudent.registration_number} />
+                <Field label="Roll Number" value={detailStudent.roll_number} />
+                <Field label="Admission Date" value={detailStudent.admission_date} />
+              </Section>
+
+              <Section title="Personal">
+                <Field label="Date of Birth" value={detailStudent.date_of_birth} />
+                <Field label="Gender" value={detailStudent.gender} />
+                <Field label="Phone" value={detailStudent.phone} />
+                <Field label="Emergency Contact" value={detailStudent.emergency_contact} />
+              </Section>
+
+              <Section title="Address">
+                <Field label="Address" value={detailStudent.address} className="sm:col-span-2" />
+                <Field label="City" value={detailStudent.city} />
+                <Field label="Area" value={detailStudent.area} />
+              </Section>
+
+              <Section title="Parent / Guardian">
+                <Field label="Parent Name" value={detailStudent.parent_name} />
+                <Field label="Parent Phone" value={detailStudent.parent_phone} />
+                <Field label="Parent Email" value={detailStudent.parent_email} className="sm:col-span-2" />
+              </Section>
+
+              {(detailStudent.medical_notes || detailStudent.notes) && (
+                <Section title="Notes">
+                  <Field label="Medical Notes" value={detailStudent.medical_notes} className="sm:col-span-2" />
+                  <Field label="Other Notes" value={detailStudent.notes} className="sm:col-span-2" />
+                </Section>
+              )}
+
+              <div className="flex flex-wrap gap-2 pt-2">
+                <Button size="sm" variant="outline" onClick={() => { openAddParent(detailStudent.id); }}>
+                  <UserPlus className="mr-1 h-3 w-3" /> Add Parent
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => viewStudentGuardians(detailStudent.id)}>
+                  View All Parents
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h4 className="mb-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide">{title}</h4>
+      <div className="grid gap-3 sm:grid-cols-2 rounded-lg border bg-surface p-3">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, value, className = "" }: { label: string; value?: string | null; className?: string }) {
+  return (
+    <div className={className}>
+      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
+      <p className="text-sm font-medium">{value || "—"}</p>
     </div>
   );
 }
