@@ -1288,6 +1288,61 @@ export type Database = {
           },
         ]
       }
+      complaint_feedbacks: {
+        Row: {
+          author_role: string
+          author_user_id: string
+          complaint_id: string
+          content: string
+          created_at: string
+          id: string
+          school_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_role: string
+          author_user_id: string
+          complaint_id: string
+          content: string
+          created_at?: string
+          id?: string
+          school_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_role?: string
+          author_user_id?: string
+          complaint_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          school_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaint_feedbacks_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaint_feedbacks_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaints_principal_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaint_feedbacks_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       complaints: {
         Row: {
           category: string | null
@@ -4470,6 +4525,41 @@ export type Database = {
       }
     }
     Views: {
+      complaint_feedbacks_principal_view: {
+        Row: {
+          author_role: string | null
+          author_user_id: string | null
+          complaint_id: string | null
+          content: string | null
+          created_at: string | null
+          id: string | null
+          school_id: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaint_feedbacks_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaint_feedbacks_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaints_principal_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaint_feedbacks_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       complaints_principal_view: {
         Row: {
           category: string | null
@@ -4555,6 +4645,10 @@ export type Database = {
       }
     }
     Functions: {
+      can_access_complaint: {
+        Args: { _complaint_id: string }
+        Returns: boolean
+      }
       can_manage_finance: { Args: { _school_id: string }; Returns: boolean }
       can_manage_staff: { Args: { _school_id: string }; Returns: boolean }
       can_manage_students: { Args: { _school_id: string }; Returns: boolean }
