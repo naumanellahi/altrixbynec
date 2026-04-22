@@ -7,6 +7,7 @@ import { useMyChildren, ChildInfo } from "@/hooks/useMyChildren";
 import { useUniversalPrefetch } from "@/hooks/useUniversalPrefetch";
 import { ParentShell } from "@/components/tenant/ParentShell";
 import { ActiveChildProvider } from "@/context/ActiveChildContext";
+import { ActiveChildBridge } from "@/context/ActiveChildBridge";
 
 import ParentHomeModule from "./parent-modules/ParentHomeModule";
 import ParentAttendanceModule from "./parent-modules/ParentAttendanceModule";
@@ -245,6 +246,7 @@ const ParentDashboard = () => {
 
   return (
     <ActiveChildProvider schoolId={schoolId} childList={childList}>
+      <ActiveChildBridge selectedChild={selectedChild} onSelectChild={setSelectedChild} />
       <ParentShell
         schoolName={schoolName}
         schoolSlug={schoolSlug || ""}
