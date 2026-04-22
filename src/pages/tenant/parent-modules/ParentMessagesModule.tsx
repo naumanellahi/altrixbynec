@@ -33,6 +33,7 @@ interface Conversation {
   otherUserId: string;
   otherName: string;
   subject: string;
+  studentId: string | null;
   messages: Message[];
   unread: number;
   lastAt: string;
