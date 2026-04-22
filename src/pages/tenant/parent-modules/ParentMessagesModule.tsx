@@ -212,10 +212,16 @@ const ParentMessagesModule = ({ child, schoolId }: ParentMessagesModuleProps) =>
         <div>
           <h1 className="font-display text-2xl font-bold tracking-tight">Messages</h1>
           <p className="text-sm text-muted-foreground">
-            Conversations with teachers about{" "}
-            <span className="font-medium text-foreground">
-              {child.first_name || "your child"}
-            </span>
+            {child ? (
+              <>
+                Conversations about{" "}
+                <span className="font-medium text-foreground">
+                  {child.first_name || "your child"}
+                </span>
+              </>
+            ) : (
+              "All your conversations with school staff"
+            )}
           </p>
         </div>
         <Button onClick={() => setShowNewMessage((v) => !v)} className="gap-2">
