@@ -64,17 +64,11 @@ export function TeacherStudentsModule() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Add student dialog
+  // Add student dialog (full form)
   const [addStudentOpen, setAddStudentOpen] = useState(false);
-  const [newStudent, setNewStudent] = useState({
-    first_name: "",
-    last_name: "",
-    parent_name: "",
-    date_of_birth: "",
-    student_code: "",
-    status: "enrolled",
-  });
-  const [submitting, setSubmitting] = useState(false);
+  const [parentUsers, setParentUsers] = useState<ParentUserOption[]>([]);
+  const [classes, setClasses] = useState<ClassOption[]>([]);
+  const [subjects, setSubjects] = useState<SubjectOption[]>([]);
 
   // Add parent dialog
   const [addParentOpen, setAddParentOpen] = useState(false);
