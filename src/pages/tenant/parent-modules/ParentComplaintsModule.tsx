@@ -140,6 +140,14 @@ export default function ParentComplaintsModule({ child, schoolId }: Props) {
                   </Button>
                 </div>
               )}
+              {schoolId && (
+                <ComplaintThread
+                  complaintId={c.id}
+                  schoolId={schoolId}
+                  authorRole="receiver"
+                  nameLookup={senderNames}
+                />
+              )}
             </CardContent>
           </Card>
         ))
