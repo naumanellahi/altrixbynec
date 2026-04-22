@@ -556,16 +556,9 @@ export function StudentDigitalTwinCard({ studentId, schoolId, compact = false }:
                             <GraduationCap className="h-3 w-3" /> Career Pathways
                           </p>
                           <div className="flex flex-wrap gap-1">
-                            {rich.predictions.career_pathways.map((c: any, i: number) => {
-                              const text = typeof c === "string"
-                                ? c
-                                : c?.path && c?.reasoning
-                                  ? `${c.path} — ${c.reasoning}`
-                                  : c?.path || c?.career || c?.name || JSON.stringify(c);
-                              return (
-                                <Badge key={i} variant="secondary" className="text-[10px]">{text}</Badge>
-                              );
-                            })}
+                            {aiToTextArray(rich.predictions.career_pathways).map((c, i) => (
+                              <Badge key={i} variant="secondary" className="text-[10px]">{c}</Badge>
+                            ))}
                           </div>
                         </div>
                       )}
