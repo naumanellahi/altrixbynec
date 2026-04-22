@@ -1288,6 +1288,72 @@ export type Database = {
           },
         ]
       }
+      complaints: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string
+          flow: string
+          id: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          school_id: string
+          sender_user_id: string
+          status: string
+          student_id: string | null
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string
+          flow: string
+          id?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          school_id: string
+          sender_user_id: string
+          status?: string
+          student_id?: string | null
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string
+          flow?: string
+          id?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          school_id?: string
+          sender_user_id?: string
+          status?: string
+          student_id?: string | null
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaints_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaints_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_activities: {
         Row: {
           activity_type: string
@@ -4404,6 +4470,72 @@ export type Database = {
       }
     }
     Views: {
+      complaints_principal_view: {
+        Row: {
+          category: string | null
+          content: string | null
+          created_at: string | null
+          flow: string | null
+          id: string | null
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          school_id: string | null
+          sender_user_id: string | null
+          status: string | null
+          student_id: string | null
+          subject: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          content?: string | null
+          created_at?: string | null
+          flow?: string | null
+          id?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          school_id?: string | null
+          sender_user_id?: never
+          status?: string | null
+          student_id?: string | null
+          subject?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          content?: string | null
+          created_at?: string | null
+          flow?: string | null
+          id?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          school_id?: string | null
+          sender_user_id?: never
+          status?: string | null
+          student_id?: string | null
+          subject?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaints_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaints_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       school_user_directory: {
         Row: {
           display_name: string | null

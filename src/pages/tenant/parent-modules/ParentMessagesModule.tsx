@@ -10,6 +10,7 @@ import { ChildInfo } from "@/hooks/useMyChildren";
 import { format } from "date-fns";
 import { Send, MessageSquarePlus, Inbox, User as UserIcon } from "lucide-react";
 import { toast } from "sonner";
+import { ParentNewMessageDialog } from "@/components/parent/ParentNewMessageDialog";
 
 interface ParentMessagesModuleProps {
   child: ChildInfo | null;
@@ -45,12 +46,8 @@ const ParentMessagesModule = ({ child, schoolId }: ParentMessagesModuleProps) =>
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [userNames, setUserNames] = useState<Record<string, string>>({});
 
-  // New message form
+  // New message dialog
   const [showNewMessage, setShowNewMessage] = useState(false);
-  const [newSubject, setNewSubject] = useState("");
-  const [newContent, setNewContent] = useState("");
-  const [recipientId, setRecipientId] = useState("");
-  const [teachers, setTeachers] = useState<{ id: string; label: string }[]>([]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -85,46 +82,21 @@ const ParentMessagesModule = ({ child, schoolId }: ParentMessagesModuleProps) =>
     fetchMessages();
   }, [fetchMessages]);
 
-  // Fetch teachers (with names) for sending new messages
+  // Fetch directory names for conversation labels
   useEffect(() => {
     if (!schoolId) return;
-
-    const fetchTeachers = async () => {
-      try {
-        const { data: dir } = await supabase.rpc("get_school_user_directory", {
-          _school_id: schoolId,
-        });
-        const { data: roles } = await supabase
-          .from("user_roles")
-          .select("user_id, role")
-          .eq("school_id", schoolId)
-          .in("role", ["teacher", "principal", "vice_principal", "academic_coordinator"]);
-
-        const dirMap = new Map<string, string>();
-        (dir ?? []).forEach((d: any) => dirMap.set(d.user_id, d.display_name || d.email || "Member"));
-
-        const seen = new Set<string>();
-        const list: { id: string; label: string }[] = [];
-        (roles ?? []).forEach((r: any) => {
-          if (seen.has(r.user_id)) return;
-          seen.add(r.user_id);
-          const name = dirMap.get(r.user_id) || `Member ${r.user_id.slice(0, 6)}`;
-          const roleTag = r.role === "teacher" ? "Teacher" : r.role.replace("_", " ");
-          list.push({ id: r.user_id, label: `${name} • ${roleTag}` });
-        });
-        setTeachers(list);
-        // also feed names cache
+    supabase
+      .rpc("get_school_user_directory", { _school_id: schoolId })
+      .then(({ data }) => {
+        if (!data) return;
         setUserNames((prev) => {
           const next = { ...prev };
-          dirMap.forEach((v, k) => (next[k] = v));
+          (data as any[]).forEach((d) => {
+            next[d.user_id] = d.display_name || d.email || "Member";
+          });
           return next;
         });
-      } catch (e) {
-        console.error("Failed to load teacher list", e);
-      }
-    };
-
-    fetchTeachers();
+      });
   }, [schoolId]);
 
   // Realtime subscription
@@ -211,35 +183,6 @@ const ParentMessagesModule = ({ child, schoolId }: ParentMessagesModuleProps) =>
     setSending(false);
   };
 
-  const handleSendNew = async () => {
-    if (!newContent.trim() || !recipientId || !currentUserId || !child || !schoolId) return;
-
-    setSending(true);
-
-    const { error } = await supabase.from("parent_messages").insert({
-      school_id: schoolId,
-      student_id: child.student_id,
-      sender_user_id: currentUserId,
-      recipient_user_id: recipientId,
-      subject: newSubject.trim() || null,
-      content: newContent.trim(),
-    });
-
-    if (error) {
-      console.error("Failed to send message:", error);
-      toast.error(error.message || "Failed to send message");
-    } else {
-      toast.success("Message sent");
-      setNewSubject("");
-      setNewContent("");
-      setRecipientId("");
-      setShowNewMessage(false);
-      await fetchMessages();
-    }
-
-    setSending(false);
-  };
-
   const markConvRead = async (conv: Conversation) => {
     if (!currentUserId || conv.unread === 0) return;
     const ids = conv.messages
@@ -275,66 +218,14 @@ const ParentMessagesModule = ({ child, schoolId }: ParentMessagesModuleProps) =>
         </Button>
       </div>
 
-      {showNewMessage && (
-        <Card className="border-primary/30">
-          <CardHeader>
-            <CardTitle className="text-base">Compose a message</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                To
-              </label>
-              <select
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={recipientId}
-                onChange={(e) => setRecipientId(e.target.value)}
-              >
-                <option value="">Select a teacher or staff member…</option>
-                {teachers.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Subject
-              </label>
-              <Input
-                value={newSubject}
-                onChange={(e) => setNewSubject(e.target.value)}
-                placeholder="Optional, e.g. Homework question"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Message
-              </label>
-              <Textarea
-                value={newContent}
-                onChange={(e) => setNewContent(e.target.value)}
-                placeholder="Type your message…"
-                rows={5}
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                onClick={handleSendNew}
-                disabled={sending || !recipientId || !newContent.trim()}
-                className="gap-2"
-              >
-                <Send className="h-4 w-4" />
-                {sending ? "Sending…" : "Send message"}
-              </Button>
-              <Button variant="outline" onClick={() => setShowNewMessage(false)}>
-                Cancel
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <ParentNewMessageDialog
+        open={showNewMessage}
+        onOpenChange={setShowNewMessage}
+        schoolId={schoolId}
+        studentId={child?.student_id ?? null}
+        childName={child?.first_name ?? "your child"}
+        onSent={() => fetchMessages()}
+      />
 
       <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
         {/* Conversation list */}
