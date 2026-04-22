@@ -19,8 +19,8 @@ export function PoweredByFooter() {
       <div className="pointer-events-none fixed bottom-2 right-3 z-[60] hidden text-[10px] text-muted-foreground/70 sm:block">
         {content}
       </div>
-      {/* Mobile: inline footer at the end of page content */}
-      <div className="flex justify-center px-3 pb-4 pt-6 text-[10px] text-muted-foreground/70 sm:hidden">
+      {/* Mobile: inline footer at the end of page content, lifted above bottom nav */}
+      <div className="flex justify-center px-3 pt-6 pb-[calc(env(safe-area-inset-bottom)+6rem)] text-[10px] text-muted-foreground/70 sm:hidden">
         {content}
       </div>
     </>
