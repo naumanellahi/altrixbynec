@@ -39,6 +39,8 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
 
   const navItems = [
     { to: `/${schoolSlug}/${role}`, icon: LayoutGrid, label: "Dashboard", show: true, badge: 0 },
+    { to: `/${schoolSlug}/${role}/fees-pro`, icon: Coins, label: "Fees", show: ["principal", "vice_principal", "accountant", "super_admin", "school_owner"].includes(role), badge: 0 },
+    { to: `/${schoolSlug}/${role}/admissions`, icon: UserPlus, label: "Admissions", show: ["principal", "vice_principal", "academic_coordinator", "hr_manager", "teacher", "super_admin", "school_owner"].includes(role), badge: 0 },
     { to: `/${schoolSlug}/${role}/messages`, icon: MessageSquare, label: "Messages", show: true, badge: unreadCount },
     { to: `/${schoolSlug}/${role}/admin`, icon: ShieldCheck, label: "Admin", show: role === "super_admin", badge: 0 },
     { to: `/${schoolSlug}/${role}/schools`, icon: ShieldCheck, label: "Schools", show: role === "super_admin", badge: 0 },
@@ -53,8 +55,6 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
     { to: `/${schoolSlug}/${role}/notices`, icon: Megaphone, label: "Notices", show: true, badge: 0 },
     { to: `/${schoolSlug}/${role}/holidays`, icon: PartyPopper, label: "Holidays", show: true, badge: 0 },
     { to: `/${schoolSlug}/${role}/finance`, icon: Coins, label: "Finance", show: ["principal", "vice_principal", "accountant", "super_admin", "school_owner"].includes(role), badge: 0 },
-    { to: `/${schoolSlug}/${role}/fees-pro`, icon: Coins, label: "Fees", show: ["principal", "vice_principal", "accountant", "super_admin", "school_owner"].includes(role), badge: 0 },
-    { to: `/${schoolSlug}/${role}/admissions`, icon: UserPlus, label: "Admissions", show: ["principal", "vice_principal", "academic_coordinator", "hr_manager", "teacher", "super_admin", "school_owner"].includes(role), badge: 0 },
     { to: `/${schoolSlug}/${role}/reports`, icon: BarChart3, label: "Reports", show: true, badge: 0 },
     { to: `/${schoolSlug}/${role}/complaints`, icon: ShieldAlert, label: "Complaints", show: ["principal", "vice_principal", "school_admin", "school_owner", "super_admin"].includes(role), badge: 0 },
     { to: `/${schoolSlug}/${role}/parent-notes`, icon: NotebookPen, label: "Parent Notes", show: ["principal", "vice_principal", "school_admin", "school_owner", "super_admin"].includes(role), badge: 0 },
