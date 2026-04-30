@@ -673,6 +673,14 @@ export function PrincipalHome() {
       <TabsContent value="parent-notes">
         <PrincipalParentNotesModule />
       </TabsContent>
+
+      <TabsContent value="fees">
+        <FeesAdvancedModule />
+      </TabsContent>
+
+      <TabsContent value="admissions">
+        <AdmissionsModule />
+      </TabsContent>
     </Tabs>
   );
 }
