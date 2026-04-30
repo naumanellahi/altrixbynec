@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
     await supabase.from("jazzcash_transactions").insert({
       school_id: inv.school_id, invoice_id: inv.id, student_id: inv.student_id,
       amount: due, txn_ref_no: txnRef, status: "pending",
-      initiator_user_id: claims.claims.sub, raw_request: fields,
+      initiator_user_id: userId, raw_request: fields,
     });
 
     const targetUrl = settings.environment === "production" ? PROD_URL : SANDBOX_URL;
