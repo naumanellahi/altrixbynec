@@ -58,16 +58,26 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
   }, [child, schoolId]);
 
   const payNow = async (invoiceId: string) => {
+    // Open popup synchronously to avoid popup blockers
+    const w = window.open("", "_blank", "width=900,height=700");
+    if (!w) {
+      toast.error("Popup blocked. Please allow popups for this site and try again.");
+      return;
+    }
+    w.document.write('<p style="font-family:sans-serif;text-align:center;padding:40px">Preparing JazzCash checkout…</p>');
     setPaying(invoiceId);
     try {
       const { data, error } = await supabase.functions.invoke("jazzcash-initiate", { body: { invoice_id: invoiceId } });
       if (error) throw error;
       const html = (data as any)?.html;
+      const errMsg = (data as any)?.error;
+      if (errMsg) throw new Error(errMsg);
       if (!html) throw new Error("Failed to start checkout");
-      const w = window.open("", "_blank");
-      if (!w) { toast.error("Popup blocked. Please allow popups."); return; }
-      w.document.open(); w.document.write(html); w.document.close();
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
     } catch (e: any) {
+      try { w.close(); } catch {}
       toast.error(e?.message || "Payment failed to start");
     } finally {
       setPaying(null);
