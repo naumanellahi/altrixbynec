@@ -52,6 +52,8 @@ export function AccountantShell({ title, subtitle, schoolSlug, children }: Props
     { to: `${basePath}/reports`, icon: BarChart3, label: "Reports", badge: 0 },
     { to: `${basePath}/messages`, icon: MessageSquare, label: "Messages", badge: unreadCount },
     { to: `${basePath}/timetable`, icon: CalendarDays, label: "Timetable Builder", badge: 0 },
+    { to: `${basePath}/fees-pro`, icon: DollarSign, label: "Fees (Advanced)", badge: 0 },
+    { to: `${basePath}/admissions`, icon: FileText, label: "Admissions", badge: 0 },
   ];
 
   const bottomNavItems = [
