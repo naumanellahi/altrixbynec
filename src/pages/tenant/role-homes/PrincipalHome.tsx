@@ -3,6 +3,8 @@ import { HrLeavesModule } from "@/pages/tenant/hr-modules/HrLeavesModule";
 import { ParentChildLinkingTab } from "@/components/principal/ParentChildLinkingTab";
 import PrincipalComplaintsModule from "@/pages/tenant/modules/PrincipalComplaintsModule";
 import PrincipalParentNotesModule from "@/pages/tenant/modules/PrincipalParentNotesModule";
+import FeesAdvancedModule from "@/pages/tenant/modules/FeesAdvancedModule";
+import AdmissionsModule from "@/pages/tenant/modules/AdmissionsModule";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   BarChart3,
