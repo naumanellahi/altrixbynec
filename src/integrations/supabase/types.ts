@@ -289,6 +289,137 @@ export type Database = {
           },
         ]
       }
+      admission_application_documents: {
+        Row: {
+          application_id: string
+          created_at: string
+          file_name: string
+          file_path: string
+          id: string
+          mime_type: string | null
+          school_id: string
+          uploaded_by_user_id: string | null
+        }
+        Insert: {
+          application_id: string
+          created_at?: string
+          file_name: string
+          file_path: string
+          id?: string
+          mime_type?: string | null
+          school_id: string
+          uploaded_by_user_id?: string | null
+        }
+        Update: {
+          application_id?: string
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          id?: string
+          mime_type?: string | null
+          school_id?: string
+          uploaded_by_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admission_application_documents_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "admission_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admission_applications: {
+        Row: {
+          applying_for_class_id: string | null
+          applying_for_section_id: string | null
+          converted_at: string | null
+          converted_student_id: string | null
+          created_at: string
+          date_of_birth: string | null
+          decision_notes: string | null
+          desired_subjects: string[] | null
+          first_name: string
+          gender: string | null
+          id: string
+          last_name: string
+          notes: string | null
+          parent_address: string | null
+          parent_email: string | null
+          parent_name: string | null
+          parent_phone: string | null
+          photo_url: string | null
+          previous_school: string | null
+          registration_number: string | null
+          reviewed_at: string | null
+          reviewed_by_user_id: string | null
+          roll_number: string | null
+          school_id: string
+          status: Database["public"]["Enums"]["admission_status"]
+          submitted_by_user_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          applying_for_class_id?: string | null
+          applying_for_section_id?: string | null
+          converted_at?: string | null
+          converted_student_id?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          decision_notes?: string | null
+          desired_subjects?: string[] | null
+          first_name: string
+          gender?: string | null
+          id?: string
+          last_name: string
+          notes?: string | null
+          parent_address?: string | null
+          parent_email?: string | null
+          parent_name?: string | null
+          parent_phone?: string | null
+          photo_url?: string | null
+          previous_school?: string | null
+          registration_number?: string | null
+          reviewed_at?: string | null
+          reviewed_by_user_id?: string | null
+          roll_number?: string | null
+          school_id: string
+          status?: Database["public"]["Enums"]["admission_status"]
+          submitted_by_user_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          applying_for_class_id?: string | null
+          applying_for_section_id?: string | null
+          converted_at?: string | null
+          converted_student_id?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          decision_notes?: string | null
+          desired_subjects?: string[] | null
+          first_name?: string
+          gender?: string | null
+          id?: string
+          last_name?: string
+          notes?: string | null
+          parent_address?: string | null
+          parent_email?: string | null
+          parent_name?: string | null
+          parent_phone?: string | null
+          photo_url?: string | null
+          previous_school?: string | null
+          registration_number?: string | null
+          reviewed_at?: string | null
+          reviewed_by_user_id?: string | null
+          roll_number?: string | null
+          school_id?: string
+          status?: Database["public"]["Enums"]["admission_status"]
+          submitted_by_user_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_academic_predictions: {
         Row: {
           confidence: number | null
@@ -2087,6 +2218,171 @@ export type Database = {
           },
         ]
       }
+      fee_invoice_items: {
+        Row: {
+          amount: number
+          category: Database["public"]["Enums"]["fee_item_category"]
+          id: string
+          invoice_id: string
+          label: string
+          school_id: string
+          sort_order: number
+        }
+        Insert: {
+          amount?: number
+          category?: Database["public"]["Enums"]["fee_item_category"]
+          id?: string
+          invoice_id: string
+          label: string
+          school_id: string
+          sort_order?: number
+        }
+        Update: {
+          amount?: number
+          category?: Database["public"]["Enums"]["fee_item_category"]
+          id?: string
+          invoice_id?: string
+          label?: string
+          school_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fee_invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "fee_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fee_invoices: {
+        Row: {
+          created_at: string
+          discount_amount: number
+          due_date: string
+          fee_plan_id: string | null
+          id: string
+          invoice_number: string
+          late_fee: number
+          notes: string | null
+          paid_amount: number
+          period_end: string | null
+          period_label: string | null
+          period_start: string | null
+          school_id: string
+          sibling_discount_amount: number
+          status: Database["public"]["Enums"]["fee_invoice_status"]
+          student_id: string
+          subtotal: number
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          discount_amount?: number
+          due_date: string
+          fee_plan_id?: string | null
+          id?: string
+          invoice_number: string
+          late_fee?: number
+          notes?: string | null
+          paid_amount?: number
+          period_end?: string | null
+          period_label?: string | null
+          period_start?: string | null
+          school_id: string
+          sibling_discount_amount?: number
+          status?: Database["public"]["Enums"]["fee_invoice_status"]
+          student_id: string
+          subtotal?: number
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          discount_amount?: number
+          due_date?: string
+          fee_plan_id?: string | null
+          id?: string
+          invoice_number?: string
+          late_fee?: number
+          notes?: string | null
+          paid_amount?: number
+          period_end?: string | null
+          period_label?: string | null
+          period_start?: string | null
+          school_id?: string
+          sibling_discount_amount?: number
+          status?: Database["public"]["Enums"]["fee_invoice_status"]
+          student_id?: string
+          subtotal?: number
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fee_invoices_fee_plan_id_fkey"
+            columns: ["fee_plan_id"]
+            isOneToOne: false
+            referencedRelation: "fee_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fee_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          invoice_id: string
+          method: Database["public"]["Enums"]["fee_payment_method"]
+          notes: string | null
+          paid_at: string
+          recorded_by_user_id: string | null
+          school_id: string
+          status: Database["public"]["Enums"]["fee_payment_status"]
+          student_id: string
+          transaction_ref: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          invoice_id: string
+          method?: Database["public"]["Enums"]["fee_payment_method"]
+          notes?: string | null
+          paid_at?: string
+          recorded_by_user_id?: string | null
+          school_id: string
+          status?: Database["public"]["Enums"]["fee_payment_status"]
+          student_id: string
+          transaction_ref?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          method?: Database["public"]["Enums"]["fee_payment_method"]
+          notes?: string | null
+          paid_at?: string
+          recorded_by_user_id?: string | null
+          school_id?: string
+          status?: Database["public"]["Enums"]["fee_payment_status"]
+          student_id?: string
+          transaction_ref?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fee_payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "fee_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fee_plan_installments: {
         Row: {
           amount: number
@@ -2135,32 +2431,88 @@ export type Database = {
           },
         ]
       }
+      fee_plan_items: {
+        Row: {
+          amount: number
+          category: Database["public"]["Enums"]["fee_item_category"]
+          created_at: string
+          fee_plan_id: string
+          id: string
+          is_recurring: boolean
+          label: string
+          school_id: string
+          sort_order: number
+        }
+        Insert: {
+          amount?: number
+          category?: Database["public"]["Enums"]["fee_item_category"]
+          created_at?: string
+          fee_plan_id: string
+          id?: string
+          is_recurring?: boolean
+          label: string
+          school_id: string
+          sort_order?: number
+        }
+        Update: {
+          amount?: number
+          category?: Database["public"]["Enums"]["fee_item_category"]
+          created_at?: string
+          fee_plan_id?: string
+          id?: string
+          is_recurring?: boolean
+          label?: string
+          school_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fee_plan_items_fee_plan_id_fkey"
+            columns: ["fee_plan_id"]
+            isOneToOne: false
+            referencedRelation: "fee_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fee_plans: {
         Row: {
+          billing_frequency: Database["public"]["Enums"]["fee_billing_frequency"]
+          class_id: string | null
           created_at: string | null
           currency: string | null
+          description: string | null
           id: string
           is_active: boolean | null
           name: string
           school_id: string
+          school_year: string | null
           updated_at: string | null
         }
         Insert: {
+          billing_frequency?: Database["public"]["Enums"]["fee_billing_frequency"]
+          class_id?: string | null
           created_at?: string | null
           currency?: string | null
+          description?: string | null
           id?: string
           is_active?: boolean | null
           name: string
           school_id: string
+          school_year?: string | null
           updated_at?: string | null
         }
         Update: {
+          billing_frequency?: Database["public"]["Enums"]["fee_billing_frequency"]
+          class_id?: string | null
           created_at?: string | null
           currency?: string | null
+          description?: string | null
           id?: string
           is_active?: boolean | null
           name?: string
           school_id?: string
+          school_year?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -2172,6 +2524,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      fee_settings: {
+        Row: {
+          created_at: string
+          currency: string
+          id: string
+          invoice_prefix: string
+          late_fee_amount: number
+          late_fee_enabled: boolean
+          late_fee_grace_days: number
+          school_id: string
+          sibling_discount_2nd_pct: number
+          sibling_discount_3rd_plus_pct: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          id?: string
+          invoice_prefix?: string
+          late_fee_amount?: number
+          late_fee_enabled?: boolean
+          late_fee_grace_days?: number
+          school_id: string
+          sibling_discount_2nd_pct?: number
+          sibling_discount_3rd_plus_pct?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          id?: string
+          invoice_prefix?: string
+          late_fee_amount?: number
+          late_fee_enabled?: boolean
+          late_fee_grace_days?: number
+          school_id?: string
+          sibling_discount_2nd_pct?: number
+          sibling_discount_3rd_plus_pct?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       finance_expenses: {
         Row: {
@@ -2907,6 +3301,104 @@ export type Database = {
             columns: ["school_id"]
             isOneToOne: false
             referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jazzcash_settings: {
+        Row: {
+          created_at: string
+          environment: Database["public"]["Enums"]["jazzcash_env"]
+          id: string
+          integrity_salt: string | null
+          is_enabled: boolean
+          merchant_id: string | null
+          merchant_password: string | null
+          return_url: string | null
+          school_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          environment?: Database["public"]["Enums"]["jazzcash_env"]
+          id?: string
+          integrity_salt?: string | null
+          is_enabled?: boolean
+          merchant_id?: string | null
+          merchant_password?: string | null
+          return_url?: string | null
+          school_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          environment?: Database["public"]["Enums"]["jazzcash_env"]
+          id?: string
+          integrity_salt?: string | null
+          is_enabled?: boolean
+          merchant_id?: string | null
+          merchant_password?: string | null
+          return_url?: string | null
+          school_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      jazzcash_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          initiator_user_id: string | null
+          invoice_id: string
+          jc_response_code: string | null
+          jc_response_message: string | null
+          raw_request: Json | null
+          raw_response: Json | null
+          school_id: string
+          status: Database["public"]["Enums"]["fee_payment_status"]
+          student_id: string
+          txn_ref_no: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          initiator_user_id?: string | null
+          invoice_id: string
+          jc_response_code?: string | null
+          jc_response_message?: string | null
+          raw_request?: Json | null
+          raw_response?: Json | null
+          school_id: string
+          status?: Database["public"]["Enums"]["fee_payment_status"]
+          student_id: string
+          txn_ref_no: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          initiator_user_id?: string | null
+          invoice_id?: string
+          jc_response_code?: string | null
+          jc_response_message?: string | null
+          raw_request?: Json | null
+          raw_response?: Json | null
+          school_id?: string
+          status?: Database["public"]["Enums"]["fee_payment_status"]
+          student_id?: string
+          txn_ref_no?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jazzcash_transactions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "fee_invoices"
             referencedColumns: ["id"]
           },
         ]
@@ -3747,6 +4239,53 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_fee_assignments: {
+        Row: {
+          created_at: string
+          discount_pct: number
+          fee_plan_id: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          scholarship_amount: number
+          school_id: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          discount_pct?: number
+          fee_plan_id: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          scholarship_amount?: number
+          school_id: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          discount_pct?: number
+          fee_plan_id?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          scholarship_amount?: number
+          school_id?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_fee_assignments_fee_plan_id_fkey"
+            columns: ["fee_plan_id"]
+            isOneToOne: false
+            referencedRelation: "fee_plans"
             referencedColumns: ["id"]
           },
         ]
@@ -4649,14 +5188,32 @@ export type Database = {
         Args: { _complaint_id: string }
         Returns: boolean
       }
+      can_manage_admissions: { Args: { _school_id: string }; Returns: boolean }
       can_manage_finance: { Args: { _school_id: string }; Returns: boolean }
+      can_manage_jazzcash: { Args: { _school_id: string }; Returns: boolean }
       can_manage_staff: { Args: { _school_id: string }; Returns: boolean }
       can_manage_students: { Args: { _school_id: string }; Returns: boolean }
+      can_view_fees: { Args: { _school_id: string }; Returns: boolean }
       can_work_crm: { Args: { _school_id: string }; Returns: boolean }
+      convert_admission_to_student: {
+        Args: { _application_id: string }
+        Returns: string
+      }
       find_parent_user_by_email: {
         Args: { _email: string; _school_id: string }
         Returns: string
       }
+      generate_invoice_for_student: {
+        Args: {
+          _due_date: string
+          _fee_plan_id: string
+          _period_label: string
+          _school_id: string
+          _student_id: string
+        }
+        Returns: string
+      }
+      generate_invoice_number: { Args: { _school_id: string }; Returns: string }
       get_at_risk_students: {
         Args: { _class_section_id?: string; _school_id: string }
         Returns: {
@@ -4693,6 +5250,7 @@ export type Database = {
             Args: { _role: string; _school_id: string; _user_id: string }
             Returns: boolean
           }
+      is_jazzcash_enabled: { Args: { _school_id: string }; Returns: boolean }
       is_my_child: {
         Args: { _school_id: string; _student_id: string }
         Returns: boolean
@@ -4728,9 +5286,50 @@ export type Database = {
         }[]
       }
       my_student_id: { Args: { _school_id: string }; Returns: string }
+      recalc_invoice_totals: {
+        Args: { _invoice_id: string }
+        Returns: undefined
+      }
+      student_sibling_rank: {
+        Args: { _school_id: string; _student_id: string }
+        Returns: number
+      }
     }
     Enums: {
-      [_ in never]: never
+      admission_status:
+        | "submitted"
+        | "under_review"
+        | "approved"
+        | "rejected"
+        | "withdrawn"
+      fee_billing_frequency: "monthly" | "quarterly" | "yearly" | "one_time"
+      fee_invoice_status:
+        | "draft"
+        | "pending"
+        | "partial"
+        | "paid"
+        | "overdue"
+        | "cancelled"
+      fee_item_category:
+        | "tuition"
+        | "admission"
+        | "exam"
+        | "transport"
+        | "hostel"
+        | "library"
+        | "lab"
+        | "uniform"
+        | "other"
+      fee_payment_method:
+        | "cash"
+        | "bank_transfer"
+        | "jazzcash"
+        | "easypaisa"
+        | "card"
+        | "cheque"
+        | "other"
+      fee_payment_status: "pending" | "success" | "failed" | "refunded"
+      jazzcash_env: "sandbox" | "live"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -4857,6 +5456,45 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      admission_status: [
+        "submitted",
+        "under_review",
+        "approved",
+        "rejected",
+        "withdrawn",
+      ],
+      fee_billing_frequency: ["monthly", "quarterly", "yearly", "one_time"],
+      fee_invoice_status: [
+        "draft",
+        "pending",
+        "partial",
+        "paid",
+        "overdue",
+        "cancelled",
+      ],
+      fee_item_category: [
+        "tuition",
+        "admission",
+        "exam",
+        "transport",
+        "hostel",
+        "library",
+        "lab",
+        "uniform",
+        "other",
+      ],
+      fee_payment_method: [
+        "cash",
+        "bank_transfer",
+        "jazzcash",
+        "easypaisa",
+        "card",
+        "cheque",
+        "other",
+      ],
+      fee_payment_status: ["pending", "success", "failed", "refunded"],
+      jazzcash_env: ["sandbox", "live"],
+    },
   },
 } as const
