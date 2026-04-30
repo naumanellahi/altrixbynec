@@ -50,3 +50,9 @@ verify_jwt = false
 
 [functions.ai-parent-update-generator]
 verify_jwt = false
+
+[functions.jazzcash-callback]
+verify_jwt = false
+
+[functions.jazzcash-initiate]
+verify_jwt = true

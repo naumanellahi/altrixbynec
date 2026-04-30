@@ -35,6 +35,8 @@ import ExamsModule from "@/pages/tenant/modules/ExamsModule";
 import ReportCardModule from "@/pages/tenant/modules/ReportCardModule";
 import PrincipalComplaintsModule from "@/pages/tenant/modules/PrincipalComplaintsModule";
 import PrincipalParentNotesModule from "@/pages/tenant/modules/PrincipalParentNotesModule";
+import FeesAdvancedModule from "@/pages/tenant/modules/FeesAdvancedModule";
+import AdmissionsModule from "@/pages/tenant/modules/AdmissionsModule";
 
 const TenantDashboard = () => {
   const { schoolSlug, role: roleParam } = useParams();
@@ -450,6 +452,8 @@ const TenantDashboard = () => {
             <Route path="timetable" element={<TimetableBuilderModule />} />
             <Route path="attendance" element={<AttendanceModule />} />
             <Route path="finance" element={<FinanceModule />} />
+            <Route path="fees-pro" element={<FeesAdvancedModule />} />
+            <Route path="admissions" element={<AdmissionsModule />} />
             <Route path="reports" element={<ReportsModule />} />
             <Route path="leaves" element={<HrLeavesModule />} />
             <Route path="notices" element={<NoticesModule schoolId={tenant.schoolId} canManage={true} />} />

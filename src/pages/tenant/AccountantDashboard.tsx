@@ -14,6 +14,8 @@ import { AccountantPayrollModule } from "@/pages/tenant/accountant-modules/Accou
 import { AccountantReportsModule } from "@/pages/tenant/accountant-modules/AccountantReportsModule";
 import { AccountantMessagesModule } from "@/pages/tenant/accountant-modules/AccountantMessagesModule";
 import { TimetableBuilderModule } from "@/pages/tenant/modules/TimetableBuilderModule";
+import FeesAdvancedModule from "@/pages/tenant/modules/FeesAdvancedModule";
+import AdmissionsModule from "@/pages/tenant/modules/AdmissionsModule";
 
 const AccountantDashboard = () => {
   const { schoolSlug } = useParams();
@@ -80,6 +82,8 @@ const AccountantDashboard = () => {
         <Route path="reports" element={<AccountantReportsModule />} />
         <Route path="messages" element={<AccountantMessagesModule />} />
         <Route path="timetable" element={<TimetableBuilderModule />} />
+        <Route path="fees-pro" element={<FeesAdvancedModule />} />
+        <Route path="admissions" element={<AdmissionsModule />} />
         <Route path="*" element={<Navigate to={`/${tenant.slug}/accountant`} replace />} />
       </Routes>
     </AccountantShell>
