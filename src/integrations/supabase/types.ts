@@ -4649,9 +4649,12 @@ export type Database = {
         Args: { _complaint_id: string }
         Returns: boolean
       }
+      can_manage_admissions: { Args: { _school_id: string }; Returns: boolean }
       can_manage_finance: { Args: { _school_id: string }; Returns: boolean }
+      can_manage_jazzcash: { Args: { _school_id: string }; Returns: boolean }
       can_manage_staff: { Args: { _school_id: string }; Returns: boolean }
       can_manage_students: { Args: { _school_id: string }; Returns: boolean }
+      can_view_fees: { Args: { _school_id: string }; Returns: boolean }
       can_work_crm: { Args: { _school_id: string }; Returns: boolean }
       find_parent_user_by_email: {
         Args: { _email: string; _school_id: string }
@@ -4730,7 +4733,40 @@ export type Database = {
       my_student_id: { Args: { _school_id: string }; Returns: string }
     }
     Enums: {
-      [_ in never]: never
+      admission_status:
+        | "submitted"
+        | "under_review"
+        | "approved"
+        | "rejected"
+        | "withdrawn"
+      fee_billing_frequency: "monthly" | "quarterly" | "yearly" | "one_time"
+      fee_invoice_status:
+        | "draft"
+        | "pending"
+        | "partial"
+        | "paid"
+        | "overdue"
+        | "cancelled"
+      fee_item_category:
+        | "tuition"
+        | "admission"
+        | "exam"
+        | "transport"
+        | "hostel"
+        | "library"
+        | "lab"
+        | "uniform"
+        | "other"
+      fee_payment_method:
+        | "cash"
+        | "bank_transfer"
+        | "jazzcash"
+        | "easypaisa"
+        | "card"
+        | "cheque"
+        | "other"
+      fee_payment_status: "pending" | "success" | "failed" | "refunded"
+      jazzcash_env: "sandbox" | "live"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -4857,6 +4893,45 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      admission_status: [
+        "submitted",
+        "under_review",
+        "approved",
+        "rejected",
+        "withdrawn",
+      ],
+      fee_billing_frequency: ["monthly", "quarterly", "yearly", "one_time"],
+      fee_invoice_status: [
+        "draft",
+        "pending",
+        "partial",
+        "paid",
+        "overdue",
+        "cancelled",
+      ],
+      fee_item_category: [
+        "tuition",
+        "admission",
+        "exam",
+        "transport",
+        "hostel",
+        "library",
+        "lab",
+        "uniform",
+        "other",
+      ],
+      fee_payment_method: [
+        "cash",
+        "bank_transfer",
+        "jazzcash",
+        "easypaisa",
+        "card",
+        "cheque",
+        "other",
+      ],
+      fee_payment_status: ["pending", "success", "failed", "refunded"],
+      jazzcash_env: ["sandbox", "live"],
+    },
   },
 } as const
