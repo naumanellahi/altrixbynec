@@ -3,6 +3,8 @@ import { HrLeavesModule } from "@/pages/tenant/hr-modules/HrLeavesModule";
 import { ParentChildLinkingTab } from "@/components/principal/ParentChildLinkingTab";
 import PrincipalComplaintsModule from "@/pages/tenant/modules/PrincipalComplaintsModule";
 import PrincipalParentNotesModule from "@/pages/tenant/modules/PrincipalParentNotesModule";
+import FeesAdvancedModule from "@/pages/tenant/modules/FeesAdvancedModule";
+import AdmissionsModule from "@/pages/tenant/modules/AdmissionsModule";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   BarChart3,
@@ -238,6 +240,12 @@ export function PrincipalHome() {
         </TabsTrigger>
         <TabsTrigger value="parent-notes" className="flex-1 px-2 py-2 text-xs sm:px-4 sm:text-sm">
           Parent Notes
+        </TabsTrigger>
+        <TabsTrigger value="fees" className="flex-1 px-2 py-2 text-xs sm:px-4 sm:text-sm">
+          Fees
+        </TabsTrigger>
+        <TabsTrigger value="admissions" className="flex-1 px-2 py-2 text-xs sm:px-4 sm:text-sm">
+          Admissions
         </TabsTrigger>
       </TabsList>
 
@@ -664,6 +672,14 @@ export function PrincipalHome() {
       {/* Parent Notes Tab */}
       <TabsContent value="parent-notes">
         <PrincipalParentNotesModule />
+      </TabsContent>
+
+      <TabsContent value="fees">
+        <FeesAdvancedModule />
+      </TabsContent>
+
+      <TabsContent value="admissions">
+        <AdmissionsModule />
       </TabsContent>
     </Tabs>
   );
