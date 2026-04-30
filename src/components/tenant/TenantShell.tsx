@@ -4,7 +4,7 @@ import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, BookOpen, CalendarDays, Coins, GraduationCap, Headphones, KanbanSquare, LayoutGrid, LogOut, Megaphone, Menu, MessageSquare, NotebookPen, Settings, ShieldAlert, ShieldCheck, Sparkles, Users, FileText, PartyPopper } from "lucide-react";
+import { BarChart3, BookOpen, CalendarDays, Coins, GraduationCap, Headphones, KanbanSquare, LayoutGrid, LogOut, Megaphone, Menu, MessageSquare, NotebookPen, Settings, ShieldAlert, ShieldCheck, Sparkles, Users, FileText, PartyPopper, UserPlus } from "lucide-react";
 import type { EduverseRole } from "@/lib/eduverse-roles";
 import { supabase } from "@/integrations/supabase/client";
 import { GlobalCommandPalette } from "@/components/global/GlobalCommandPalette";
