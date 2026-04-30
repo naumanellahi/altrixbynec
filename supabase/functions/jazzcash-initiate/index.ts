@@ -36,8 +36,11 @@ Deno.serve(async (req) => {
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: claims } = await supabase.auth.getClaims(authHeader.replace("Bearer ", ""));
-    if (!claims?.claims) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const { data: userData, error: userErr } = await supabase.auth.getUser();
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized: " + (userErr?.message || "no user") }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const userId = userData.user.id;
 
     const body = await req.json();
     const invoiceId = String(body?.invoice_id || "");
@@ -79,7 +82,7 @@ Deno.serve(async (req) => {
     await supabase.from("jazzcash_transactions").insert({
       school_id: inv.school_id, invoice_id: inv.id, student_id: inv.student_id,
       amount: due, txn_ref_no: txnRef, status: "pending",
-      initiator_user_id: claims.claims.sub, raw_request: fields,
+      initiator_user_id: userId, raw_request: fields,
     });
 
     const targetUrl = settings.environment === "production" ? PROD_URL : SANDBOX_URL;
