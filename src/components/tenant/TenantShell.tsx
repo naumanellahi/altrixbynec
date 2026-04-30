@@ -25,9 +25,9 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
   const navigate = useNavigate();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { user } = useSession();
-  const isPrincipal = role === "principal";
-  const canAccessFees = isPrincipal || ["vice_principal", "accountant", "super_admin", "school_owner"].includes(role);
-  const canAccessAdmissions = isPrincipal || ["vice_principal", "academic_coordinator", "hr_manager", "teacher", "super_admin", "school_owner"].includes(role);
+  const isParentOrStudent = role === "parent" || role === "student";
+  const canAccessFees = !isParentOrStudent;
+  const canAccessAdmissions = !isParentOrStudent;
   
   // Use optimized tenant hook that caches and applies branding automatically
   const tenant = useTenantOptimized(schoolSlug);
