@@ -35,7 +35,7 @@ export default function FeesAdvancedModule() {
   const tenant = useTenantOptimized(schoolSlug);
   const schoolId = tenant.status === "ready" ? tenant.schoolId : null;
   const perms = useSchoolPermissions(schoolId);
-  const canManage = !perms.loading && (perms.isPrincipal || perms.isOwner || perms.isSuperAdmin || (perms as any).isAccountant);
+  const canManage = !perms.loading && perms.canManageFinance;
 
   const [tab, setTab] = useState("plans");
 
