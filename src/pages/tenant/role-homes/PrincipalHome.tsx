@@ -241,6 +241,12 @@ export function PrincipalHome() {
         <TabsTrigger value="parent-notes" className="flex-1 px-2 py-2 text-xs sm:px-4 sm:text-sm">
           Parent Notes
         </TabsTrigger>
+        <TabsTrigger value="fees" className="flex-1 px-2 py-2 text-xs sm:px-4 sm:text-sm">
+          Fees
+        </TabsTrigger>
+        <TabsTrigger value="admissions" className="flex-1 px-2 py-2 text-xs sm:px-4 sm:text-sm">
+          Admissions
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="overview" className="space-y-4 lg:space-y-6">
