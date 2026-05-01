@@ -289,11 +289,44 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
 
       <Card>
         <CardHeader><CardTitle>Invoices</CardTitle></CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input value={invSearch} onChange={e => setInvSearch(e.target.value)} placeholder="Search invoice # or period…" className="pl-8 pr-8" />
+              {invSearch && (
+                <button type="button" onClick={() => setInvSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <Select value={invStatus} onValueChange={setInvStatus}>
+              <SelectTrigger className="w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all">All statuses</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="partial">Partial</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
+                <SelectItem value="overdue">Overdue</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-1">
+              <Label className="text-xs text-muted-foreground">From</Label>
+              <Input type="date" className="w-[150px]" value={invFromDate} onChange={e => setInvFromDate(e.target.value)} />
+              <Label className="text-xs text-muted-foreground">to</Label>
+              <Input type="date" className="w-[150px]" value={invToDate} onChange={e => setInvToDate(e.target.value)} />
+            </div>
+            {(invSearch || invStatus !== "__all" || invFromDate || invToDate) && (
+              <Button size="sm" variant="ghost" onClick={() => { setInvSearch(""); setInvStatus("__all"); setInvFromDate(""); setInvToDate(""); }}>
+                <X className="h-3 w-3 mr-1" /> Clear
+              </Button>
+            )}
+          </div>
           {loading ? (
             <p className="text-muted-foreground">Loading…</p>
-          ) : invoices.length === 0 ? (
-            <p className="text-muted-foreground">No invoices found.</p>
+          ) : filteredInvoices.length === 0 ? (
+            <p className="text-muted-foreground">{invoices.length === 0 ? "No invoices found." : "No invoices match your search."}</p>
           ) : (
             <Table>
               <TableHeader><TableRow>
@@ -302,7 +335,7 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
                 <TableHead>Status</TableHead><TableHead></TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {invoices.map(inv => {
+                {filteredInvoices.map(inv => {
                   const due = Math.max(Number(inv.total_amount) - Number(inv.paid_amount), 0);
                   return (
                     <TableRow key={inv.id}>
