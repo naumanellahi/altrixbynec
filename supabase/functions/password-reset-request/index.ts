@@ -26,6 +26,17 @@ const hashEmail = async (email: string) => {
   return toHex(await crypto.subtle.digest("SHA-256", data));
 };
 
+const findUserByEmail = async (admin: ReturnType<typeof createClient>, email: string) => {
+  for (let page = 1; page <= 20; page += 1) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error) throw error;
+    const user = data.users.find((u) => (u.email ?? "").toLowerCase() === email);
+    if (user) return user;
+    if (data.users.length < 1000) return null;
+  }
+  return null;
+};
+
 const safeRedirect = (raw: unknown, origin: string) => {
   const fallback = `${origin}/reset-password`;
   if (typeof raw !== "string" || !raw.startsWith(origin)) return fallback;
@@ -49,6 +60,11 @@ serve(async (req) => {
     const admin = createClient(supabaseUrl, serviceRole, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
+
+    const authUser = await findUserByEmail(admin, email);
+    if (!authUser) {
+      return json({ ok: false, code: "account_not_found", error: "No active account was found for this email. Please check the spelling or contact your school administrator." });
+    }
 
     const emailHash = await hashEmail(email);
     const since = new Date(Date.now() - WINDOW_HOURS * 60 * 60 * 1000).toISOString();
