@@ -228,13 +228,48 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
         <p className="text-muted-foreground">View fee invoices and payment status for {child.first_name || "your child"}</p>
       </div>
 
-      {totalOutstanding > 0 && (
-        <Card className="border-destructive/50 bg-destructive/5">
-          <CardContent className="pt-6">
-            <p className="text-sm text-destructive"><strong>Outstanding Balance:</strong> PKR {totalOutstanding.toLocaleString()}</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Card className={totalOutstanding > 0 ? "border-destructive/40 bg-destructive/5" : ""}>
+          <CardContent className="pt-5">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <AlertCircle className="h-4 w-4" /><span className="uppercase tracking-wide">Outstanding</span>
+            </div>
+            <p className="mt-2 text-xl font-semibold">PKR {totalOutstanding.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{overdueCount} overdue</p>
           </CardContent>
         </Card>
-      )}
+        <Card>
+          <CardContent className="pt-5">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Wallet className="h-4 w-4" /><span className="uppercase tracking-wide">Total Paid</span>
+            </div>
+            <p className="mt-2 text-xl font-semibold">PKR {totalPaid.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">of PKR {totalBilled.toLocaleString()} billed</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-5">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Clock className="h-4 w-4" /><span className="uppercase tracking-wide">Next Due</span>
+            </div>
+            <p className="mt-2 text-xl font-semibold">
+              {nextDue ? format(new Date(nextDue.due_date), "MMM d") : "—"}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {nextDue ? `PKR ${Math.max(Number(nextDue.total_amount) - Number(nextDue.paid_amount), 0).toLocaleString()}` : "Nothing pending"}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-5">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <History className="h-4 w-4" /><span className="uppercase tracking-wide">Online Paid</span>
+            </div>
+            <p className="mt-2 text-xl font-semibold">PKR {successPaymentsTotal.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{txns.filter(t => t.status === "success").length} successful txns</p>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card>
         <CardHeader><CardTitle>Invoices</CardTitle></CardHeader>
