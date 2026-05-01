@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   getResetCooldownRemaining,
+  rememberResetEmail,
   requestPasswordResetLink,
   startResetCooldown,
 } from "@/lib/password-reset";
@@ -115,6 +116,7 @@ const TenantAuth = () => {
       const result = await requestPasswordResetLink(parsedEmail.data, returnTo);
       if (!result.ok) return setMessage(result.error || "Unable to send reset link. Please try again shortly.");
       const seconds = result.cooldownSeconds || 60;
+      rememberResetEmail(parsedEmail.data);
       startResetCooldown(parsedEmail.data, seconds);
       setResetCooldown(seconds);
       const remaining = typeof result.remainingRequests === "number" ? ` You have ${result.remainingRequests} reset request${result.remainingRequests === 1 ? "" : "s"} left today.` : "";
