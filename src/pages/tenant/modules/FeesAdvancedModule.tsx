@@ -597,10 +597,44 @@ export default function FeesAdvancedModule() {
         <TabsContent value="payments" className="space-y-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Payments ({payments.length})</CardTitle>
+              <CardTitle>Payments ({filteredPayments.length})</CardTitle>
               <Button onClick={() => setPayOpen(true)}><Plus className="h-4 w-4 mr-1" />Record Payment</Button>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative flex-1 min-w-[220px]">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input value={paySearch} onChange={e => setPaySearch(e.target.value)} placeholder="Search student, invoice #, reference…" className="pl-8 pr-8" />
+                  {paySearch && (
+                    <button type="button" onClick={() => setPaySearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                <Select value={payMethod} onValueChange={setPayMethod}>
+                  <SelectTrigger className="w-[160px]"><SelectValue placeholder="Method" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all">All methods</SelectItem>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="bank">Bank</SelectItem>
+                    <SelectItem value="jazzcash">JazzCash</SelectItem>
+                    <SelectItem value="card">Card</SelectItem>
+                    <SelectItem value="cheque">Cheque</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs text-muted-foreground">From</Label>
+                  <Input type="date" className="w-[150px]" value={payFromDate} onChange={e => setPayFromDate(e.target.value)} />
+                  <Label className="text-xs text-muted-foreground">to</Label>
+                  <Input type="date" className="w-[150px]" value={payToDate} onChange={e => setPayToDate(e.target.value)} />
+                </div>
+                {(paySearch || payMethod !== "__all" || payFromDate || payToDate) && (
+                  <Button size="sm" variant="ghost" onClick={() => { setPaySearch(""); setPayMethod("__all"); setPayFromDate(""); setPayToDate(""); }}>
+                    <X className="h-3 w-3 mr-1" /> Clear
+                  </Button>
+                )}
+              </div>
               <Table>
                 <TableHeader><TableRow>
                   <TableHead>Date</TableHead><TableHead>Student</TableHead><TableHead>Invoice</TableHead>
@@ -608,7 +642,7 @@ export default function FeesAdvancedModule() {
                   <TableHead>Reference</TableHead><TableHead>Status</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
-                  {payments.slice(0, 200).map(p => (
+                  {filteredPayments.slice(0, 200).map(p => (
                     <TableRow key={p.id}>
                       <TableCell>{format(new Date(p.paid_at), "MMM d, yyyy")}</TableCell>
                       <TableCell>{studentName(p.student_id)}</TableCell>
