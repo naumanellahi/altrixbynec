@@ -193,14 +193,16 @@ const TenantAuth = () => {
                     <Button type="submit" variant="hero" size="xl" className="w-full" disabled={busy}>
                       Sign in
                     </Button>
-                    <button
-                      type="button"
-                      onClick={() => { if (!busy) void doForgotPassword(); }}
-                      className="text-xs text-primary hover:underline w-full text-center"
-                      disabled={busy}
-                    >
-                      Forgot password?
-                    </button>
+                    <div className="pt-1 text-center">
+                      <button
+                        type="button"
+                        onClick={() => { if (!busy) void doForgotPassword(); }}
+                        className="text-sm font-medium text-primary hover:underline underline-offset-4"
+                        disabled={busy}
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
                   </form>
                 </TabsContent>
 
