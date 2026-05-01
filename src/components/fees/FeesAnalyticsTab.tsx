@@ -530,7 +530,8 @@ export function FeesAnalyticsTab({ schoolId, currency, invoices, payments, stude
                 })}
               </TableBody>
             </Table>
-          )}
+            );
+          })()}
         </CardContent>
       </Card>
 
