@@ -62,15 +62,24 @@ export default function FeesAdvancedModule() {
   // assignments
   const [assignments, setAssignments] = useState<StudentAssignment[]>([]);
   const [assignFilterClass, setAssignFilterClass] = useState<string>("__all");
+  const [assignSearch, setAssignSearch] = useState("");
 
   // invoices
   const [invoices, setInvoices] = useState<FeeInvoice[]>([]);
   const [invFilterStatus, setInvFilterStatus] = useState<string>("__all");
+  const [invFilterClass, setInvFilterClass] = useState<string>("__all");
+  const [invSearch, setInvSearch] = useState("");
+  const [invFromDate, setInvFromDate] = useState("");
+  const [invToDate, setInvToDate] = useState("");
   const [generateOpen, setGenerateOpen] = useState(false);
   const [genForm, setGenForm] = useState({ class_id: "", fee_plan_id: "", period_label: format(new Date(), "MMMM yyyy"), due_date: format(new Date(Date.now() + 15 * 86400000), "yyyy-MM-dd") });
 
   // payments
   const [payments, setPayments] = useState<FeePayment[]>([]);
+  const [paySearch, setPaySearch] = useState("");
+  const [payMethod, setPayMethod] = useState("__all");
+  const [payFromDate, setPayFromDate] = useState("");
+  const [payToDate, setPayToDate] = useState("");
   const [payOpen, setPayOpen] = useState(false);
   const [payForm, setPayForm] = useState({ invoice_id: "", amount: "", method: "cash", transaction_ref: "", notes: "" });
 
