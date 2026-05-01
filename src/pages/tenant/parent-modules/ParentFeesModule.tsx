@@ -1,12 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { ChildInfo } from "@/hooks/useMyChildren";
 import { format } from "date-fns";
-import { CheckCircle2, CreditCard, Loader2, XCircle, Clock, RefreshCw, Download, Receipt, Printer, Wallet, AlertCircle, History } from "lucide-react";
+import { CheckCircle2, CreditCard, Loader2, XCircle, Clock, RefreshCw, Download, Receipt, Printer, Wallet, AlertCircle, History, Search, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
