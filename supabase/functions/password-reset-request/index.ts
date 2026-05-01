@@ -44,7 +44,7 @@ serve(async (req) => {
     const origin = req.headers.get("origin") ?? new URL(req.url).origin;
     const redirectTo = safeRedirect(body.redirectTo, origin);
 
-    if (!isEmail(email)) return json({ ok: false, code: "invalid_email", error: "Please enter a valid email address." }, 400);
+    if (!isEmail(email)) return json({ ok: false, code: "invalid_email", error: "Please enter a valid email address." });
 
     const admin = createClient(supabaseUrl, serviceRole, {
       auth: { persistSession: false, autoRefreshToken: false },
@@ -59,7 +59,7 @@ serve(async (req) => {
       .eq("email_hash", emailHash)
       .gte("requested_at", since);
 
-    if (countErr) return json({ ok: false, code: "rate_check_failed", error: "We could not check reset limits. Please try again shortly." }, 500);
+    if (countErr) return json({ ok: false, code: "rate_check_failed", error: "We could not check reset limits. Please try again shortly." });
 
     if ((count ?? 0) >= MAX_REQUESTS) {
       return json(
@@ -67,8 +67,7 @@ serve(async (req) => {
           ok: false,
           code: "limit_reached",
           error: "For security, only 3 reset links can be sent in 24 hours. Please try again later or contact your school administrator.",
-        },
-        429,
+        }
       );
     }
 
@@ -76,7 +75,7 @@ serve(async (req) => {
     if (resetErr) {
       const message = resetErr.message || "Unable to send reset email.";
       const status = /rate|too many/i.test(message) ? 429 : 400;
-      return json({ ok: false, code: status === 429 ? "provider_rate_limited" : "send_failed", error: message }, status);
+      return json({ ok: false, code: status === 429 ? "provider_rate_limited" : "send_failed", error: message });
     }
 
     await admin.from("password_reset_rate_limits").insert({ email_hash: emailHash });
