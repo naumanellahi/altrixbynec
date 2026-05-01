@@ -93,8 +93,10 @@ const TenantAuth = () => {
     if (!parsedEmail.success) return setMessage("Enter your email above, then click 'Forgot password?' again.");
     setBusy(true);
     try {
+      const returnTo = `${window.location.pathname}${window.location.search}`;
+      const redirectTo = `${window.location.origin}/reset-password?returnTo=${encodeURIComponent(returnTo)}`;
       const { error } = await supabase.auth.resetPasswordForEmail(parsedEmail.data, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo,
       });
       if (error) return setMessage(error.message);
       setMessage(`We sent a password reset link to ${parsedEmail.data}. Check your inbox (and spam folder).`);
@@ -191,14 +193,16 @@ const TenantAuth = () => {
                     <Button type="submit" variant="hero" size="xl" className="w-full" disabled={busy}>
                       Sign in
                     </Button>
-                    <button
-                      type="button"
-                      onClick={() => { if (!busy) void doForgotPassword(); }}
-                      className="text-xs text-primary hover:underline w-full text-center"
-                      disabled={busy}
-                    >
-                      Forgot password?
-                    </button>
+                    <div className="pt-1 text-center">
+                      <button
+                        type="button"
+                        onClick={() => { if (!busy) void doForgotPassword(); }}
+                        className="text-sm font-medium text-primary hover:underline underline-offset-4"
+                        disabled={busy}
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
                   </form>
                 </TabsContent>
 
