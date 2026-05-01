@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Plus, Trash2, Receipt, Settings as SettingsIcon, Wallet, FileText, Users as UsersIcon, CreditCard, Send, BarChart3 } from "lucide-react";
+import { Plus, Trash2, Receipt, Settings as SettingsIcon, Wallet, FileText, Users as UsersIcon, CreditCard, Send, BarChart3, Search, X } from "lucide-react";
 import { FeesAnalyticsTab } from "@/components/fees/FeesAnalyticsTab";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenantOptimized } from "@/hooks/useTenantOptimized";
@@ -62,15 +62,24 @@ export default function FeesAdvancedModule() {
   // assignments
   const [assignments, setAssignments] = useState<StudentAssignment[]>([]);
   const [assignFilterClass, setAssignFilterClass] = useState<string>("__all");
+  const [assignSearch, setAssignSearch] = useState("");
 
   // invoices
   const [invoices, setInvoices] = useState<FeeInvoice[]>([]);
   const [invFilterStatus, setInvFilterStatus] = useState<string>("__all");
+  const [invFilterClass, setInvFilterClass] = useState<string>("__all");
+  const [invSearch, setInvSearch] = useState("");
+  const [invFromDate, setInvFromDate] = useState("");
+  const [invToDate, setInvToDate] = useState("");
   const [generateOpen, setGenerateOpen] = useState(false);
   const [genForm, setGenForm] = useState({ class_id: "", fee_plan_id: "", period_label: format(new Date(), "MMMM yyyy"), due_date: format(new Date(Date.now() + 15 * 86400000), "yyyy-MM-dd") });
 
   // payments
   const [payments, setPayments] = useState<FeePayment[]>([]);
+  const [paySearch, setPaySearch] = useState("");
+  const [payMethod, setPayMethod] = useState("__all");
+  const [payFromDate, setPayFromDate] = useState("");
+  const [payToDate, setPayToDate] = useState("");
   const [payOpen, setPayOpen] = useState(false);
   const [payForm, setPayForm] = useState({ invoice_id: "", amount: "", method: "cash", transaction_ref: "", notes: "" });
 
@@ -180,10 +189,15 @@ export default function FeesAdvancedModule() {
 
   // ---------- ASSIGNMENTS ----------
   const studentsForFilter = useMemo(() => {
-    if (assignFilterClass === "__all") return students;
-    const sectionIds = sections.filter(s => s.class_id === assignFilterClass).map(s => s.id);
-    return students.filter(s => sectionIds.includes((s as any).class_section_id));
-  }, [students, sections, assignFilterClass]);
+    const q = assignSearch.trim().toLowerCase();
+    let list = students;
+    if (assignFilterClass !== "__all") {
+      const sectionIds = sections.filter(s => s.class_id === assignFilterClass).map(s => s.id);
+      list = list.filter(s => sectionIds.includes((s as any).class_section_id));
+    }
+    if (q) list = list.filter(s => `${s.first_name} ${s.last_name || ""}`.toLowerCase().includes(q) || (s.parent_email || "").toLowerCase().includes(q) || (s.parent_phone || "").toLowerCase().includes(q));
+    return list;
+  }, [students, sections, assignFilterClass, assignSearch]);
 
   const setStudentAssignment = async (studentId: string, planId: string | null, opts?: { discount_pct?: number; scholarship_amount?: number }) => {
     if (!schoolId) return;
@@ -233,9 +247,45 @@ export default function FeesAdvancedModule() {
     setInvoices((data as FeeInvoice[]) || []);
   };
 
+  const sectionToClass = useMemo(() => Object.fromEntries(sections.map(s => [s.id, s.class_id])), [sections]);
   const filteredInvoices = useMemo(() => {
-    return invFilterStatus === "__all" ? invoices : invoices.filter(i => i.status === invFilterStatus);
-  }, [invoices, invFilterStatus]);
+    const q = invSearch.trim().toLowerCase();
+    return invoices.filter(i => {
+      if (invFilterStatus !== "__all" && i.status !== invFilterStatus) return false;
+      if (invFilterClass !== "__all") {
+        const st = studentsById[i.student_id];
+        const cid = st ? sectionToClass[(st as any).class_section_id] : null;
+        if (cid !== invFilterClass) return false;
+      }
+      if (invFromDate && i.due_date < invFromDate) return false;
+      if (invToDate && i.due_date > invToDate) return false;
+      if (q) {
+        const st = studentsById[i.student_id];
+        const name = st ? `${st.first_name} ${st.last_name || ""}`.toLowerCase() : "";
+        const hay = `${i.invoice_number} ${name} ${i.period_label || ""} ${i.status}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [invoices, invFilterStatus, invFilterClass, invSearch, invFromDate, invToDate, studentsById, sectionToClass]);
+
+  const filteredPayments = useMemo(() => {
+    const q = paySearch.trim().toLowerCase();
+    return payments.filter(p => {
+      if (payMethod !== "__all" && p.method !== payMethod) return false;
+      const day = (p.paid_at || "").slice(0, 10);
+      if (payFromDate && day < payFromDate) return false;
+      if (payToDate && day > payToDate) return false;
+      if (q) {
+        const st = studentsById[p.student_id];
+        const name = st ? `${st.first_name} ${st.last_name || ""}`.toLowerCase() : "";
+        const inv = invoices.find(i => i.id === p.invoice_id);
+        const hay = `${name} ${inv?.invoice_number || ""} ${p.transaction_ref || ""} ${p.method} ${p.status}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [payments, paySearch, payMethod, payFromDate, payToDate, studentsById, invoices]);
 
   // ---------- PAYMENTS ----------
   const recordPayment = async () => {
@@ -384,12 +434,20 @@ export default function FeesAdvancedModule() {
           <Card>
             <CardHeader><CardTitle>Per-Student Plan Assignments & Overrides</CardTitle></CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Label>Filter by class:</Label>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative flex-1 min-w-[220px]">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input value={assignSearch} onChange={e => setAssignSearch(e.target.value)} placeholder="Search students by name, parent email/phone…" className="pl-8 pr-8" />
+                  {assignSearch && (
+                    <button type="button" onClick={() => setAssignSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
                 <Select value={assignFilterClass} onValueChange={setAssignFilterClass}>
-                  <SelectTrigger className="w-[260px]"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-[220px]"><SelectValue placeholder="Filter by class" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__all">All students</SelectItem>
+                    <SelectItem value="__all">All classes</SelectItem>
                     {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -474,7 +532,36 @@ export default function FeesAdvancedModule() {
                 </Dialog>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative flex-1 min-w-[220px]">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input value={invSearch} onChange={e => setInvSearch(e.target.value)} placeholder="Search invoice #, student, period…" className="pl-8 pr-8" />
+                  {invSearch && (
+                    <button type="button" onClick={() => setInvSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                <Select value={invFilterClass} onValueChange={setInvFilterClass}>
+                  <SelectTrigger className="w-[180px]"><SelectValue placeholder="Class" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all">All classes</SelectItem>
+                    {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs text-muted-foreground">Due from</Label>
+                  <Input type="date" className="w-[150px]" value={invFromDate} onChange={e => setInvFromDate(e.target.value)} />
+                  <Label className="text-xs text-muted-foreground">to</Label>
+                  <Input type="date" className="w-[150px]" value={invToDate} onChange={e => setInvToDate(e.target.value)} />
+                </div>
+                {(invSearch || invFilterClass !== "__all" || invFromDate || invToDate || invFilterStatus !== "__all") && (
+                  <Button size="sm" variant="ghost" onClick={() => { setInvSearch(""); setInvFilterClass("__all"); setInvFromDate(""); setInvToDate(""); setInvFilterStatus("__all"); }}>
+                    <X className="h-3 w-3 mr-1" /> Clear
+                  </Button>
+                )}
+              </div>
               <Table>
                 <TableHeader><TableRow>
                   <TableHead>Invoice #</TableHead><TableHead>Student</TableHead><TableHead>Period</TableHead>
@@ -510,10 +597,44 @@ export default function FeesAdvancedModule() {
         <TabsContent value="payments" className="space-y-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Payments ({payments.length})</CardTitle>
+              <CardTitle>Payments ({filteredPayments.length})</CardTitle>
               <Button onClick={() => setPayOpen(true)}><Plus className="h-4 w-4 mr-1" />Record Payment</Button>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative flex-1 min-w-[220px]">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input value={paySearch} onChange={e => setPaySearch(e.target.value)} placeholder="Search student, invoice #, reference…" className="pl-8 pr-8" />
+                  {paySearch && (
+                    <button type="button" onClick={() => setPaySearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                <Select value={payMethod} onValueChange={setPayMethod}>
+                  <SelectTrigger className="w-[160px]"><SelectValue placeholder="Method" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all">All methods</SelectItem>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="bank">Bank</SelectItem>
+                    <SelectItem value="jazzcash">JazzCash</SelectItem>
+                    <SelectItem value="card">Card</SelectItem>
+                    <SelectItem value="cheque">Cheque</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs text-muted-foreground">From</Label>
+                  <Input type="date" className="w-[150px]" value={payFromDate} onChange={e => setPayFromDate(e.target.value)} />
+                  <Label className="text-xs text-muted-foreground">to</Label>
+                  <Input type="date" className="w-[150px]" value={payToDate} onChange={e => setPayToDate(e.target.value)} />
+                </div>
+                {(paySearch || payMethod !== "__all" || payFromDate || payToDate) && (
+                  <Button size="sm" variant="ghost" onClick={() => { setPaySearch(""); setPayMethod("__all"); setPayFromDate(""); setPayToDate(""); }}>
+                    <X className="h-3 w-3 mr-1" /> Clear
+                  </Button>
+                )}
+              </div>
               <Table>
                 <TableHeader><TableRow>
                   <TableHead>Date</TableHead><TableHead>Student</TableHead><TableHead>Invoice</TableHead>
@@ -521,7 +642,7 @@ export default function FeesAdvancedModule() {
                   <TableHead>Reference</TableHead><TableHead>Status</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
-                  {payments.slice(0, 200).map(p => (
+                  {filteredPayments.slice(0, 200).map(p => (
                     <TableRow key={p.id}>
                       <TableCell>{format(new Date(p.paid_at), "MMM d, yyyy")}</TableCell>
                       <TableCell>{studentName(p.student_id)}</TableCell>

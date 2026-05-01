@@ -1,12 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { ChildInfo } from "@/hooks/useMyChildren";
 import { format } from "date-fns";
-import { CheckCircle2, CreditCard, Loader2, XCircle, Clock, RefreshCw, Download, Receipt, Printer, Wallet, AlertCircle, History } from "lucide-react";
+import { CheckCircle2, CreditCard, Loader2, XCircle, Clock, RefreshCw, Download, Receipt, Printer, Wallet, AlertCircle, History, Search, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
@@ -87,6 +90,10 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
   const [paying, setPaying] = useState<string | null>(null);
   const [txns, setTxns] = useState<JcTxn[]>([]);
   const [receiptTxn, setReceiptTxn] = useState<JcTxn | null>(null);
+  const [invSearch, setInvSearch] = useState("");
+  const [invStatus, setInvStatus] = useState("__all");
+  const [invFromDate, setInvFromDate] = useState("");
+  const [invToDate, setInvToDate] = useState("");
 
   const printChallan = (inv: InvoiceRecord) => {
     const due = Math.max(Number(inv.total_amount) - Number(inv.paid_amount), 0);
@@ -216,6 +223,20 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
   };
   const txnBadgeVariant = (status: string): any => status === "success" ? "default" : status === "failed" ? "destructive" : "secondary";
 
+  const filteredInvoices = useMemo(() => {
+    const q = invSearch.trim().toLowerCase();
+    return invoices.filter(i => {
+      if (invStatus !== "__all" && i.status !== invStatus) return false;
+      if (invFromDate && i.due_date < invFromDate) return false;
+      if (invToDate && i.due_date > invToDate) return false;
+      if (q) {
+        const hay = `${i.invoice_number} ${i.period_label || ""} ${i.status}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [invoices, invSearch, invStatus, invFromDate, invToDate]);
+
   return (
     <div className="space-y-6">
       <div>
@@ -268,11 +289,44 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
 
       <Card>
         <CardHeader><CardTitle>Invoices</CardTitle></CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input value={invSearch} onChange={e => setInvSearch(e.target.value)} placeholder="Search invoice # or period…" className="pl-8 pr-8" />
+              {invSearch && (
+                <button type="button" onClick={() => setInvSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <Select value={invStatus} onValueChange={setInvStatus}>
+              <SelectTrigger className="w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all">All statuses</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="partial">Partial</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
+                <SelectItem value="overdue">Overdue</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-1">
+              <Label className="text-xs text-muted-foreground">From</Label>
+              <Input type="date" className="w-[150px]" value={invFromDate} onChange={e => setInvFromDate(e.target.value)} />
+              <Label className="text-xs text-muted-foreground">to</Label>
+              <Input type="date" className="w-[150px]" value={invToDate} onChange={e => setInvToDate(e.target.value)} />
+            </div>
+            {(invSearch || invStatus !== "__all" || invFromDate || invToDate) && (
+              <Button size="sm" variant="ghost" onClick={() => { setInvSearch(""); setInvStatus("__all"); setInvFromDate(""); setInvToDate(""); }}>
+                <X className="h-3 w-3 mr-1" /> Clear
+              </Button>
+            )}
+          </div>
           {loading ? (
             <p className="text-muted-foreground">Loading…</p>
-          ) : invoices.length === 0 ? (
-            <p className="text-muted-foreground">No invoices found.</p>
+          ) : filteredInvoices.length === 0 ? (
+            <p className="text-muted-foreground">{invoices.length === 0 ? "No invoices found." : "No invoices match your search."}</p>
           ) : (
             <Table>
               <TableHeader><TableRow>
@@ -281,7 +335,7 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
                 <TableHead>Status</TableHead><TableHead></TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {invoices.map(inv => {
+                {filteredInvoices.map(inv => {
                   const due = Math.max(Number(inv.total_amount) - Number(inv.paid_amount), 0);
                   return (
                     <TableRow key={inv.id}>

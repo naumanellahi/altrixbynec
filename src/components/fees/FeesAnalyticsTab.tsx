@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import {
   TrendingUp, AlertTriangle, Wallet, FileDown, Printer, Send, Percent,
-  CalendarClock, RefreshCw, DollarSign, Users
+  CalendarClock, RefreshCw, DollarSign, Users, Search, X
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, subDays, startOfMonth } from "date-fns";
@@ -81,6 +81,7 @@ export function FeesAnalyticsTab({ schoolId, currency, invoices, payments, stude
   const [lateInv, setLateInv] = useState<Invoice | null>(null);
   const [lateAmount, setLateAmount] = useState("");
   const [reminderBusy, setReminderBusy] = useState(false);
+  const [defSearch, setDefSearch] = useState("");
 
   const studentsById = useMemo(
     () => Object.fromEntries(students.map(s => [s.id, s])),
@@ -462,10 +463,28 @@ export function FeesAnalyticsTab({ schoolId, currency, invoices, payments, stude
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          {defaulters.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No overdue balances. 🎉</p>
-          ) : (
+        <CardContent className="space-y-3">
+          <div className="relative max-w-md">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input value={defSearch} onChange={e => setDefSearch(e.target.value)} placeholder="Search defaulter by name, phone, email…" className="pl-8 pr-8" />
+            {defSearch && (
+              <button type="button" onClick={() => setDefSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          {(() => {
+            const q = defSearch.trim().toLowerCase();
+            const filtered = q
+              ? defaulters.filter(d => {
+                  const s = studentsById[d.student_id];
+                  const hay = `${sName(d.student_id)} ${s?.parent_phone || ""} ${s?.parent_email || ""}`.toLowerCase();
+                  return hay.includes(q);
+                })
+              : defaulters;
+            if (defaulters.length === 0) return <p className="text-sm text-muted-foreground">No overdue balances. 🎉</p>;
+            if (filtered.length === 0) return <p className="text-sm text-muted-foreground">No defaulters match your search.</p>;
+            return (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -478,7 +497,7 @@ export function FeesAnalyticsTab({ schoolId, currency, invoices, payments, stude
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {defaulters.slice(0, 50).map(d => {
+                {filtered.slice(0, 50).map(d => {
                   const s = studentsById[d.student_id];
                   const oldest = invoices
                     .filter(i => i.student_id === d.student_id && i.status === "overdue")
@@ -511,7 +530,8 @@ export function FeesAnalyticsTab({ schoolId, currency, invoices, payments, stude
                 })}
               </TableBody>
             </Table>
-          )}
+            );
+          })()}
         </CardContent>
       </Card>
 
