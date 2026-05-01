@@ -184,6 +184,28 @@ const TenantAuth = () => {
                 />
               </div>
 
+              <div className="rounded-xl border border-primary/30 bg-primary/10 p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
+                    <KeyRound className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-foreground">Forget password?</p>
+                    <p className="text-xs text-muted-foreground">Enter your account email above and get a secure reset link.</p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="hero"
+                  size="xl"
+                  className="w-full"
+                  onClick={() => { if (!busy && resetCooldown <= 0) void doForgotPassword(); }}
+                  disabled={busy || resetCooldown > 0}
+                >
+                  {resetCooldown > 0 ? `Send reset link again in ${resetCooldown}s` : "Send password reset link"}
+                </Button>
+              </div>
+
               <Tabs defaultValue="password">
                 <TabsList className="w-full">
                   <TabsTrigger value="password" className="flex-1">
@@ -234,16 +256,6 @@ const TenantAuth = () => {
                   </form>
                 </TabsContent>
               </Tabs>
-
-              <Button
-                type="button"
-                variant="soft"
-                className="w-full border border-primary/30 text-primary hover:bg-primary/10"
-                onClick={() => { if (!busy && resetCooldown <= 0) void doForgotPassword(); }}
-                disabled={busy || resetCooldown > 0}
-              >
-                {resetCooldown > 0 ? `Forgot password? Try again in ${resetCooldown}s` : "Forgot password? Send reset link"}
-              </Button>
 
               {message && <div className="rounded-xl bg-accent p-3 text-sm text-accent-foreground">{message}</div>}
 
