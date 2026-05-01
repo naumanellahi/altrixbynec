@@ -247,9 +247,45 @@ export default function FeesAdvancedModule() {
     setInvoices((data as FeeInvoice[]) || []);
   };
 
+  const sectionToClass = useMemo(() => Object.fromEntries(sections.map(s => [s.id, s.class_id])), [sections]);
   const filteredInvoices = useMemo(() => {
-    return invFilterStatus === "__all" ? invoices : invoices.filter(i => i.status === invFilterStatus);
-  }, [invoices, invFilterStatus]);
+    const q = invSearch.trim().toLowerCase();
+    return invoices.filter(i => {
+      if (invFilterStatus !== "__all" && i.status !== invFilterStatus) return false;
+      if (invFilterClass !== "__all") {
+        const st = studentsById[i.student_id];
+        const cid = st ? sectionToClass[(st as any).class_section_id] : null;
+        if (cid !== invFilterClass) return false;
+      }
+      if (invFromDate && i.due_date < invFromDate) return false;
+      if (invToDate && i.due_date > invToDate) return false;
+      if (q) {
+        const st = studentsById[i.student_id];
+        const name = st ? `${st.first_name} ${st.last_name || ""}`.toLowerCase() : "";
+        const hay = `${i.invoice_number} ${name} ${i.period_label || ""} ${i.status}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [invoices, invFilterStatus, invFilterClass, invSearch, invFromDate, invToDate, studentsById, sectionToClass]);
+
+  const filteredPayments = useMemo(() => {
+    const q = paySearch.trim().toLowerCase();
+    return payments.filter(p => {
+      if (payMethod !== "__all" && p.method !== payMethod) return false;
+      const day = (p.paid_at || "").slice(0, 10);
+      if (payFromDate && day < payFromDate) return false;
+      if (payToDate && day > payToDate) return false;
+      if (q) {
+        const st = studentsById[p.student_id];
+        const name = st ? `${st.first_name} ${st.last_name || ""}`.toLowerCase() : "";
+        const inv = invoices.find(i => i.id === p.invoice_id);
+        const hay = `${name} ${inv?.invoice_number || ""} ${p.transaction_ref || ""} ${p.method} ${p.status}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [payments, paySearch, payMethod, payFromDate, payToDate, studentsById, invoices]);
 
   // ---------- PAYMENTS ----------
   const recordPayment = async () => {
