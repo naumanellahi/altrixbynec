@@ -23,6 +23,7 @@ import StudentDashboard from "./pages/tenant/StudentDashboard";
 import ParentDashboard from "./pages/tenant/ParentDashboard";
 import TenantBootstrap from "./pages/tenant/TenantBootstrap";
 import OwnerDashboard from "./pages/tenant/OwnerDashboard";
+import ResetPassword from "./pages/ResetPassword";
 import { PoweredByFooter } from "./components/global/PoweredByFooter";
 
 const queryClient = new QueryClient();
@@ -79,6 +80,7 @@ export default function App() {
             <Route path="/auth" element={<PlatformAuth />} />
             <Route path="/auth/update-password" element={<PlatformUpdatePassword />} />
             <Route path="/auth/recover-master" element={<PlatformRecoverMaster />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             {/* Global Super Admin (platform-level) */}
             <Route path="/super_admin" element={<PlatformDashboardPage />} />
             <Route path="/super_admin/directory" element={<PlatformDirectoryPage />} />
