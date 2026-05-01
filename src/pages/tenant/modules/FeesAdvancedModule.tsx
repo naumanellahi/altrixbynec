@@ -434,12 +434,20 @@ export default function FeesAdvancedModule() {
           <Card>
             <CardHeader><CardTitle>Per-Student Plan Assignments & Overrides</CardTitle></CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Label>Filter by class:</Label>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative flex-1 min-w-[220px]">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input value={assignSearch} onChange={e => setAssignSearch(e.target.value)} placeholder="Search students by name, parent email/phone…" className="pl-8 pr-8" />
+                  {assignSearch && (
+                    <button type="button" onClick={() => setAssignSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
                 <Select value={assignFilterClass} onValueChange={setAssignFilterClass}>
-                  <SelectTrigger className="w-[260px]"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-[220px]"><SelectValue placeholder="Filter by class" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__all">All students</SelectItem>
+                    <SelectItem value="__all">All classes</SelectItem>
                     {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
