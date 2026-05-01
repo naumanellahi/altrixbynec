@@ -532,7 +532,36 @@ export default function FeesAdvancedModule() {
                 </Dialog>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative flex-1 min-w-[220px]">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input value={invSearch} onChange={e => setInvSearch(e.target.value)} placeholder="Search invoice #, student, period…" className="pl-8 pr-8" />
+                  {invSearch && (
+                    <button type="button" onClick={() => setInvSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                <Select value={invFilterClass} onValueChange={setInvFilterClass}>
+                  <SelectTrigger className="w-[180px]"><SelectValue placeholder="Class" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all">All classes</SelectItem>
+                    {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs text-muted-foreground">Due from</Label>
+                  <Input type="date" className="w-[150px]" value={invFromDate} onChange={e => setInvFromDate(e.target.value)} />
+                  <Label className="text-xs text-muted-foreground">to</Label>
+                  <Input type="date" className="w-[150px]" value={invToDate} onChange={e => setInvToDate(e.target.value)} />
+                </div>
+                {(invSearch || invFilterClass !== "__all" || invFromDate || invToDate || invFilterStatus !== "__all") && (
+                  <Button size="sm" variant="ghost" onClick={() => { setInvSearch(""); setInvFilterClass("__all"); setInvFromDate(""); setInvToDate(""); setInvFilterStatus("__all"); }}>
+                    <X className="h-3 w-3 mr-1" /> Clear
+                  </Button>
+                )}
+              </div>
               <Table>
                 <TableHeader><TableRow>
                   <TableHead>Invoice #</TableHead><TableHead>Student</TableHead><TableHead>Period</TableHead>
