@@ -162,6 +162,26 @@ export default function PlatformAuth() {
                       Sign in
                     </Button>
                   </form>
+
+                  <div className="pt-2 border-t border-border/60">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <p className="text-sm font-medium text-foreground">Forget password?</p>
+                      <KeyRound className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Enter your admin email above and we'll send a secure reset link.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="default"
+                      className="w-full"
+                      onClick={() => { if (!busy && resetCooldown <= 0) void doResetPassword(); }}
+                      disabled={busy || resetCooldown > 0}
+                    >
+                      {resetCooldown > 0 ? `Send reset link again in ${resetCooldown}s` : "Send password reset link"}
+                    </Button>
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="reset" className="mt-4 space-y-3">
