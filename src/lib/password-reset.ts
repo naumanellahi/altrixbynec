@@ -33,6 +33,13 @@ export const requestPasswordResetLink = async (email: string, returnTo: string) 
 };
 
 const cooldownKey = (email: string) => `password-reset-cooldown:${email.trim().toLowerCase()}`;
+const LAST_RESET_EMAIL_KEY = "password-reset-last-email";
+
+export const rememberResetEmail = (email: string) => {
+  localStorage.setItem(LAST_RESET_EMAIL_KEY, email.trim().toLowerCase());
+};
+
+export const getRememberedResetEmail = () => localStorage.getItem(LAST_RESET_EMAIL_KEY) || "";
 
 export const startResetCooldown = (email: string, seconds = RESET_RESEND_COOLDOWN_SECONDS) => {
   localStorage.setItem(cooldownKey(email), String(Date.now() + seconds * 1000));
