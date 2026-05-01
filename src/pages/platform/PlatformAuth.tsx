@@ -10,6 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  getResetCooldownRemaining,
+  rememberResetEmail,
+  requestPasswordResetLink,
+  startResetCooldown,
+} from "@/lib/password-reset";
 
 const emailSchema = z.string().email();
 const passwordSchema = z.string().min(8);
@@ -23,6 +29,7 @@ export default function PlatformAuth() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [resetCooldown, setResetCooldown] = useState(0);
 
   const title = useMemo(() => "Platform Super Admin", []);
 
@@ -30,6 +37,13 @@ export default function PlatformAuth() {
     if (loading) return;
     if (user) navigate("/super_admin", { replace: true });
   }, [loading, user, navigate]);
+
+  useEffect(() => {
+    const tick = () => setResetCooldown(email.trim() ? getResetCooldownRemaining(email) : 0);
+    tick();
+    const timer = window.setInterval(tick, 1000);
+    return () => window.clearInterval(timer);
+  }, [email]);
 
   const doPasswordLogin = async () => {
     setMessage(null);
@@ -55,13 +69,22 @@ export default function PlatformAuth() {
     setMessage(null);
     const parsedEmail = emailSchema.safeParse(email.trim());
     if (!parsedEmail.success) return setMessage("Please enter your email first.");
+    const cooldown = getResetCooldownRemaining(parsedEmail.data);
+    if (cooldown > 0) {
+      setResetCooldown(cooldown);
+      return setMessage(`Please wait ${cooldown}s before requesting another reset link.`);
+    }
 
     setBusy(true);
     try {
-      const redirectTo = `${window.location.origin}/auth/update-password`;
-      const { error } = await supabase.auth.resetPasswordForEmail(parsedEmail.data, { redirectTo });
-      if (error) return setMessage(error.message);
-      setMessage("Password reset email sent. Open the link to set a new password.");
+      const result = await requestPasswordResetLink(parsedEmail.data, "/auth");
+      if (!result.ok) return setMessage(result.error || "Unable to send reset link. Please try again shortly.");
+      const seconds = result.cooldownSeconds || 60;
+      rememberResetEmail(parsedEmail.data);
+      startResetCooldown(parsedEmail.data, seconds);
+      setResetCooldown(seconds);
+      const remaining = typeof result.remainingRequests === "number" ? ` You have ${result.remainingRequests} reset request${result.remainingRequests === 1 ? "" : "s"} left today.` : "";
+      setMessage(`We sent a password reset link to ${parsedEmail.data}. Check your inbox and spam folder.${remaining}`);
     } finally {
       setBusy(false);
     }
