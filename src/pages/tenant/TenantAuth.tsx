@@ -93,8 +93,10 @@ const TenantAuth = () => {
     if (!parsedEmail.success) return setMessage("Enter your email above, then click 'Forgot password?' again.");
     setBusy(true);
     try {
+      const returnTo = `${window.location.pathname}${window.location.search}`;
+      const redirectTo = `${window.location.origin}/reset-password?returnTo=${encodeURIComponent(returnTo)}`;
       const { error } = await supabase.auth.resetPasswordForEmail(parsedEmail.data, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo,
       });
       if (error) return setMessage(error.message);
       setMessage(`We sent a password reset link to ${parsedEmail.data}. Check your inbox (and spam folder).`);
