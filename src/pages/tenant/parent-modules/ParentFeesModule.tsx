@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { ChildInfo } from "@/hooks/useMyChildren";
 import { format } from "date-fns";
-import { CreditCard, Loader2 } from "lucide-react";
+import { CheckCircle2, CreditCard, Loader2, XCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 interface ParentFeesModuleProps {
@@ -24,44 +24,86 @@ interface InvoiceRecord {
   status: string;
 }
 
+interface JcTxn {
+  id: string;
+  invoice_id: string;
+  txn_ref_no: string;
+  amount: number;
+  status: string;
+  jc_response_message: string | null;
+  created_at: string;
+}
+
+// Map raw errors from jazzcash-initiate / network to user-friendly messages
+function friendlyError(raw: string): string {
+  const msg = (raw || "").toLowerCase();
+  if (msg.includes("not configured")) return "JazzCash is not yet set up by your school. Please contact the school office.";
+  if (msg.includes("already paid")) return "This invoice has already been paid.";
+  if (msg.includes("invoice not found")) return "We couldn't find this invoice. Please refresh and try again.";
+  if (msg.includes("unauthorized")) return "Your session has expired. Please sign in again.";
+  if (msg.includes("invoice_id required")) return "Something went wrong selecting this invoice. Please retry.";
+  if (msg.includes("popup")) return "Your browser blocked the payment window. Please allow popups and try again.";
+  if (msg.includes("failed to fetch") || msg.includes("network")) return "Network problem reaching JazzCash. Check your connection and try again.";
+  if (msg.includes("failed to start")) return "JazzCash didn't respond. Please try again in a moment.";
+  return raw || "Payment couldn't be started. Please try again.";
+}
+
 const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [jcEnabled, setJcEnabled] = useState(false);
   const [paying, setPaying] = useState<string | null>(null);
+  const [txns, setTxns] = useState<JcTxn[]>([]);
 
   useEffect(() => {
     if (!child || !schoolId) return;
     let cancelled = false;
+
+    const loadInvoices = async () => {
+      const { data } = await supabase.from("fee_invoices")
+        .select("id, invoice_number, period_label, due_date, total_amount, paid_amount, status")
+        .eq("school_id", schoolId).eq("student_id", child.student_id)
+        .order("due_date", { ascending: false }).limit(100);
+      if (!cancelled) setInvoices((data as InvoiceRecord[]) || []);
+    };
+    const loadJc = async () => {
+      const { data } = await supabase.from("jazzcash_settings").select("is_enabled").eq("school_id", schoolId).maybeSingle();
+      if (!cancelled) setJcEnabled(!!data?.is_enabled);
+    };
+    const loadTxns = async () => {
+      const { data } = await supabase.from("jazzcash_transactions")
+        .select("id, invoice_id, txn_ref_no, amount, status, jc_response_message, created_at")
+        .eq("school_id", schoolId).eq("student_id", child.student_id)
+        .order("created_at", { ascending: false }).limit(50);
+      if (!cancelled) setTxns((data as JcTxn[]) || []);
+    };
+
     (async () => {
       setLoading(true);
-      const [invRes, jcRes] = await Promise.all([
-        supabase.from("fee_invoices").select("id, invoice_number, period_label, due_date, total_amount, paid_amount, status")
-          .eq("school_id", schoolId).eq("student_id", child.student_id).order("due_date", { ascending: false }).limit(100),
-        supabase.from("jazzcash_settings").select("is_enabled").eq("school_id", schoolId).maybeSingle(),
-      ]);
-      if (cancelled) return;
-      if (invRes.error) toast.error(invRes.error.message);
-      setInvoices((invRes.data as InvoiceRecord[]) || []);
-      setJcEnabled(!!jcRes.data?.is_enabled);
-      setLoading(false);
+      await Promise.all([loadInvoices(), loadJc(), loadTxns()]);
+      if (!cancelled) setLoading(false);
     })();
 
     const ch = supabase.channel(`pfees-${child.student_id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "fee_invoices", filter: `student_id=eq.${child.student_id}` }, async () => {
-        const { data } = await supabase.from("fee_invoices").select("id, invoice_number, period_label, due_date, total_amount, paid_amount, status")
-          .eq("school_id", schoolId).eq("student_id", child.student_id).order("due_date", { ascending: false }).limit(100);
-        if (!cancelled) setInvoices((data as InvoiceRecord[]) || []);
-      }).subscribe();
+      .on("postgres_changes", { event: "*", schema: "public", table: "fee_invoices", filter: `student_id=eq.${child.student_id}` }, loadInvoices)
+      .on("postgres_changes", { event: "*", schema: "public", table: "jazzcash_settings", filter: `school_id=eq.${schoolId}` }, loadJc)
+      .on("postgres_changes", { event: "*", schema: "public", table: "jazzcash_transactions", filter: `student_id=eq.${child.student_id}` }, (payload) => {
+        loadTxns();
+        const newRow = payload.new as JcTxn | undefined;
+        if (newRow && payload.eventType === "UPDATE") {
+          if (newRow.status === "success") toast.success(`Payment received for ${newRow.txn_ref_no}`);
+          else if (newRow.status === "failed") toast.error(`Payment failed: ${newRow.jc_response_message || "Unknown reason"}`);
+        }
+      })
+      .subscribe();
 
     return () => { cancelled = true; supabase.removeChannel(ch); };
   }, [child, schoolId]);
 
   const payNow = async (invoiceId: string) => {
-    // Open popup synchronously to avoid popup blockers
     const w = window.open("", "_blank", "width=900,height=700");
     if (!w) {
-      toast.error("Popup blocked. Please allow popups for this site and try again.");
+      toast.error(friendlyError("popup blocked"));
       return;
     }
     w.document.write('<p style="font-family:sans-serif;text-align:center;padding:40px">Preparing JazzCash checkout…</p>');
@@ -69,16 +111,17 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
     try {
       const { data, error } = await supabase.functions.invoke("jazzcash-initiate", { body: { invoice_id: invoiceId } });
       if (error) throw error;
-      const html = (data as any)?.html;
       const errMsg = (data as any)?.error;
       if (errMsg) throw new Error(errMsg);
+      const html = (data as any)?.html;
       if (!html) throw new Error("Failed to start checkout");
       w.document.open();
       w.document.write(html);
       w.document.close();
     } catch (e: any) {
       try { w.close(); } catch {}
-      toast.error(e?.message || "Payment failed to start");
+      const friendly = friendlyError(e?.message || "");
+      toast.error(friendly);
     } finally {
       setPaying(null);
     }
@@ -90,6 +133,13 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
 
   const statusVariant = (status: string): any => status === "paid" ? "default" : status === "overdue" ? "destructive" : status === "partial" ? "secondary" : "outline";
   const totalOutstanding = invoices.filter(i => i.status !== "paid" && i.status !== "cancelled").reduce((sum, i) => sum + Math.max(Number(i.total_amount) - Number(i.paid_amount), 0), 0);
+
+  const txnIcon = (status: string) => {
+    if (status === "success") return <CheckCircle2 className="h-4 w-4 text-primary" />;
+    if (status === "failed") return <XCircle className="h-4 w-4 text-destructive" />;
+    return <Clock className="h-4 w-4 text-muted-foreground" />;
+  };
+  const txnBadgeVariant = (status: string): any => status === "success" ? "default" : status === "failed" ? "destructive" : "secondary";
 
   return (
     <div className="space-y-6">
@@ -138,6 +188,54 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
                             Pay Now
                           </Button>
                         )}
+                        {due > 0 && !jcEnabled && (
+                          <span className="text-xs text-muted-foreground">Online payment unavailable</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Payment Status</CardTitle>
+          <p className="text-sm text-muted-foreground">Live updates from your recent JazzCash payment attempts.</p>
+        </CardHeader>
+        <CardContent>
+          {txns.length === 0 ? (
+            <p className="text-muted-foreground text-sm">No payment attempts yet.</p>
+          ) : (
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>When</TableHead>
+                <TableHead>Invoice</TableHead>
+                <TableHead>Reference</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Message</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {txns.map(t => {
+                  const inv = invoices.find(i => i.id === t.invoice_id);
+                  return (
+                    <TableRow key={t.id}>
+                      <TableCell>{format(new Date(t.created_at), "MMM d, h:mm a")}</TableCell>
+                      <TableCell>{inv?.invoice_number || "—"}</TableCell>
+                      <TableCell className="font-mono text-xs">{t.txn_ref_no}</TableCell>
+                      <TableCell className="text-right">PKR {Number(t.amount).toLocaleString()}</TableCell>
+                      <TableCell>
+                        <Badge variant={txnBadgeVariant(t.status)} className="gap-1">
+                          {txnIcon(t.status)}
+                          {t.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground max-w-[260px] truncate">
+                        {t.jc_response_message || (t.status === "pending" ? "Awaiting confirmation from JazzCash…" : "—")}
                       </TableCell>
                     </TableRow>
                   );
