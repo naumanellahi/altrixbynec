@@ -538,6 +538,25 @@ export default function FeesAdvancedModule() {
           </Card>
         </TabsContent>
 
+        {/* ANALYTICS */}
+        <TabsContent value="analytics" className="space-y-4">
+          <FeesAnalyticsTab
+            schoolId={schoolId}
+            currency={settings.currency}
+            invoices={invoices as any}
+            payments={payments as any}
+            students={students as any}
+            onRefresh={async () => {
+              const [invRes, payRes] = await Promise.all([
+                supabase.from("fee_invoices").select("*").eq("school_id", schoolId).order("created_at", { ascending: false }).limit(500),
+                supabase.from("fee_payments").select("*").eq("school_id", schoolId).order("paid_at", { ascending: false }).limit(500),
+              ]);
+              setInvoices((invRes.data as FeeInvoice[]) || []);
+              setPayments((payRes.data as FeePayment[]) || []);
+            }}
+          />
+        </TabsContent>
+
         {/* SETTINGS */}
         <TabsContent value="settings" className="space-y-4">
           <Card>
