@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Plus, Trash2, Receipt, Settings as SettingsIcon, Wallet, FileText, Users as UsersIcon, CreditCard, Send } from "lucide-react";
+import { Plus, Trash2, Receipt, Settings as SettingsIcon, Wallet, FileText, Users as UsersIcon, CreditCard, Send, BarChart3 } from "lucide-react";
+import { FeesAnalyticsTab } from "@/components/fees/FeesAnalyticsTab";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenantOptimized } from "@/hooks/useTenantOptimized";
 import { useSchoolPermissions } from "@/hooks/useSchoolPermissions";
@@ -20,7 +21,7 @@ import { format } from "date-fns";
 
 type ClassRow = { id: string; name: string };
 type SectionRow = { id: string; name: string; class_id: string };
-type StudentRow = { id: string; first_name: string; last_name: string | null; class_section_id?: string | null };
+type StudentRow = { id: string; first_name: string; last_name: string | null; class_section_id?: string | null; parent_phone?: string | null; parent_email?: string | null };
 type FeePlanRow = { id: string; name: string; class_id: string | null; billing_frequency: string; currency: string | null; is_active: boolean | null; school_year: string | null };
 type FeePlanItem = { id: string; fee_plan_id: string; label: string; category: string; amount: number; sort_order: number };
 type StudentAssignment = { id: string; student_id: string; fee_plan_id: string; discount_pct: number; scholarship_amount: number };
@@ -80,7 +81,7 @@ export default function FeesAdvancedModule() {
       const [cRes, sRes, stRes, settRes, pRes, iRes, aRes, invRes, payRes] = await Promise.all([
         supabase.from("academic_classes").select("id, name").eq("school_id", schoolId).order("name"),
         supabase.from("class_sections").select("id, name, class_id").eq("school_id", schoolId).order("name"),
-        supabase.from("students").select("id, first_name, last_name").eq("school_id", schoolId).order("first_name").limit(2000),
+        supabase.from("students").select("id, first_name, last_name, parent_phone, parent_email").eq("school_id", schoolId).order("first_name").limit(2000),
         supabase.from("fee_settings").select("*").eq("school_id", schoolId).maybeSingle(),
         supabase.from("fee_plans").select("*").eq("school_id", schoolId).order("created_at", { ascending: false }),
         supabase.from("fee_plan_items").select("*").eq("school_id", schoolId),
