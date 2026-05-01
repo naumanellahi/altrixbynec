@@ -81,6 +81,7 @@ export function FeesAnalyticsTab({ schoolId, currency, invoices, payments, stude
   const [lateInv, setLateInv] = useState<Invoice | null>(null);
   const [lateAmount, setLateAmount] = useState("");
   const [reminderBusy, setReminderBusy] = useState(false);
+  const [defSearch, setDefSearch] = useState("");
 
   const studentsById = useMemo(
     () => Object.fromEntries(students.map(s => [s.id, s])),
