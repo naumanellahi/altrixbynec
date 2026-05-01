@@ -55,6 +55,7 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
   const [jcEnabled, setJcEnabled] = useState(false);
   const [paying, setPaying] = useState<string | null>(null);
   const [txns, setTxns] = useState<JcTxn[]>([]);
+  const [receiptTxn, setReceiptTxn] = useState<JcTxn | null>(null);
 
   useEffect(() => {
     if (!child || !schoolId) return;
