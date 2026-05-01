@@ -206,6 +206,13 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
 
   const statusVariant = (status: string): any => status === "paid" ? "default" : status === "overdue" ? "destructive" : status === "partial" ? "secondary" : "outline";
   const totalOutstanding = invoices.filter(i => i.status !== "paid" && i.status !== "cancelled").reduce((sum, i) => sum + Math.max(Number(i.total_amount) - Number(i.paid_amount), 0), 0);
+  const totalBilled = invoices.reduce((s, i) => s + Number(i.total_amount || 0), 0);
+  const totalPaid = invoices.reduce((s, i) => s + Number(i.paid_amount || 0), 0);
+  const overdueCount = invoices.filter(i => i.status === "overdue").length;
+  const successPaymentsTotal = txns.filter(t => t.status === "success").reduce((s, t) => s + Number(t.amount || 0), 0);
+  const nextDue = invoices
+    .filter(i => i.status !== "paid" && i.status !== "cancelled")
+    .sort((a, b) => a.due_date.localeCompare(b.due_date))[0];
 
   const txnIcon = (status: string) => {
     if (status === "success") return <CheckCircle2 className="h-4 w-4 text-primary" />;
