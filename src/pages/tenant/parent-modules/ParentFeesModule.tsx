@@ -93,6 +93,41 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
   const [partialInv, setPartialInv] = useState<InvoiceRecord | null>(null);
   const [partialAmount, setPartialAmount] = useState("");
 
+  const printChallan = (inv: InvoiceRecord) => {
+    const due = Math.max(Number(inv.total_amount) - Number(inv.paid_amount), 0);
+    const w = window.open("", "_blank", "width=900,height=700");
+    if (!w) { toast.error("Pop-up blocked. Allow pop-ups to print."); return; }
+    const html = `<!doctype html><html><head><title>Fee Challan ${inv.invoice_number}</title>
+      <style>
+        body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#0a0a0a;padding:20px}
+        .challan{border:1px dashed #888;padding:18px;margin-bottom:14px;border-radius:8px}
+        h2{margin:0 0 6px;font-size:16px}
+        .row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px dotted #ddd}
+        .total{font-size:16px;font-weight:700;margin-top:10px;padding-top:8px;border-top:2px solid #0a0a0a}
+        .muted{color:#6b7280;font-size:11px}
+        .copy-label{background:#0a0a0a;color:#fff;display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;margin-bottom:8px}
+        @media print{button{display:none}}
+      </style></head><body>
+      ${["School Copy","Bank Copy","Parent Copy"].map(label => `
+        <div class="challan">
+          <span class="copy-label">${label}</span>
+          <h2>FEE PAYMENT CHALLAN</h2>
+          <div class="muted">Invoice ${inv.invoice_number}</div>
+          <div class="row"><span>Student</span><span>${child?.first_name || ""} ${child?.last_name || ""}</span></div>
+          <div class="row"><span>Period</span><span>${inv.period_label || "—"}</span></div>
+          <div class="row"><span>Due Date</span><span>${format(new Date(inv.due_date), "MMM d, yyyy")}</span></div>
+          <div class="row"><span>Total</span><span>PKR ${Number(inv.total_amount).toLocaleString()}</span></div>
+          <div class="row"><span>Paid</span><span>PKR ${Number(inv.paid_amount).toLocaleString()}</span></div>
+          <div class="total">Amount Due: PKR ${due.toLocaleString()}</div>
+          <div class="muted" style="margin-top:8px">Pay at the school office or your bank using this challan. Keep your copy as proof of payment.</div>
+        </div>
+      `).join("")}
+      <script>setTimeout(()=>window.print(),250)</script>
+      </body></html>`;
+    w.document.write(html);
+    w.document.close();
+  };
+
   useEffect(() => {
     if (!child || !schoolId) return;
     let cancelled = false;
