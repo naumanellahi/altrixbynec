@@ -49,6 +49,37 @@ function friendlyError(raw: string): string {
   return raw || "Payment couldn't be started. Please try again.";
 }
 
+function buildReceiptText(t: JcTxn, inv: InvoiceRecord | undefined, studentName: string): string {
+  const lines = [
+    "JAZZCASH PAYMENT RECEIPT",
+    "========================",
+    `Date:       ${new Date(t.created_at).toLocaleString()}`,
+    `Reference:  ${t.txn_ref_no}`,
+    `Invoice:    ${inv?.invoice_number || "—"}`,
+    `Student:    ${studentName}`,
+    `Method:     JazzCash`,
+    `Status:     ${t.status.toUpperCase()}`,
+    `Amount:     PKR ${Number(t.amount).toLocaleString()}`,
+    "",
+    t.jc_response_message ? `Note: ${t.jc_response_message}` : "",
+    "",
+    "Keep this receipt for your records.",
+  ];
+  return lines.filter(Boolean).join("\n");
+}
+
+function downloadReceipt(text: string, ref: string) {
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `jazzcash-receipt-${ref}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
   const [loading, setLoading] = useState(true);
