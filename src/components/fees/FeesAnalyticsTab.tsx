@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import {
   TrendingUp, AlertTriangle, Wallet, FileDown, Printer, Send, Percent,
-  CalendarClock, RefreshCw, DollarSign, Users
+  CalendarClock, RefreshCw, DollarSign, Users, Search, X
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, subDays, startOfMonth } from "date-fns";
