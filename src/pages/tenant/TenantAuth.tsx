@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { z } from "zod";
 import { motion, useReducedMotion } from "framer-motion";
@@ -12,6 +12,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  getResetCooldownRemaining,
+  rememberResetEmail,
+  requestPasswordResetLink,
+  startResetCooldown,
+} from "@/lib/password-reset";
 
 const emailSchema = z.string().email();
 const passwordSchema = z.string().min(8);
@@ -38,11 +44,19 @@ const TenantAuth = () => {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [resetCooldown, setResetCooldown] = useState(0);
 
   const title = useMemo(() => {
     if (tenant.status === "ready") return tenant.school.name;
     return "AltRix";
   }, [tenant.status, tenant.school]);
+
+  useEffect(() => {
+    const tick = () => setResetCooldown(email.trim() ? getResetCooldownRemaining(email) : 0);
+    tick();
+    const timer = window.setInterval(tick, 1000);
+    return () => window.clearInterval(timer);
+  }, [email]);
 
   const doPasswordLogin = async () => {
     setMessage(null);
@@ -91,15 +105,22 @@ const TenantAuth = () => {
     setMessage(null);
     const parsedEmail = emailSchema.safeParse(email.trim());
     if (!parsedEmail.success) return setMessage("Enter your email above, then click 'Forgot password?' again.");
+    const cooldown = getResetCooldownRemaining(parsedEmail.data);
+    if (cooldown > 0) {
+      setResetCooldown(cooldown);
+      return setMessage(`Please wait ${cooldown}s before requesting another reset link.`);
+    }
     setBusy(true);
     try {
       const returnTo = `${window.location.pathname}${window.location.search}`;
-      const redirectTo = `${window.location.origin}/reset-password?returnTo=${encodeURIComponent(returnTo)}`;
-      const { error } = await supabase.auth.resetPasswordForEmail(parsedEmail.data, {
-        redirectTo,
-      });
-      if (error) return setMessage(error.message);
-      setMessage(`We sent a password reset link to ${parsedEmail.data}. Check your inbox (and spam folder).`);
+      const result = await requestPasswordResetLink(parsedEmail.data, returnTo);
+      if (!result.ok) return setMessage(result.error || "Unable to send reset link. Please try again shortly.");
+      const seconds = result.cooldownSeconds || 60;
+      rememberResetEmail(parsedEmail.data);
+      startResetCooldown(parsedEmail.data, seconds);
+      setResetCooldown(seconds);
+      const remaining = typeof result.remainingRequests === "number" ? ` You have ${result.remainingRequests} reset request${result.remainingRequests === 1 ? "" : "s"} left today.` : "";
+      setMessage(`We sent a password reset link to ${parsedEmail.data}. Check your inbox and spam folder.${remaining}`);
     } finally {
       setBusy(false);
     }
@@ -193,16 +214,6 @@ const TenantAuth = () => {
                     <Button type="submit" variant="hero" size="xl" className="w-full" disabled={busy}>
                       Sign in
                     </Button>
-                    <div className="pt-1 text-center">
-                      <button
-                        type="button"
-                        onClick={() => { if (!busy) void doForgotPassword(); }}
-                        className="text-sm font-medium text-primary hover:underline underline-offset-4"
-                        disabled={busy}
-                      >
-                        Forgot password?
-                      </button>
-                    </div>
                   </form>
                 </TabsContent>
 
@@ -223,6 +234,16 @@ const TenantAuth = () => {
                   </form>
                 </TabsContent>
               </Tabs>
+
+              <Button
+                type="button"
+                variant="soft"
+                className="w-full border border-primary/30 text-primary hover:bg-primary/10"
+                onClick={() => { if (!busy && resetCooldown <= 0) void doForgotPassword(); }}
+                disabled={busy || resetCooldown > 0}
+              >
+                {resetCooldown > 0 ? `Forgot password? Try again in ${resetCooldown}s` : "Forgot password? Send reset link"}
+              </Button>
 
               {message && <div className="rounded-xl bg-accent p-3 text-sm text-accent-foreground">{message}</div>}
 

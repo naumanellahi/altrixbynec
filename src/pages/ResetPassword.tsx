@@ -1,15 +1,30 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
-import { KeyRound, CheckCircle2, AlertCircle, Mail, RefreshCw } from "lucide-react";
+import { KeyRound, CheckCircle2, AlertCircle, Mail, RefreshCw, Timer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import {
+  RESET_LINK_TTL_SECONDS,
+  formatDuration,
+  getRememberedResetEmail,
+  getResetCooldownRemaining,
+  rememberResetEmail,
+  requestPasswordResetLink,
+  startResetCooldown,
+} from "@/lib/password-reset";
 
 const passwordSchema = z.string().min(8, "Password must be at least 8 characters");
 const emailSchema = z.string().email("Please enter a valid email");
+
+const getResetUrlParams = () => {
+  const hash = window.location.hash || "";
+  const qs = window.location.search || "";
+  return new URLSearchParams((hash.startsWith("#") ? hash.slice(1) : hash) + "&" + qs.replace(/^\?/, ""));
+};
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -26,18 +41,15 @@ const ResetPassword = () => {
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
+  const [linkSecondsLeft, setLinkSecondsLeft] = useState<number | null>(null);
 
-  // Resend flow state
-  const [resendEmail, setResendEmail] = useState("");
+  const [resendEmail, setResendEmail] = useState(() => getRememberedResetEmail());
   const [resending, setResending] = useState(false);
   const [resendSentTo, setResendSentTo] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
-  // Detect URL-level errors from Supabase (e.g. expired/invalid)
   useEffect(() => {
-    const hash = window.location.hash || "";
-    const qs = window.location.search || "";
-    const combined = (hash.startsWith("#") ? hash.slice(1) : hash) + "&" + qs.replace(/^\?/, "");
-    const params = new URLSearchParams(combined);
+    const params = getResetUrlParams();
     const errCode = params.get("error_code") || params.get("error");
     const errDesc = params.get("error_description");
     if (errCode) {
@@ -45,24 +57,43 @@ const ResetPassword = () => {
       setExpired(
         isExpired
           ? "Your password reset link has expired. For your security, links are only valid for a short time."
-          : (errDesc?.replace(/\+/g, " ") || "This reset link is invalid. Please request a new one.")
+          : errDesc?.replace(/\+/g, " ") || "This reset link is invalid. Please request a new one.",
       );
       return;
     }
 
+    const computeExpirySeconds = async (sessionExpiresAt?: number | null) => {
+      const p = getResetUrlParams();
+      const expiresAt = Number(p.get("expires_at") || sessionExpiresAt || 0);
+      if (expiresAt > 0) return Math.max(0, Math.floor(expiresAt - Date.now() / 1000));
+      const expiresIn = Number(p.get("expires_in") || 0);
+      if (expiresIn > 0) return expiresIn;
+      return RESET_LINK_TTL_SECONDS;
+    };
+
+    const activate = async (sessionExpiresAt?: number | null) => {
+      const seconds = await computeExpirySeconds(sessionExpiresAt);
+      if (seconds <= 0) {
+        setExpired("This password reset link has expired. Please request a new one.");
+        return;
+      }
+      setLinkSecondsLeft(seconds);
+      setReady(true);
+    };
+
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && session)) {
-        setReady(true);
+        void activate(session?.expires_at ?? null);
       }
     });
 
     (async () => {
       const { data } = await supabase.auth.getSession();
-      if (data.session) setReady(true);
+      if (data.session) await activate(data.session.expires_at ?? null);
       else {
         setTimeout(async () => {
           const { data: d2 } = await supabase.auth.getSession();
-          if (d2.session) setReady(true);
+          if (d2.session) await activate(d2.session.expires_at ?? null);
           else setExpired("This password reset link is invalid or has expired. Please request a new one.");
         }, 900);
       }
@@ -70,6 +101,35 @@ const ResetPassword = () => {
 
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!ready || done || linkSecondsLeft === null) return undefined;
+    if (linkSecondsLeft <= 0) {
+      setReady(false);
+      setExpired("This password reset link has expired. Please request a new one.");
+      return undefined;
+    }
+    const timer = window.setInterval(() => {
+      setLinkSecondsLeft((current) => {
+        if (current === null) return current;
+        if (current <= 1) {
+          window.clearInterval(timer);
+          setReady(false);
+          setExpired("This password reset link has expired. Please request a new one.");
+          return 0;
+        }
+        return current - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [ready, done, linkSecondsLeft]);
+
+  useEffect(() => {
+    const tick = () => setResendCooldown(resendEmail.trim() ? getResetCooldownRemaining(resendEmail) : 0);
+    tick();
+    const timer = window.setInterval(tick, 1000);
+    return () => window.clearInterval(timer);
+  }, [resendEmail]);
 
   const submit = async () => {
     const parsed = passwordSchema.safeParse(password);
@@ -91,7 +151,6 @@ const ResetPassword = () => {
       setDone(true);
       toast.success("Password updated. You can now sign in.");
       await supabase.auth.signOut();
-      // Send the user back to the login page they came from
       setTimeout(() => navigate(returnTo, { replace: true }), 1600);
     } finally {
       setBusy(false);
@@ -104,14 +163,23 @@ const ResetPassword = () => {
       toast.error(parsed.error.errors[0].message);
       return;
     }
+    const cooldown = getResetCooldownRemaining(parsed.data);
+    if (cooldown > 0) {
+      setResendCooldown(cooldown);
+      toast.error(`Please wait ${cooldown}s before requesting another reset link.`);
+      return;
+    }
     setResending(true);
     try {
-      const redirectTo = `${window.location.origin}/reset-password?returnTo=${encodeURIComponent(returnTo)}`;
-      const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, { redirectTo });
-      if (error) {
-        toast.error(error.message);
+      const result = await requestPasswordResetLink(parsed.data, returnTo);
+      if (!result.ok) {
+        toast.error(result.error || "Unable to send reset link. Please try again shortly.");
         return;
       }
+      const seconds = result.cooldownSeconds || 60;
+      rememberResetEmail(parsed.data);
+      startResetCooldown(parsed.data, seconds);
+      setResendCooldown(seconds);
       setResendSentTo(parsed.data);
       toast.success(`New reset link sent to ${parsed.data}`);
     } finally {
@@ -155,7 +223,7 @@ const ResetPassword = () => {
                 </div>
               ) : (
                 <form
-                  onSubmit={(e) => { e.preventDefault(); if (!resending) void resendLink(); }}
+                  onSubmit={(e) => { e.preventDefault(); if (!resending && resendCooldown <= 0) void resendLink(); }}
                   className="space-y-3"
                 >
                   <div className="space-y-2">
@@ -170,10 +238,13 @@ const ResetPassword = () => {
                       placeholder="name@school.com"
                     />
                   </div>
-                  <Button type="submit" variant="hero" size="xl" className="w-full" disabled={resending}>
+                  <Button type="submit" variant="hero" size="xl" className="w-full" disabled={resending || resendCooldown > 0}>
                     <RefreshCw className={`mr-2 h-4 w-4 ${resending ? "animate-spin" : ""}`} />
-                    {resending ? "Sending…" : "Resend reset link"}
+                    {resending ? "Sending…" : resendCooldown > 0 ? `Resend available in ${resendCooldown}s` : "Resend reset link"}
                   </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    You can request up to 3 reset links in 24 hours.
+                  </p>
                 </form>
               )}
 
@@ -182,8 +253,9 @@ const ResetPassword = () => {
                   variant="soft"
                   className="w-full"
                   onClick={() => { setResendSentTo(null); }}
+                  disabled={resendCooldown > 0}
                 >
-                  Send to a different email
+                  {resendCooldown > 0 ? `Send again in ${resendCooldown}s` : "Send another reset link"}
                 </Button>
               )}
             </div>
@@ -200,6 +272,14 @@ const ResetPassword = () => {
               onSubmit={(e) => { e.preventDefault(); if (!busy && ready) void submit(); }}
               className="space-y-3"
             >
+              {linkSecondsLeft !== null && (
+                <div className="rounded-xl bg-primary/10 border border-primary/30 p-3 text-sm flex items-center gap-2">
+                  <Timer className="h-4 w-4 text-primary shrink-0" />
+                  <span>
+                    This reset link expires in <span className="font-medium">{formatDuration(linkSecondsLeft)}</span>.
+                  </span>
+                </div>
+              )}
               <div className="space-y-2">
                 <label className="text-sm font-medium">New password</label>
                 <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoComplete="new-password" disabled={!ready} />

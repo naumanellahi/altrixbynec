@@ -3726,6 +3726,24 @@ export type Database = {
           },
         ]
       }
+      password_reset_rate_limits: {
+        Row: {
+          email_hash: string
+          id: string
+          requested_at: string
+        }
+        Insert: {
+          email_hash: string
+          id?: string
+          requested_at?: string
+        }
+        Update: {
+          email_hash?: string
+          id?: string
+          requested_at?: string
+        }
+        Relationships: []
+      }
       platform_super_admins: {
         Row: {
           created_at: string | null

@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.jazzcash-reconcile]
 verify_jwt = false
+
+[functions.password-reset-request]
+verify_jwt = false
