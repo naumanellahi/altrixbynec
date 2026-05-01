@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Plus, Trash2, Receipt, Settings as SettingsIcon, Wallet, FileText, Users as UsersIcon, CreditCard, Send, BarChart3 } from "lucide-react";
+import { Plus, Trash2, Receipt, Settings as SettingsIcon, Wallet, FileText, Users as UsersIcon, CreditCard, Send, BarChart3, Search, X } from "lucide-react";
 import { FeesAnalyticsTab } from "@/components/fees/FeesAnalyticsTab";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenantOptimized } from "@/hooks/useTenantOptimized";
