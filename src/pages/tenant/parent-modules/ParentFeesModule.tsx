@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { ChildInfo } from "@/hooks/useMyChildren";
 import { format } from "date-fns";
-import { CheckCircle2, CreditCard, Loader2, XCircle, Clock, RefreshCw, Download, Receipt } from "lucide-react";
+import { CheckCircle2, CreditCard, Loader2, XCircle, Clock, RefreshCw, Download, Receipt, Printer, Wallet, AlertCircle, History } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
@@ -88,6 +88,41 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
   const [txns, setTxns] = useState<JcTxn[]>([]);
   const [receiptTxn, setReceiptTxn] = useState<JcTxn | null>(null);
 
+  const printChallan = (inv: InvoiceRecord) => {
+    const due = Math.max(Number(inv.total_amount) - Number(inv.paid_amount), 0);
+    const w = window.open("", "_blank", "width=900,height=700");
+    if (!w) { toast.error("Pop-up blocked. Allow pop-ups to print."); return; }
+    const html = `<!doctype html><html><head><title>Fee Challan ${inv.invoice_number}</title>
+      <style>
+        body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#0a0a0a;padding:20px}
+        .challan{border:1px dashed #888;padding:18px;margin-bottom:14px;border-radius:8px}
+        h2{margin:0 0 6px;font-size:16px}
+        .row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px dotted #ddd}
+        .total{font-size:16px;font-weight:700;margin-top:10px;padding-top:8px;border-top:2px solid #0a0a0a}
+        .muted{color:#6b7280;font-size:11px}
+        .copy-label{background:#0a0a0a;color:#fff;display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;margin-bottom:8px}
+        @media print{button{display:none}}
+      </style></head><body>
+      ${["School Copy","Bank Copy","Parent Copy"].map(label => `
+        <div class="challan">
+          <span class="copy-label">${label}</span>
+          <h2>FEE PAYMENT CHALLAN</h2>
+          <div class="muted">Invoice ${inv.invoice_number}</div>
+          <div class="row"><span>Student</span><span>${child?.first_name || ""} ${child?.last_name || ""}</span></div>
+          <div class="row"><span>Period</span><span>${inv.period_label || "—"}</span></div>
+          <div class="row"><span>Due Date</span><span>${format(new Date(inv.due_date), "MMM d, yyyy")}</span></div>
+          <div class="row"><span>Total</span><span>PKR ${Number(inv.total_amount).toLocaleString()}</span></div>
+          <div class="row"><span>Paid</span><span>PKR ${Number(inv.paid_amount).toLocaleString()}</span></div>
+          <div class="total">Amount Due: PKR ${due.toLocaleString()}</div>
+          <div class="muted" style="margin-top:8px">Pay at the school office or your bank using this challan. Keep your copy as proof of payment.</div>
+        </div>
+      `).join("")}
+      <script>setTimeout(()=>window.print(),250)</script>
+      </body></html>`;
+    w.document.write(html);
+    w.document.close();
+  };
+
   useEffect(() => {
     if (!child || !schoolId) return;
     let cancelled = false;
@@ -166,6 +201,13 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
 
   const statusVariant = (status: string): any => status === "paid" ? "default" : status === "overdue" ? "destructive" : status === "partial" ? "secondary" : "outline";
   const totalOutstanding = invoices.filter(i => i.status !== "paid" && i.status !== "cancelled").reduce((sum, i) => sum + Math.max(Number(i.total_amount) - Number(i.paid_amount), 0), 0);
+  const totalBilled = invoices.reduce((s, i) => s + Number(i.total_amount || 0), 0);
+  const totalPaid = invoices.reduce((s, i) => s + Number(i.paid_amount || 0), 0);
+  const overdueCount = invoices.filter(i => i.status === "overdue").length;
+  const successPaymentsTotal = txns.filter(t => t.status === "success").reduce((s, t) => s + Number(t.amount || 0), 0);
+  const nextDue = invoices
+    .filter(i => i.status !== "paid" && i.status !== "cancelled")
+    .sort((a, b) => a.due_date.localeCompare(b.due_date))[0];
 
   const txnIcon = (status: string) => {
     if (status === "success") return <CheckCircle2 className="h-4 w-4 text-primary" />;
@@ -181,13 +223,48 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
         <p className="text-muted-foreground">View fee invoices and payment status for {child.first_name || "your child"}</p>
       </div>
 
-      {totalOutstanding > 0 && (
-        <Card className="border-destructive/50 bg-destructive/5">
-          <CardContent className="pt-6">
-            <p className="text-sm text-destructive"><strong>Outstanding Balance:</strong> PKR {totalOutstanding.toLocaleString()}</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Card className={totalOutstanding > 0 ? "border-destructive/40 bg-destructive/5" : ""}>
+          <CardContent className="pt-5">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <AlertCircle className="h-4 w-4" /><span className="uppercase tracking-wide">Outstanding</span>
+            </div>
+            <p className="mt-2 text-xl font-semibold">PKR {totalOutstanding.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{overdueCount} overdue</p>
           </CardContent>
         </Card>
-      )}
+        <Card>
+          <CardContent className="pt-5">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Wallet className="h-4 w-4" /><span className="uppercase tracking-wide">Total Paid</span>
+            </div>
+            <p className="mt-2 text-xl font-semibold">PKR {totalPaid.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">of PKR {totalBilled.toLocaleString()} billed</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-5">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Clock className="h-4 w-4" /><span className="uppercase tracking-wide">Next Due</span>
+            </div>
+            <p className="mt-2 text-xl font-semibold">
+              {nextDue ? format(new Date(nextDue.due_date), "MMM d") : "—"}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {nextDue ? `PKR ${Math.max(Number(nextDue.total_amount) - Number(nextDue.paid_amount), 0).toLocaleString()}` : "Nothing pending"}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-5">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <History className="h-4 w-4" /><span className="uppercase tracking-wide">Online Paid</span>
+            </div>
+            <p className="mt-2 text-xl font-semibold">PKR {successPaymentsTotal.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{txns.filter(t => t.status === "success").length} successful txns</p>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card>
         <CardHeader><CardTitle>Invoices</CardTitle></CardHeader>
@@ -215,15 +292,22 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
                       <TableCell className="text-right">PKR {due.toLocaleString()}</TableCell>
                       <TableCell><Badge variant={statusVariant(inv.status)}>{inv.status}</Badge></TableCell>
                       <TableCell>
-                        {due > 0 && jcEnabled && (
-                          <Button size="sm" onClick={() => payNow(inv.id)} disabled={paying === inv.id}>
-                            {paying === inv.id ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <CreditCard className="h-3 w-3 mr-1" />}
-                            Pay Now
-                          </Button>
-                        )}
-                        {due > 0 && !jcEnabled && (
-                          <span className="text-xs text-muted-foreground">Online payment unavailable</span>
-                        )}
+                        <div className="flex justify-end gap-1 flex-wrap">
+                          {due > 0 && jcEnabled && (
+                            <Button size="sm" onClick={() => payNow(inv.id)} disabled={paying === inv.id}>
+                              {paying === inv.id ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <CreditCard className="h-3 w-3 mr-1" />}
+                              Pay Now
+                            </Button>
+                          )}
+                          {due > 0 && !jcEnabled && (
+                            <span className="text-xs text-muted-foreground">Online payment unavailable</span>
+                          )}
+                          {due > 0 && (
+                            <Button size="sm" variant="outline" onClick={() => printChallan(inv)}>
+                              <Printer className="h-3 w-3 mr-1" /> Challan
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );

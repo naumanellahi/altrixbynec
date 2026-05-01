@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Plus, Trash2, Receipt, Settings as SettingsIcon, Wallet, FileText, Users as UsersIcon, CreditCard, Send } from "lucide-react";
+import { Plus, Trash2, Receipt, Settings as SettingsIcon, Wallet, FileText, Users as UsersIcon, CreditCard, Send, BarChart3 } from "lucide-react";
+import { FeesAnalyticsTab } from "@/components/fees/FeesAnalyticsTab";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenantOptimized } from "@/hooks/useTenantOptimized";
 import { useSchoolPermissions } from "@/hooks/useSchoolPermissions";
@@ -20,7 +21,7 @@ import { format } from "date-fns";
 
 type ClassRow = { id: string; name: string };
 type SectionRow = { id: string; name: string; class_id: string };
-type StudentRow = { id: string; first_name: string; last_name: string | null; class_section_id?: string | null };
+type StudentRow = { id: string; first_name: string; last_name: string | null; class_section_id?: string | null; parent_phone?: string | null; parent_email?: string | null };
 type FeePlanRow = { id: string; name: string; class_id: string | null; billing_frequency: string; currency: string | null; is_active: boolean | null; school_year: string | null };
 type FeePlanItem = { id: string; fee_plan_id: string; label: string; category: string; amount: number; sort_order: number };
 type StudentAssignment = { id: string; student_id: string; fee_plan_id: string; discount_pct: number; scholarship_amount: number };
@@ -80,7 +81,7 @@ export default function FeesAdvancedModule() {
       const [cRes, sRes, stRes, settRes, pRes, iRes, aRes, invRes, payRes] = await Promise.all([
         supabase.from("academic_classes").select("id, name").eq("school_id", schoolId).order("name"),
         supabase.from("class_sections").select("id, name, class_id").eq("school_id", schoolId).order("name"),
-        supabase.from("students").select("id, first_name, last_name").eq("school_id", schoolId).order("first_name").limit(2000),
+        supabase.from("students").select("id, first_name, last_name, parent_phone, parent_email").eq("school_id", schoolId).order("first_name").limit(2000),
         supabase.from("fee_settings").select("*").eq("school_id", schoolId).maybeSingle(),
         supabase.from("fee_plans").select("*").eq("school_id", schoolId).order("created_at", { ascending: false }),
         supabase.from("fee_plan_items").select("*").eq("school_id", schoolId),
@@ -266,11 +267,12 @@ export default function FeesAdvancedModule() {
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="grid grid-cols-5 w-full max-w-3xl">
+        <TabsList className="grid grid-cols-6 w-full max-w-4xl">
           <TabsTrigger value="plans"><Wallet className="h-4 w-4 mr-1" />Plans</TabsTrigger>
           <TabsTrigger value="assignments"><UsersIcon className="h-4 w-4 mr-1" />Assignments</TabsTrigger>
           <TabsTrigger value="invoices"><FileText className="h-4 w-4 mr-1" />Invoices</TabsTrigger>
           <TabsTrigger value="payments"><CreditCard className="h-4 w-4 mr-1" />Payments</TabsTrigger>
+          <TabsTrigger value="analytics"><BarChart3 className="h-4 w-4 mr-1" />Analytics</TabsTrigger>
           <TabsTrigger value="settings"><SettingsIcon className="h-4 w-4 mr-1" />Settings</TabsTrigger>
         </TabsList>
 
@@ -534,6 +536,25 @@ export default function FeesAdvancedModule() {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* ANALYTICS */}
+        <TabsContent value="analytics" className="space-y-4">
+          <FeesAnalyticsTab
+            schoolId={schoolId}
+            currency={settings.currency}
+            invoices={invoices as any}
+            payments={payments as any}
+            students={students as any}
+            onRefresh={async () => {
+              const [invRes, payRes] = await Promise.all([
+                supabase.from("fee_invoices").select("*").eq("school_id", schoolId).order("created_at", { ascending: false }).limit(500),
+                supabase.from("fee_payments").select("*").eq("school_id", schoolId).order("paid_at", { ascending: false }).limit(500),
+              ]);
+              setInvoices((invRes.data as FeeInvoice[]) || []);
+              setPayments((payRes.data as FeePayment[]) || []);
+            }}
+          />
         </TabsContent>
 
         {/* SETTINGS */}
