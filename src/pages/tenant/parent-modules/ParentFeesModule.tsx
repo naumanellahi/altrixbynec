@@ -6,7 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { ChildInfo } from "@/hooks/useMyChildren";
 import { format } from "date-fns";
-import { CheckCircle2, CreditCard, Loader2, XCircle, Clock } from "lucide-react";
+import { CheckCircle2, CreditCard, Loader2, XCircle, Clock, RefreshCw, Download, Receipt } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 interface ParentFeesModuleProps {
@@ -48,12 +49,44 @@ function friendlyError(raw: string): string {
   return raw || "Payment couldn't be started. Please try again.";
 }
 
+function buildReceiptText(t: JcTxn, inv: InvoiceRecord | undefined, studentName: string): string {
+  const lines = [
+    "JAZZCASH PAYMENT RECEIPT",
+    "========================",
+    `Date:       ${new Date(t.created_at).toLocaleString()}`,
+    `Reference:  ${t.txn_ref_no}`,
+    `Invoice:    ${inv?.invoice_number || "—"}`,
+    `Student:    ${studentName}`,
+    `Method:     JazzCash`,
+    `Status:     ${t.status.toUpperCase()}`,
+    `Amount:     PKR ${Number(t.amount).toLocaleString()}`,
+    "",
+    t.jc_response_message ? `Note: ${t.jc_response_message}` : "",
+    "",
+    "Keep this receipt for your records.",
+  ];
+  return lines.filter(Boolean).join("\n");
+}
+
+function downloadReceipt(text: string, ref: string) {
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `jazzcash-receipt-${ref}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [jcEnabled, setJcEnabled] = useState(false);
   const [paying, setPaying] = useState<string | null>(null);
   const [txns, setTxns] = useState<JcTxn[]>([]);
+  const [receiptTxn, setReceiptTxn] = useState<JcTxn | null>(null);
 
   useEffect(() => {
     if (!child || !schoolId) return;
@@ -218,6 +251,7 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Message</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {txns.map(t => {
@@ -237,6 +271,19 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
                       <TableCell className="text-xs text-muted-foreground max-w-[260px] truncate">
                         {t.jc_response_message || (t.status === "pending" ? "Awaiting confirmation from JazzCash…" : "—")}
                       </TableCell>
+                      <TableCell className="text-right">
+                        {t.status === "failed" && inv && Math.max(Number(inv.total_amount) - Number(inv.paid_amount), 0) > 0 && jcEnabled && (
+                          <Button size="sm" variant="outline" onClick={() => payNow(t.invoice_id)} disabled={paying === t.invoice_id}>
+                            {paying === t.invoice_id ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+                            Try again
+                          </Button>
+                        )}
+                        {t.status === "success" && (
+                          <Button size="sm" variant="outline" onClick={() => setReceiptTxn(t)}>
+                            <Receipt className="h-3 w-3 mr-1" /> Receipt
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -245,6 +292,44 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!receiptTxn} onOpenChange={(o) => !o && setReceiptTxn(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-primary" /> Payment Receipt
+            </DialogTitle>
+          </DialogHeader>
+          {receiptTxn && (() => {
+            const inv = invoices.find(i => i.id === receiptTxn.invoice_id);
+            const receiptText = buildReceiptText(receiptTxn, inv, child?.first_name || "");
+            return (
+              <div className="space-y-3">
+                <div className="rounded-lg border bg-muted/30 p-4 space-y-2 text-sm">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Reference</span><span className="font-mono">{receiptTxn.txn_ref_no}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Invoice</span><span>{inv?.invoice_number || "—"}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Student</span><span>{child?.first_name}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Date</span><span>{format(new Date(receiptTxn.created_at), "MMM d, yyyy h:mm a")}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Method</span><span>JazzCash</span></div>
+                  <div className="flex justify-between font-semibold pt-2 border-t"><span>Amount Paid</span><span>PKR {Number(receiptTxn.amount).toLocaleString()}</span></div>
+                  {receiptTxn.jc_response_message && (
+                    <div className="text-xs text-muted-foreground pt-1">{receiptTxn.jc_response_message}</div>
+                  )}
+                </div>
+                <DialogFooter className="gap-2 sm:gap-2">
+                  <Button variant="outline" onClick={() => {
+                    navigator.clipboard.writeText(receiptTxn.txn_ref_no);
+                    toast.success("Reference copied");
+                  }}>Copy reference</Button>
+                  <Button onClick={() => downloadReceipt(receiptText, receiptTxn.txn_ref_no)}>
+                    <Download className="h-4 w-4 mr-1" /> Download
+                  </Button>
+                </DialogFooter>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

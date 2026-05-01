@@ -40,13 +40,18 @@ Deno.serve(async (req) => {
 
     if (success && (txn?.invoice_id || invoiceId)) {
       const invId = txn?.invoice_id || invoiceId;
-      const { data: inv } = await supabase.from("fee_invoices").select("school_id, student_id").eq("id", invId).single();
-      if (inv) {
-        await supabase.from("fee_payments").insert({
-          school_id: inv.school_id, student_id: inv.student_id, invoice_id: invId,
-          amount: amountPaisa / 100, method: "jazzcash", status: "success",
-          transaction_ref: txnRef, notes: `JazzCash ${responseMessage}`,
-        });
+      // Idempotency: only insert payment if no existing record for this txnRef
+      const { data: existingPay } = await supabase.from("fee_payments")
+        .select("id").eq("transaction_ref", txnRef).maybeSingle();
+      if (!existingPay) {
+        const { data: inv } = await supabase.from("fee_invoices").select("school_id, student_id").eq("id", invId).single();
+        if (inv) {
+          await supabase.from("fee_payments").insert({
+            school_id: inv.school_id, student_id: inv.student_id, invoice_id: invId,
+            amount: amountPaisa / 100, method: "jazzcash", status: "success",
+            transaction_ref: txnRef, notes: `JazzCash ${responseMessage}`,
+          });
+        }
       }
     }
 
