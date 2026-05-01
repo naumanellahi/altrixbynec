@@ -89,9 +89,6 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
   const [paying, setPaying] = useState<string | null>(null);
   const [txns, setTxns] = useState<JcTxn[]>([]);
   const [receiptTxn, setReceiptTxn] = useState<JcTxn | null>(null);
-  const [partialOpen, setPartialOpen] = useState(false);
-  const [partialInv, setPartialInv] = useState<InvoiceRecord | null>(null);
-  const [partialAmount, setPartialAmount] = useState("");
 
   const printChallan = (inv: InvoiceRecord) => {
     const due = Math.max(Number(inv.total_amount) - Number(inv.paid_amount), 0);
