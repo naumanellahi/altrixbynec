@@ -189,10 +189,15 @@ export default function FeesAdvancedModule() {
 
   // ---------- ASSIGNMENTS ----------
   const studentsForFilter = useMemo(() => {
-    if (assignFilterClass === "__all") return students;
-    const sectionIds = sections.filter(s => s.class_id === assignFilterClass).map(s => s.id);
-    return students.filter(s => sectionIds.includes((s as any).class_section_id));
-  }, [students, sections, assignFilterClass]);
+    const q = assignSearch.trim().toLowerCase();
+    let list = students;
+    if (assignFilterClass !== "__all") {
+      const sectionIds = sections.filter(s => s.class_id === assignFilterClass).map(s => s.id);
+      list = list.filter(s => sectionIds.includes((s as any).class_section_id));
+    }
+    if (q) list = list.filter(s => `${s.first_name} ${s.last_name || ""}`.toLowerCase().includes(q) || (s.parent_email || "").toLowerCase().includes(q) || (s.parent_phone || "").toLowerCase().includes(q));
+    return list;
+  }, [students, sections, assignFilterClass, assignSearch]);
 
   const setStudentAssignment = async (studentId: string, planId: string | null, opts?: { discount_pct?: number; scholarship_amount?: number }) => {
     if (!schoolId) return;
