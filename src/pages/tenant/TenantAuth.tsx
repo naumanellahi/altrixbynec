@@ -47,6 +47,13 @@ const TenantAuth = () => {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [resetCooldown, setResetCooldown] = useState(0);
+  const [recentEmails, setRecentEmails] = useState<string[]>(() => getRecentEmails());
+
+  // Prefill with the most recent email on first mount
+  useEffect(() => {
+    if (!email && recentEmails.length > 0) setEmail(recentEmails[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const title = useMemo(() => {
     if (tenant.status === "ready") return tenant.school.name;
