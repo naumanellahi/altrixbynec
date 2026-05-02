@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Routes, Route, Navigate, useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
@@ -72,10 +72,15 @@ const ParentDashboard = () => {
   const schoolId = tenant.status === "ready" ? tenant.schoolId : null;
   const { children: childList, loading: childrenLoading } = useMyChildren(schoolId);
 
-  const [selectedChild, setSelectedChild] = useState<ChildInfo | null>(null);
+  const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
   const [authzState, setAuthzState] = useState<"checking" | "ok" | "denied">("checking");
   const [authzMessage, setAuthzMessage] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  const selectedChild = useMemo(
+    () => childList.find((child) => child.student_id === selectedChildId) ?? null,
+    [childList, selectedChildId],
+  );
 
   // Universal prefetch for offline support
   useUniversalPrefetch({
@@ -190,7 +195,7 @@ const ParentDashboard = () => {
 
   const handleSelectChild = useCallback(
     (child: ChildInfo) => {
-      setSelectedChild(child);
+      setSelectedChildId(child.student_id);
       try {
         localStorage.setItem(getActiveChildStorageKey(), child.student_id);
       } catch {
@@ -203,27 +208,25 @@ const ParentDashboard = () => {
   // Keep one source of truth for the selected child and hydrate it once from storage.
   useEffect(() => {
     if (childList.length === 0) {
-      setSelectedChild(null);
+      setSelectedChildId(null);
       return;
     }
 
-    setSelectedChild((current) => {
-      if (current) {
-        const stillLinked = childList.find((child) => child.student_id === current.student_id);
-        if (stillLinked) return stillLinked;
+    setSelectedChildId((currentId) => {
+      if (currentId && childList.some((child) => child.student_id === currentId)) {
+        return currentId;
       }
 
       try {
         const storedId = localStorage.getItem(getActiveChildStorageKey());
-        const storedChild = storedId
-          ? childList.find((child) => child.student_id === storedId)
-          : null;
-        if (storedChild) return storedChild;
+        if (storedId && childList.some((child) => child.student_id === storedId)) {
+          return storedId;
+        }
       } catch {
         // Ignore storage errors
       }
 
-      return childList[0];
+      return childList[0].student_id;
     });
   }, [childList, getActiveChildStorageKey]);
 
