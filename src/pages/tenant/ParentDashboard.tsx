@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Routes, Route, Navigate, useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
@@ -6,8 +6,6 @@ import { useTenantOptimized } from "@/hooks/useTenantOptimized";
 import { useMyChildren, ChildInfo } from "@/hooks/useMyChildren";
 import { useUniversalPrefetch } from "@/hooks/useUniversalPrefetch";
 import { ParentShell } from "@/components/tenant/ParentShell";
-import { ActiveChildProvider } from "@/context/ActiveChildContext";
-import { ActiveChildBridge } from "@/context/ActiveChildBridge";
 
 import ParentHomeModule from "./parent-modules/ParentHomeModule";
 import ParentAttendanceModule from "./parent-modules/ParentAttendanceModule";
@@ -29,6 +27,7 @@ import ReportCardModule from "./modules/ReportCardModule";
 // Cache key for parent auth
 const PARENT_AUTHZ_CACHE = "eduverse_parent_authz_cache";
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+const ACTIVE_CHILD_STORAGE_KEY = "altrix_active_child_id";
 
 interface CachedParentAuthz {
   schoolId: string;
@@ -184,12 +183,49 @@ const ParentDashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, sessionLoading, tenant.status, tenant.schoolId, isOnline]);
 
-  // Auto-select first child when loaded
+  const getActiveChildStorageKey = useCallback(
+    () => `${ACTIVE_CHILD_STORAGE_KEY}:${schoolId ?? "_"}`,
+    [schoolId],
+  );
+
+  const handleSelectChild = useCallback(
+    (child: ChildInfo) => {
+      setSelectedChild(child);
+      try {
+        localStorage.setItem(getActiveChildStorageKey(), child.student_id);
+      } catch {
+        // Ignore storage errors
+      }
+    },
+    [getActiveChildStorageKey],
+  );
+
+  // Keep one source of truth for the selected child and hydrate it once from storage.
   useEffect(() => {
-    if (childList.length > 0 && !selectedChild) {
-      setSelectedChild(childList[0]);
+    if (childList.length === 0) {
+      setSelectedChild(null);
+      return;
     }
-  }, [childList, selectedChild]);
+
+    setSelectedChild((current) => {
+      if (current) {
+        const stillLinked = childList.find((child) => child.student_id === current.student_id);
+        if (stillLinked) return stillLinked;
+      }
+
+      try {
+        const storedId = localStorage.getItem(getActiveChildStorageKey());
+        const storedChild = storedId
+          ? childList.find((child) => child.student_id === storedId)
+          : null;
+        if (storedChild) return storedChild;
+      } catch {
+        // Ignore storage errors
+      }
+
+      return childList[0];
+    });
+  }, [childList, getActiveChildStorageKey]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -248,14 +284,12 @@ const ParentDashboard = () => {
   const schoolName = tenant.status === "ready" ? tenant.school.name : "School";
 
   return (
-    <ActiveChildProvider schoolId={schoolId} childList={childList}>
-      <ActiveChildBridge selectedChild={selectedChild} onSelectChild={setSelectedChild} />
-      <ParentShell
+    <ParentShell
         schoolName={schoolName}
         schoolSlug={schoolSlug || ""}
         childList={childList}
         selectedChild={selectedChild}
-        onSelectChild={setSelectedChild}
+        onSelectChild={handleSelectChild}
         onLogout={handleLogout}
       >
         <Routes>
@@ -277,8 +311,7 @@ const ParentDashboard = () => {
           <Route path="complaints" element={<ParentComplaintsModule child={selectedChild} schoolId={schoolId} />} />
           <Route path="*" element={<Navigate to="" replace />} />
         </Routes>
-      </ParentShell>
-    </ActiveChildProvider>
+    </ParentShell>
   );
 };
 
