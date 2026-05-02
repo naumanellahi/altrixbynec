@@ -11,7 +11,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  getRecentEmails,
   getResetCooldownRemaining,
+  rememberRecentEmail,
   rememberResetEmail,
   requestPasswordResetLink,
   startResetCooldown,
@@ -30,6 +32,13 @@ export default function PlatformAuth() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [resetCooldown, setResetCooldown] = useState(0);
+  const [recentEmails, setRecentEmails] = useState<string[]>(() => getRecentEmails());
+
+  // Prefill with most recent email on first mount
+  useEffect(() => {
+    if (!email && recentEmails.length > 0) setEmail(recentEmails[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const title = useMemo(() => "Platform Super Admin", []);
 
@@ -59,6 +68,8 @@ export default function PlatformAuth() {
         password,
       });
       if (error) return setMessage(error.message);
+      rememberRecentEmail(parsedEmail.data);
+      setRecentEmails(getRecentEmails());
       navigate("/super_admin");
     } finally {
       setBusy(false);
@@ -122,12 +133,23 @@ export default function PlatformAuth() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Email</label>
                 <Input
+                  id="login-email"
+                  name="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@domain.com"
                   type="email"
-                  autoComplete="email"
+                  autoComplete="username"
+                  inputMode="email"
+                  list="saved-emails"
                 />
+                {recentEmails.length > 0 && (
+                  <datalist id="saved-emails">
+                    {recentEmails.map((e) => (
+                      <option key={e} value={e} />
+                    ))}
+                  </datalist>
+                )}
               </div>
 
 

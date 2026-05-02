@@ -13,7 +13,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  getRecentEmails,
   getResetCooldownRemaining,
+  rememberRecentEmail,
   rememberResetEmail,
   requestPasswordResetLink,
   startResetCooldown,
@@ -45,6 +47,13 @@ const TenantAuth = () => {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [resetCooldown, setResetCooldown] = useState(0);
+  const [recentEmails, setRecentEmails] = useState<string[]>(() => getRecentEmails());
+
+  // Prefill with the most recent email on first mount
+  useEffect(() => {
+    if (!email && recentEmails.length > 0) setEmail(recentEmails[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const title = useMemo(() => {
     if (tenant.status === "ready") return tenant.school.name;
@@ -72,6 +81,8 @@ const TenantAuth = () => {
         password,
       });
       if (error) return setMessage(error.message);
+      rememberRecentEmail(parsedEmail.data);
+      setRecentEmails(getRecentEmails());
       navigate(`/${tenant.slug}/${roleToPathSegment(role)}`);
     } finally {
       setBusy(false);
@@ -176,12 +187,23 @@ const TenantAuth = () => {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Email</label>
                 <Input
+                  id="login-email"
+                  name="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@school.com"
                   type="email"
-                  autoComplete="email"
+                  autoComplete="username"
+                  inputMode="email"
+                  list="saved-emails"
                 />
+                {recentEmails.length > 0 && (
+                  <datalist id="saved-emails">
+                    {recentEmails.map((e) => (
+                      <option key={e} value={e} />
+                    ))}
+                  </datalist>
+                )}
               </div>
 
 
