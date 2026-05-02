@@ -81,6 +81,8 @@ const TenantAuth = () => {
         password,
       });
       if (error) return setMessage(error.message);
+      rememberRecentEmail(parsedEmail.data);
+      setRecentEmails(getRecentEmails());
       navigate(`/${tenant.slug}/${roleToPathSegment(role)}`);
     } finally {
       setBusy(false);
