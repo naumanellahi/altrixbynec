@@ -143,6 +143,13 @@ export default function PlatformAuth() {
                   inputMode="email"
                   list="saved-emails"
                 />
+                {recentEmails.length > 0 && (
+                  <datalist id="saved-emails">
+                    {recentEmails.map((e) => (
+                      <option key={e} value={e} />
+                    ))}
+                  </datalist>
+                )}
               </div>
 
 
