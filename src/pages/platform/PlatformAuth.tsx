@@ -122,11 +122,15 @@ export default function PlatformAuth() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Email</label>
                 <Input
+                  id="login-email"
+                  name="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@domain.com"
                   type="email"
-                  autoComplete="email"
+                  autoComplete="username"
+                  inputMode="email"
+                  list="saved-emails"
                 />
               </div>
 
