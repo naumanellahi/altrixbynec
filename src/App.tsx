@@ -32,7 +32,15 @@ export default function App() {
   // Prevent single failing async task from hard-crashing the whole shell (white screen)
   useEffect(() => {
     const handleRejection = (event: PromiseRejectionEvent) => {
-      console.error("Unhandled rejection:", event.reason);
+      const reason: any = event.reason;
+      // Suppress benign aborts (e.g. cancelled in-flight fetches when a component re-renders/unmounts)
+      const name = reason?.name || reason?.error?.name;
+      const message: string = reason?.message || reason?.error?.message || "";
+      if (name === "AbortError" || /aborted/i.test(message)) {
+        event.preventDefault();
+        return;
+      }
+      console.error("Unhandled rejection:", reason);
       toast.error("An unexpected error occurred. Please try again.");
       event.preventDefault();
     };
