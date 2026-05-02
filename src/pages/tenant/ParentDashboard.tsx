@@ -180,7 +180,9 @@ const ParentDashboard = () => {
     };
 
     checkAuth();
-  }, [user, sessionLoading, tenant, isOnline]);
+    // Use primitive deps to avoid re-running on every render (tenant returns a new object each time)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, sessionLoading, tenant.status, tenant.schoolId, isOnline]);
 
   // Auto-select first child when loaded
   useEffect(() => {
