@@ -68,6 +68,8 @@ export default function PlatformAuth() {
         password,
       });
       if (error) return setMessage(error.message);
+      rememberRecentEmail(parsedEmail.data);
+      setRecentEmails(getRecentEmails());
       navigate("/super_admin");
     } finally {
       setBusy(false);
