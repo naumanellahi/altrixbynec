@@ -41,6 +41,36 @@ export const rememberResetEmail = (email: string) => {
 
 export const getRememberedResetEmail = () => localStorage.getItem(LAST_RESET_EMAIL_KEY) || "";
 
+const RECENT_EMAILS_KEY = "auth-recent-emails";
+const RECENT_EMAILS_LIMIT = 5;
+
+export const getRecentEmails = (): string[] => {
+  try {
+    const raw = localStorage.getItem(RECENT_EMAILS_KEY);
+    if (!raw) {
+      const last = localStorage.getItem(LAST_RESET_EMAIL_KEY);
+      return last ? [last] : [];
+    }
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr.filter((v) => typeof v === "string") : [];
+  } catch {
+    return [];
+  }
+};
+
+export const rememberRecentEmail = (email: string) => {
+  const normalized = email.trim().toLowerCase();
+  if (!normalized || !normalized.includes("@")) return;
+  try {
+    const current = getRecentEmails().filter((e) => e !== normalized);
+    const next = [normalized, ...current].slice(0, RECENT_EMAILS_LIMIT);
+    localStorage.setItem(RECENT_EMAILS_KEY, JSON.stringify(next));
+    localStorage.setItem(LAST_RESET_EMAIL_KEY, normalized);
+  } catch {
+    // ignore quota errors
+  }
+};
+
 export const startResetCooldown = (email: string, seconds = RESET_RESEND_COOLDOWN_SECONDS) => {
   localStorage.setItem(cooldownKey(email), String(Date.now() + seconds * 1000));
 };
