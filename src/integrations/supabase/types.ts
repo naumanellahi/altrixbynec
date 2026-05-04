@@ -3892,15 +3892,21 @@ export type Database = {
       }
       report_cards: {
         Row: {
+          academic_year: string | null
           attendance_percentage: number | null
           created_at: string
-          exam_id: string
+          exam_id: string | null
           gpa: number | null
           id: string
           is_published: boolean
+          last_edited_by: string | null
           max_total: number | null
           overall_grade: string | null
           percentage: number | null
+          period_end: string | null
+          period_label: string | null
+          period_start: string | null
+          period_type: string
           principal_remarks: string | null
           published_at: string | null
           school_id: string
@@ -3910,15 +3916,21 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          academic_year?: string | null
           attendance_percentage?: number | null
           created_at?: string
-          exam_id: string
+          exam_id?: string | null
           gpa?: number | null
           id?: string
           is_published?: boolean
+          last_edited_by?: string | null
           max_total?: number | null
           overall_grade?: string | null
           percentage?: number | null
+          period_end?: string | null
+          period_label?: string | null
+          period_start?: string | null
+          period_type?: string
           principal_remarks?: string | null
           published_at?: string | null
           school_id: string
@@ -3928,15 +3940,21 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          academic_year?: string | null
           attendance_percentage?: number | null
           created_at?: string
-          exam_id?: string
+          exam_id?: string | null
           gpa?: number | null
           id?: string
           is_published?: boolean
+          last_edited_by?: string | null
           max_total?: number | null
           overall_grade?: string | null
           percentage?: number | null
+          period_end?: string | null
+          period_label?: string | null
+          period_start?: string | null
+          period_type?: string
           principal_remarks?: string | null
           published_at?: string | null
           school_id?: string
