@@ -382,12 +382,18 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
                       <TableCell>
                         <div className="flex justify-end gap-1 flex-wrap">
                           {due > 0 && jcEnabled && (
-                            <Button size="sm" onClick={() => payNow(inv.id)} disabled={paying === inv.id}>
-                              {paying === inv.id ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <CreditCard className="h-3 w-3 mr-1" />}
-                              Pay Now
+                            <Button size="sm" onClick={() => payNow(inv.id, "jazzcash")} disabled={paying === `jazzcash:${inv.id}`}>
+                              {paying === `jazzcash:${inv.id}` ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <CreditCard className="h-3 w-3 mr-1" />}
+                              JazzCash
                             </Button>
                           )}
-                          {due > 0 && !jcEnabled && (
+                          {due > 0 && epEnabled && (
+                            <Button size="sm" variant="secondary" onClick={() => payNow(inv.id, "easypaisa")} disabled={paying === `easypaisa:${inv.id}`}>
+                              {paying === `easypaisa:${inv.id}` ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Wallet className="h-3 w-3 mr-1" />}
+                              Easypaisa
+                            </Button>
+                          )}
+                          {due > 0 && !jcEnabled && !epEnabled && (
                             <span className="text-xs text-muted-foreground">Online payment unavailable</span>
                           )}
                           {due > 0 && (
