@@ -415,7 +415,7 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
       <Card>
         <CardHeader>
           <CardTitle>Payment Status</CardTitle>
-          <p className="text-sm text-muted-foreground">Live updates from your recent JazzCash payment attempts.</p>
+          <p className="text-sm text-muted-foreground">Live updates from your recent online payment attempts (JazzCash & Easypaisa).</p>
         </CardHeader>
         <CardContent>
           {txns.length === 0 ? (
@@ -447,12 +447,12 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground max-w-[260px] truncate">
-                        {t.jc_response_message || (t.status === "pending" ? "Awaiting confirmation from JazzCash…" : "—")}
+                        {t.jc_response_message || (t.status === "pending" ? `Awaiting confirmation from ${t.provider === "easypaisa" ? "Easypaisa" : "JazzCash"}…` : "—")}
                       </TableCell>
                       <TableCell className="text-right">
-                        {t.status === "failed" && inv && Math.max(Number(inv.total_amount) - Number(inv.paid_amount), 0) > 0 && jcEnabled && (
-                          <Button size="sm" variant="outline" onClick={() => payNow(t.invoice_id)} disabled={paying === t.invoice_id}>
-                            {paying === t.invoice_id ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+                        {t.status === "failed" && inv && Math.max(Number(inv.total_amount) - Number(inv.paid_amount), 0) > 0 && ((t.provider === "easypaisa" && epEnabled) || (t.provider !== "easypaisa" && jcEnabled)) && (
+                          <Button size="sm" variant="outline" onClick={() => payNow(t.invoice_id, t.provider === "easypaisa" ? "easypaisa" : "jazzcash")} disabled={paying === `${t.provider || "jazzcash"}:${t.invoice_id}`}>
+                            {paying === `${t.provider || "jazzcash"}:${t.invoice_id}` ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
                             Try again
                           </Button>
                         )}
@@ -488,7 +488,7 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
                   <div className="flex justify-between"><span className="text-muted-foreground">Invoice</span><span>{inv?.invoice_number || "—"}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Student</span><span>{child?.first_name}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Date</span><span>{format(new Date(receiptTxn.created_at), "MMM d, yyyy h:mm a")}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Method</span><span>JazzCash</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Method</span><span>{receiptTxn.provider === "easypaisa" ? "Easypaisa" : "JazzCash"}</span></div>
                   <div className="flex justify-between font-semibold pt-2 border-t"><span>Amount Paid</span><span>PKR {Number(receiptTxn.amount).toLocaleString()}</span></div>
                   {receiptTxn.jc_response_message && (
                     <div className="text-xs text-muted-foreground pt-1">{receiptTxn.jc_response_message}</div>
