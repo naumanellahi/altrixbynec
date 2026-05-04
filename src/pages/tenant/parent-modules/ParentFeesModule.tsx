@@ -36,31 +36,34 @@ interface JcTxn {
   status: string;
   jc_response_message: string | null;
   created_at: string;
+  provider?: "jazzcash" | "easypaisa";
 }
 
-// Map raw errors from jazzcash-initiate / network to user-friendly messages
-function friendlyError(raw: string): string {
+// Map raw errors from initiate functions / network to user-friendly messages
+function friendlyError(raw: string, provider: string = "online payment"): string {
   const msg = (raw || "").toLowerCase();
-  if (msg.includes("not configured")) return "JazzCash is not yet set up by your school. Please contact the school office.";
+  const label = provider === "easypaisa" ? "Easypaisa" : provider === "jazzcash" ? "JazzCash" : "Online payment";
+  if (msg.includes("not configured")) return `${label} is not yet set up by your school. Please contact the school office.`;
   if (msg.includes("already paid")) return "This invoice has already been paid.";
   if (msg.includes("invoice not found")) return "We couldn't find this invoice. Please refresh and try again.";
   if (msg.includes("unauthorized")) return "Your session has expired. Please sign in again.";
   if (msg.includes("invoice_id required")) return "Something went wrong selecting this invoice. Please retry.";
   if (msg.includes("popup")) return "Your browser blocked the payment window. Please allow popups and try again.";
-  if (msg.includes("failed to fetch") || msg.includes("network")) return "Network problem reaching JazzCash. Check your connection and try again.";
-  if (msg.includes("failed to start")) return "JazzCash didn't respond. Please try again in a moment.";
+  if (msg.includes("failed to fetch") || msg.includes("network")) return `Network problem reaching ${label}. Check your connection and try again.`;
+  if (msg.includes("failed to start")) return `${label} didn't respond. Please try again in a moment.`;
   return raw || "Payment couldn't be started. Please try again.";
 }
 
 function buildReceiptText(t: JcTxn, inv: InvoiceRecord | undefined, studentName: string): string {
+  const methodLabel = t.provider === "easypaisa" ? "Easypaisa" : "JazzCash";
   const lines = [
-    "JAZZCASH PAYMENT RECEIPT",
+    `${methodLabel.toUpperCase()} PAYMENT RECEIPT`,
     "========================",
     `Date:       ${new Date(t.created_at).toLocaleString()}`,
     `Reference:  ${t.txn_ref_no}`,
     `Invoice:    ${inv?.invoice_number || "—"}`,
     `Student:    ${studentName}`,
-    `Method:     JazzCash`,
+    `Method:     ${methodLabel}`,
     `Status:     ${t.status.toUpperCase()}`,
     `Amount:     PKR ${Number(t.amount).toLocaleString()}`,
     "",
@@ -71,12 +74,12 @@ function buildReceiptText(t: JcTxn, inv: InvoiceRecord | undefined, studentName:
   return lines.filter(Boolean).join("\n");
 }
 
-function downloadReceipt(text: string, ref: string) {
+function downloadReceipt(text: string, ref: string, provider: string = "payment") {
   const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `jazzcash-receipt-${ref}.txt`;
+  a.download = `${provider}-receipt-${ref}.txt`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -87,6 +90,7 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [jcEnabled, setJcEnabled] = useState(false);
+  const [epEnabled, setEpEnabled] = useState(false);
   const [paying, setPaying] = useState<string | null>(null);
   const [txns, setTxns] = useState<JcTxn[]>([]);
   const [receiptTxn, setReceiptTxn] = useState<JcTxn | null>(null);
@@ -141,33 +145,62 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
         .order("due_date", { ascending: false }).limit(100);
       if (!cancelled) setInvoices((data as InvoiceRecord[]) || []);
     };
-    const loadJc = async () => {
-      const { data } = await supabase.from("jazzcash_settings").select("is_enabled").eq("school_id", schoolId).maybeSingle();
-      if (!cancelled) setJcEnabled(!!data?.is_enabled);
+    const loadProviders = async () => {
+      const [{ data: jc }, { data: ep }] = await Promise.all([
+        supabase.from("jazzcash_settings").select("is_enabled").eq("school_id", schoolId).maybeSingle(),
+        supabase.from("easypaisa_settings").select("is_enabled").eq("school_id", schoolId).maybeSingle(),
+      ]);
+      if (!cancelled) {
+        setJcEnabled(!!jc?.is_enabled);
+        setEpEnabled(!!ep?.is_enabled);
+      }
     };
     const loadTxns = async () => {
-      const { data } = await supabase.from("jazzcash_transactions")
-        .select("id, invoice_id, txn_ref_no, amount, status, jc_response_message, created_at")
-        .eq("school_id", schoolId).eq("student_id", child.student_id)
-        .order("created_at", { ascending: false }).limit(50);
-      if (!cancelled) setTxns((data as JcTxn[]) || []);
+      const [{ data: jcRows }, { data: epRows }] = await Promise.all([
+        supabase.from("jazzcash_transactions")
+          .select("id, invoice_id, txn_ref_no, amount, status, jc_response_message, created_at")
+          .eq("school_id", schoolId).eq("student_id", child.student_id)
+          .order("created_at", { ascending: false }).limit(50),
+        supabase.from("easypaisa_transactions")
+          .select("id, invoice_id, order_ref_no, amount, status, ep_response_message, created_at")
+          .eq("school_id", schoolId).eq("student_id", child.student_id)
+          .order("created_at", { ascending: false }).limit(50),
+      ]);
+      const merged: JcTxn[] = [
+        ...((jcRows || []) as any[]).map(r => ({ ...r, provider: "jazzcash" as const })),
+        ...((epRows || []) as any[]).map(r => ({
+          id: r.id, invoice_id: r.invoice_id, txn_ref_no: r.order_ref_no,
+          amount: r.amount, status: r.status, jc_response_message: r.ep_response_message,
+          created_at: r.created_at, provider: "easypaisa" as const,
+        })),
+      ].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 50);
+      if (!cancelled) setTxns(merged);
     };
 
     (async () => {
       setLoading(true);
-      await Promise.all([loadInvoices(), loadJc(), loadTxns()]);
+      await Promise.all([loadInvoices(), loadProviders(), loadTxns()]);
       if (!cancelled) setLoading(false);
     })();
 
     const ch = supabase.channel(`pfees-${child.student_id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "fee_invoices", filter: `student_id=eq.${child.student_id}` }, loadInvoices)
-      .on("postgres_changes", { event: "*", schema: "public", table: "jazzcash_settings", filter: `school_id=eq.${schoolId}` }, loadJc)
+      .on("postgres_changes", { event: "*", schema: "public", table: "jazzcash_settings", filter: `school_id=eq.${schoolId}` }, loadProviders)
+      .on("postgres_changes", { event: "*", schema: "public", table: "easypaisa_settings", filter: `school_id=eq.${schoolId}` }, loadProviders)
       .on("postgres_changes", { event: "*", schema: "public", table: "jazzcash_transactions", filter: `student_id=eq.${child.student_id}` }, (payload) => {
         loadTxns();
-        const newRow = payload.new as JcTxn | undefined;
+        const newRow = payload.new as any;
         if (newRow && payload.eventType === "UPDATE") {
           if (newRow.status === "success") toast.success(`Payment received for ${newRow.txn_ref_no}`);
           else if (newRow.status === "failed") toast.error(`Payment failed: ${newRow.jc_response_message || "Unknown reason"}`);
+        }
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "easypaisa_transactions", filter: `student_id=eq.${child.student_id}` }, (payload) => {
+        loadTxns();
+        const newRow = payload.new as any;
+        if (newRow && payload.eventType === "UPDATE") {
+          if (newRow.status === "success") toast.success(`Payment received for ${newRow.order_ref_no}`);
+          else if (newRow.status === "failed") toast.error(`Payment failed: ${newRow.ep_response_message || "Unknown reason"}`);
         }
       })
       .subscribe();
@@ -175,16 +208,18 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
     return () => { cancelled = true; supabase.removeChannel(ch); };
   }, [child, schoolId]);
 
-  const payNow = async (invoiceId: string) => {
+  const payNow = async (invoiceId: string, provider: "jazzcash" | "easypaisa" = "jazzcash") => {
     const w = window.open("", "_blank", "width=900,height=700");
     if (!w) {
-      toast.error(friendlyError("popup blocked"));
+      toast.error(friendlyError("popup blocked", provider));
       return;
     }
-    w.document.write('<p style="font-family:sans-serif;text-align:center;padding:40px">Preparing JazzCash checkout…</p>');
-    setPaying(invoiceId);
+    const label = provider === "easypaisa" ? "Easypaisa" : "JazzCash";
+    w.document.write(`<p style="font-family:sans-serif;text-align:center;padding:40px">Preparing ${label} checkout…</p>`);
+    setPaying(`${provider}:${invoiceId}`);
     try {
-      const { data, error } = await supabase.functions.invoke("jazzcash-initiate", { body: { invoice_id: invoiceId } });
+      const fnName = provider === "easypaisa" ? "easypaisa-initiate" : "jazzcash-initiate";
+      const { data, error } = await supabase.functions.invoke(fnName, { body: { invoice_id: invoiceId } });
       if (error) throw error;
       const errMsg = (data as any)?.error;
       if (errMsg) throw new Error(errMsg);
@@ -195,8 +230,7 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
       w.document.close();
     } catch (e: any) {
       try { w.close(); } catch {}
-      const friendly = friendlyError(e?.message || "");
-      toast.error(friendly);
+      toast.error(friendlyError(e?.message || "", provider));
     } finally {
       setPaying(null);
     }
@@ -348,12 +382,18 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
                       <TableCell>
                         <div className="flex justify-end gap-1 flex-wrap">
                           {due > 0 && jcEnabled && (
-                            <Button size="sm" onClick={() => payNow(inv.id)} disabled={paying === inv.id}>
-                              {paying === inv.id ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <CreditCard className="h-3 w-3 mr-1" />}
-                              Pay Now
+                            <Button size="sm" onClick={() => payNow(inv.id, "jazzcash")} disabled={paying === `jazzcash:${inv.id}`}>
+                              {paying === `jazzcash:${inv.id}` ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <CreditCard className="h-3 w-3 mr-1" />}
+                              JazzCash
                             </Button>
                           )}
-                          {due > 0 && !jcEnabled && (
+                          {due > 0 && epEnabled && (
+                            <Button size="sm" variant="secondary" onClick={() => payNow(inv.id, "easypaisa")} disabled={paying === `easypaisa:${inv.id}`}>
+                              {paying === `easypaisa:${inv.id}` ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Wallet className="h-3 w-3 mr-1" />}
+                              Easypaisa
+                            </Button>
+                          )}
+                          {due > 0 && !jcEnabled && !epEnabled && (
                             <span className="text-xs text-muted-foreground">Online payment unavailable</span>
                           )}
                           {due > 0 && (
@@ -375,7 +415,7 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
       <Card>
         <CardHeader>
           <CardTitle>Payment Status</CardTitle>
-          <p className="text-sm text-muted-foreground">Live updates from your recent JazzCash payment attempts.</p>
+          <p className="text-sm text-muted-foreground">Live updates from your recent online payment attempts (JazzCash & Easypaisa).</p>
         </CardHeader>
         <CardContent>
           {txns.length === 0 ? (
@@ -407,12 +447,12 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground max-w-[260px] truncate">
-                        {t.jc_response_message || (t.status === "pending" ? "Awaiting confirmation from JazzCash…" : "—")}
+                        {t.jc_response_message || (t.status === "pending" ? `Awaiting confirmation from ${t.provider === "easypaisa" ? "Easypaisa" : "JazzCash"}…` : "—")}
                       </TableCell>
                       <TableCell className="text-right">
-                        {t.status === "failed" && inv && Math.max(Number(inv.total_amount) - Number(inv.paid_amount), 0) > 0 && jcEnabled && (
-                          <Button size="sm" variant="outline" onClick={() => payNow(t.invoice_id)} disabled={paying === t.invoice_id}>
-                            {paying === t.invoice_id ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+                        {t.status === "failed" && inv && Math.max(Number(inv.total_amount) - Number(inv.paid_amount), 0) > 0 && ((t.provider === "easypaisa" && epEnabled) || (t.provider !== "easypaisa" && jcEnabled)) && (
+                          <Button size="sm" variant="outline" onClick={() => payNow(t.invoice_id, t.provider === "easypaisa" ? "easypaisa" : "jazzcash")} disabled={paying === `${t.provider || "jazzcash"}:${t.invoice_id}`}>
+                            {paying === `${t.provider || "jazzcash"}:${t.invoice_id}` ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
                             Try again
                           </Button>
                         )}
@@ -448,7 +488,7 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
                   <div className="flex justify-between"><span className="text-muted-foreground">Invoice</span><span>{inv?.invoice_number || "—"}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Student</span><span>{child?.first_name}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Date</span><span>{format(new Date(receiptTxn.created_at), "MMM d, yyyy h:mm a")}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Method</span><span>JazzCash</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Method</span><span>{receiptTxn.provider === "easypaisa" ? "Easypaisa" : "JazzCash"}</span></div>
                   <div className="flex justify-between font-semibold pt-2 border-t"><span>Amount Paid</span><span>PKR {Number(receiptTxn.amount).toLocaleString()}</span></div>
                   {receiptTxn.jc_response_message && (
                     <div className="text-xs text-muted-foreground pt-1">{receiptTxn.jc_response_message}</div>
@@ -459,7 +499,7 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
                     navigator.clipboard.writeText(receiptTxn.txn_ref_no);
                     toast.success("Reference copied");
                   }}>Copy reference</Button>
-                  <Button onClick={() => downloadReceipt(receiptText, receiptTxn.txn_ref_no)}>
+                  <Button onClick={() => downloadReceipt(receiptText, receiptTxn.txn_ref_no, receiptTxn.provider || "jazzcash")}>
                     <Download className="h-4 w-4 mr-1" /> Download
                   </Button>
                 </DialogFooter>

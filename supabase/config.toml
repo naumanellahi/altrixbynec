@@ -9,5 +9,14 @@ verify_jwt = false
 [functions.jazzcash-reconcile]
 verify_jwt = false
 
+[functions.easypaisa-initiate]
+verify_jwt = true
+
+[functions.easypaisa-callback]
+verify_jwt = false
+
+[functions.easypaisa-reconcile]
+verify_jwt = false
+
 [functions.password-reset-request]
 verify_jwt = false
