@@ -2026,6 +2026,104 @@ export type Database = {
           },
         ]
       }
+      easypaisa_settings: {
+        Row: {
+          account_number: string | null
+          created_at: string
+          environment: Database["public"]["Enums"]["easypaisa_env"]
+          hash_key: string | null
+          id: string
+          is_enabled: boolean
+          return_url: string | null
+          school_id: string
+          store_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_number?: string | null
+          created_at?: string
+          environment?: Database["public"]["Enums"]["easypaisa_env"]
+          hash_key?: string | null
+          id?: string
+          is_enabled?: boolean
+          return_url?: string | null
+          school_id: string
+          store_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string | null
+          created_at?: string
+          environment?: Database["public"]["Enums"]["easypaisa_env"]
+          hash_key?: string | null
+          id?: string
+          is_enabled?: boolean
+          return_url?: string | null
+          school_id?: string
+          store_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      easypaisa_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          ep_response_code: string | null
+          ep_response_message: string | null
+          id: string
+          initiator_user_id: string | null
+          invoice_id: string
+          order_ref_no: string
+          raw_request: Json | null
+          raw_response: Json | null
+          school_id: string
+          status: Database["public"]["Enums"]["fee_payment_status"]
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          ep_response_code?: string | null
+          ep_response_message?: string | null
+          id?: string
+          initiator_user_id?: string | null
+          invoice_id: string
+          order_ref_no: string
+          raw_request?: Json | null
+          raw_response?: Json | null
+          school_id: string
+          status?: Database["public"]["Enums"]["fee_payment_status"]
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          ep_response_code?: string | null
+          ep_response_message?: string | null
+          id?: string
+          initiator_user_id?: string | null
+          invoice_id?: string
+          order_ref_no?: string
+          raw_request?: Json | null
+          raw_response?: Json | null
+          school_id?: string
+          status?: Database["public"]["Enums"]["fee_payment_status"]
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "easypaisa_transactions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "fee_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exam_results: {
         Row: {
           created_at: string
@@ -5207,6 +5305,7 @@ export type Database = {
         Returns: boolean
       }
       can_manage_admissions: { Args: { _school_id: string }; Returns: boolean }
+      can_manage_easypaisa: { Args: { _school_id: string }; Returns: boolean }
       can_manage_finance: { Args: { _school_id: string }; Returns: boolean }
       can_manage_jazzcash: { Args: { _school_id: string }; Returns: boolean }
       can_manage_staff: { Args: { _school_id: string }; Returns: boolean }
@@ -5268,6 +5367,7 @@ export type Database = {
             Args: { _role: string; _school_id: string; _user_id: string }
             Returns: boolean
           }
+      is_easypaisa_enabled: { Args: { _school_id: string }; Returns: boolean }
       is_jazzcash_enabled: { Args: { _school_id: string }; Returns: boolean }
       is_my_child: {
         Args: { _school_id: string; _student_id: string }
@@ -5320,6 +5420,7 @@ export type Database = {
         | "approved"
         | "rejected"
         | "withdrawn"
+      easypaisa_env: "sandbox" | "live"
       fee_billing_frequency: "monthly" | "quarterly" | "yearly" | "one_time"
       fee_invoice_status:
         | "draft"
@@ -5482,6 +5583,7 @@ export const Constants = {
         "rejected",
         "withdrawn",
       ],
+      easypaisa_env: ["sandbox", "live"],
       fee_billing_frequency: ["monthly", "quarterly", "yearly", "one_time"],
       fee_invoice_status: [
         "draft",
