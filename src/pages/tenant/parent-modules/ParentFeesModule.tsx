@@ -36,31 +36,34 @@ interface JcTxn {
   status: string;
   jc_response_message: string | null;
   created_at: string;
+  provider?: "jazzcash" | "easypaisa";
 }
 
-// Map raw errors from jazzcash-initiate / network to user-friendly messages
-function friendlyError(raw: string): string {
+// Map raw errors from initiate functions / network to user-friendly messages
+function friendlyError(raw: string, provider: string = "online payment"): string {
   const msg = (raw || "").toLowerCase();
-  if (msg.includes("not configured")) return "JazzCash is not yet set up by your school. Please contact the school office.";
+  const label = provider === "easypaisa" ? "Easypaisa" : provider === "jazzcash" ? "JazzCash" : "Online payment";
+  if (msg.includes("not configured")) return `${label} is not yet set up by your school. Please contact the school office.`;
   if (msg.includes("already paid")) return "This invoice has already been paid.";
   if (msg.includes("invoice not found")) return "We couldn't find this invoice. Please refresh and try again.";
   if (msg.includes("unauthorized")) return "Your session has expired. Please sign in again.";
   if (msg.includes("invoice_id required")) return "Something went wrong selecting this invoice. Please retry.";
   if (msg.includes("popup")) return "Your browser blocked the payment window. Please allow popups and try again.";
-  if (msg.includes("failed to fetch") || msg.includes("network")) return "Network problem reaching JazzCash. Check your connection and try again.";
-  if (msg.includes("failed to start")) return "JazzCash didn't respond. Please try again in a moment.";
+  if (msg.includes("failed to fetch") || msg.includes("network")) return `Network problem reaching ${label}. Check your connection and try again.`;
+  if (msg.includes("failed to start")) return `${label} didn't respond. Please try again in a moment.`;
   return raw || "Payment couldn't be started. Please try again.";
 }
 
 function buildReceiptText(t: JcTxn, inv: InvoiceRecord | undefined, studentName: string): string {
+  const methodLabel = t.provider === "easypaisa" ? "Easypaisa" : "JazzCash";
   const lines = [
-    "JAZZCASH PAYMENT RECEIPT",
+    `${methodLabel.toUpperCase()} PAYMENT RECEIPT`,
     "========================",
     `Date:       ${new Date(t.created_at).toLocaleString()}`,
     `Reference:  ${t.txn_ref_no}`,
     `Invoice:    ${inv?.invoice_number || "—"}`,
     `Student:    ${studentName}`,
-    `Method:     JazzCash`,
+    `Method:     ${methodLabel}`,
     `Status:     ${t.status.toUpperCase()}`,
     `Amount:     PKR ${Number(t.amount).toLocaleString()}`,
     "",
@@ -71,12 +74,12 @@ function buildReceiptText(t: JcTxn, inv: InvoiceRecord | undefined, studentName:
   return lines.filter(Boolean).join("\n");
 }
 
-function downloadReceipt(text: string, ref: string) {
+function downloadReceipt(text: string, ref: string, provider: string = "payment") {
   const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `jazzcash-receipt-${ref}.txt`;
+  a.download = `${provider}-receipt-${ref}.txt`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
