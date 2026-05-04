@@ -90,6 +90,7 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [jcEnabled, setJcEnabled] = useState(false);
+  const [epEnabled, setEpEnabled] = useState(false);
   const [paying, setPaying] = useState<string | null>(null);
   const [txns, setTxns] = useState<JcTxn[]>([]);
   const [receiptTxn, setReceiptTxn] = useState<JcTxn | null>(null);
