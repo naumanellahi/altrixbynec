@@ -772,3 +772,36 @@ function JazzCashSettingsCard({ schoolId }: { schoolId: string }) {
     </Card>
   );
 }
+
+// ---------------- Easypaisa settings ----------------
+function EasypaisaSettingsCard({ schoolId }: { schoolId: string }) {
+  const [s, setS] = useState({ is_enabled: false, environment: "sandbox" as "sandbox" | "live", store_id: "", hash_key: "", account_number: "", return_url: "" });
+  useEffect(() => {
+    if (!schoolId) return;
+    supabase.from("easypaisa_settings").select("*").eq("school_id", schoolId).maybeSingle().then(({ data }) => { if (data) setS(data as any); });
+  }, [schoolId]);
+  const save = async () => {
+    const { error } = await supabase.from("easypaisa_settings").upsert({ ...s, school_id: schoolId } as any, { onConflict: "school_id" });
+    if (error) return toast.error(error.message);
+    toast.success("Easypaisa settings saved");
+  };
+  return (
+    <Card>
+      <CardHeader><CardTitle>Easypaisa (Hosted Checkout)</CardTitle></CardHeader>
+      <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="flex items-center gap-3"><Switch checked={s.is_enabled} onCheckedChange={v => setS({ ...s, is_enabled: v })} /><Label>Enable Easypaisa payments</Label></div>
+        <div><Label>Environment</Label>
+          <Select value={s.environment} onValueChange={v => setS({ ...s, environment: v as any })}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent><SelectItem value="sandbox">Sandbox</SelectItem><SelectItem value="live">Live</SelectItem></SelectContent>
+          </Select>
+        </div>
+        <div><Label>Store ID</Label><Input value={s.store_id || ""} onChange={e => setS({ ...s, store_id: e.target.value })} placeholder="e.g. 12345" /></div>
+        <div><Label>Hash Key</Label><Input type="password" value={s.hash_key || ""} onChange={e => setS({ ...s, hash_key: e.target.value })} /></div>
+        <div><Label>Merchant Mobile Account #</Label><Input value={s.account_number || ""} onChange={e => setS({ ...s, account_number: e.target.value })} placeholder="03xxxxxxxxx" /></div>
+        <div><Label>Return URL (optional)</Label><Input value={s.return_url || ""} onChange={e => setS({ ...s, return_url: e.target.value })} placeholder="https://your-app/return" /></div>
+        <div className="md:col-span-2"><Button onClick={save}>Save Easypaisa settings</Button></div>
+      </CardContent>
+    </Card>
+  );
+}
