@@ -618,6 +618,7 @@ export default function FeesAdvancedModule() {
                     <SelectItem value="cash">Cash</SelectItem>
                     <SelectItem value="bank">Bank</SelectItem>
                     <SelectItem value="jazzcash">JazzCash</SelectItem>
+                    <SelectItem value="easypaisa">Easypaisa</SelectItem>
                     <SelectItem value="card">Card</SelectItem>
                     <SelectItem value="cheque">Cheque</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
@@ -695,6 +696,7 @@ export default function FeesAdvancedModule() {
           </Card>
 
           <JazzCashSettingsCard schoolId={schoolId} />
+          <EasypaisaSettingsCard schoolId={schoolId} />
         </TabsContent>
       </Tabs>
 
