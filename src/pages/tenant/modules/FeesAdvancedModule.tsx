@@ -722,6 +722,8 @@ export default function FeesAdvancedModule() {
                 <SelectContent>
                   <SelectItem value="cash">Cash</SelectItem>
                   <SelectItem value="bank_transfer">Bank transfer</SelectItem>
+                  <SelectItem value="jazzcash">JazzCash</SelectItem>
+                  <SelectItem value="easypaisa">Easypaisa</SelectItem>
                   <SelectItem value="cheque">Cheque</SelectItem>
                   <SelectItem value="card">Card</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
