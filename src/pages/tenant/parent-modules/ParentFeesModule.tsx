@@ -145,33 +145,62 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
         .order("due_date", { ascending: false }).limit(100);
       if (!cancelled) setInvoices((data as InvoiceRecord[]) || []);
     };
-    const loadJc = async () => {
-      const { data } = await supabase.from("jazzcash_settings").select("is_enabled").eq("school_id", schoolId).maybeSingle();
-      if (!cancelled) setJcEnabled(!!data?.is_enabled);
+    const loadProviders = async () => {
+      const [{ data: jc }, { data: ep }] = await Promise.all([
+        supabase.from("jazzcash_settings").select("is_enabled").eq("school_id", schoolId).maybeSingle(),
+        supabase.from("easypaisa_settings").select("is_enabled").eq("school_id", schoolId).maybeSingle(),
+      ]);
+      if (!cancelled) {
+        setJcEnabled(!!jc?.is_enabled);
+        setEpEnabled(!!ep?.is_enabled);
+      }
     };
     const loadTxns = async () => {
-      const { data } = await supabase.from("jazzcash_transactions")
-        .select("id, invoice_id, txn_ref_no, amount, status, jc_response_message, created_at")
-        .eq("school_id", schoolId).eq("student_id", child.student_id)
-        .order("created_at", { ascending: false }).limit(50);
-      if (!cancelled) setTxns((data as JcTxn[]) || []);
+      const [{ data: jcRows }, { data: epRows }] = await Promise.all([
+        supabase.from("jazzcash_transactions")
+          .select("id, invoice_id, txn_ref_no, amount, status, jc_response_message, created_at")
+          .eq("school_id", schoolId).eq("student_id", child.student_id)
+          .order("created_at", { ascending: false }).limit(50),
+        supabase.from("easypaisa_transactions")
+          .select("id, invoice_id, order_ref_no, amount, status, ep_response_message, created_at")
+          .eq("school_id", schoolId).eq("student_id", child.student_id)
+          .order("created_at", { ascending: false }).limit(50),
+      ]);
+      const merged: JcTxn[] = [
+        ...((jcRows || []) as any[]).map(r => ({ ...r, provider: "jazzcash" as const })),
+        ...((epRows || []) as any[]).map(r => ({
+          id: r.id, invoice_id: r.invoice_id, txn_ref_no: r.order_ref_no,
+          amount: r.amount, status: r.status, jc_response_message: r.ep_response_message,
+          created_at: r.created_at, provider: "easypaisa" as const,
+        })),
+      ].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 50);
+      if (!cancelled) setTxns(merged);
     };
 
     (async () => {
       setLoading(true);
-      await Promise.all([loadInvoices(), loadJc(), loadTxns()]);
+      await Promise.all([loadInvoices(), loadProviders(), loadTxns()]);
       if (!cancelled) setLoading(false);
     })();
 
     const ch = supabase.channel(`pfees-${child.student_id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "fee_invoices", filter: `student_id=eq.${child.student_id}` }, loadInvoices)
-      .on("postgres_changes", { event: "*", schema: "public", table: "jazzcash_settings", filter: `school_id=eq.${schoolId}` }, loadJc)
+      .on("postgres_changes", { event: "*", schema: "public", table: "jazzcash_settings", filter: `school_id=eq.${schoolId}` }, loadProviders)
+      .on("postgres_changes", { event: "*", schema: "public", table: "easypaisa_settings", filter: `school_id=eq.${schoolId}` }, loadProviders)
       .on("postgres_changes", { event: "*", schema: "public", table: "jazzcash_transactions", filter: `student_id=eq.${child.student_id}` }, (payload) => {
         loadTxns();
-        const newRow = payload.new as JcTxn | undefined;
+        const newRow = payload.new as any;
         if (newRow && payload.eventType === "UPDATE") {
           if (newRow.status === "success") toast.success(`Payment received for ${newRow.txn_ref_no}`);
           else if (newRow.status === "failed") toast.error(`Payment failed: ${newRow.jc_response_message || "Unknown reason"}`);
+        }
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "easypaisa_transactions", filter: `student_id=eq.${child.student_id}` }, (payload) => {
+        loadTxns();
+        const newRow = payload.new as any;
+        if (newRow && payload.eventType === "UPDATE") {
+          if (newRow.status === "success") toast.success(`Payment received for ${newRow.order_ref_no}`);
+          else if (newRow.status === "failed") toast.error(`Payment failed: ${newRow.ep_response_message || "Unknown reason"}`);
         }
       })
       .subscribe();
@@ -179,16 +208,18 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
     return () => { cancelled = true; supabase.removeChannel(ch); };
   }, [child, schoolId]);
 
-  const payNow = async (invoiceId: string) => {
+  const payNow = async (invoiceId: string, provider: "jazzcash" | "easypaisa" = "jazzcash") => {
     const w = window.open("", "_blank", "width=900,height=700");
     if (!w) {
-      toast.error(friendlyError("popup blocked"));
+      toast.error(friendlyError("popup blocked", provider));
       return;
     }
-    w.document.write('<p style="font-family:sans-serif;text-align:center;padding:40px">Preparing JazzCash checkout…</p>');
-    setPaying(invoiceId);
+    const label = provider === "easypaisa" ? "Easypaisa" : "JazzCash";
+    w.document.write(`<p style="font-family:sans-serif;text-align:center;padding:40px">Preparing ${label} checkout…</p>`);
+    setPaying(`${provider}:${invoiceId}`);
     try {
-      const { data, error } = await supabase.functions.invoke("jazzcash-initiate", { body: { invoice_id: invoiceId } });
+      const fnName = provider === "easypaisa" ? "easypaisa-initiate" : "jazzcash-initiate";
+      const { data, error } = await supabase.functions.invoke(fnName, { body: { invoice_id: invoiceId } });
       if (error) throw error;
       const errMsg = (data as any)?.error;
       if (errMsg) throw new Error(errMsg);
@@ -199,8 +230,7 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
       w.document.close();
     } catch (e: any) {
       try { w.close(); } catch {}
-      const friendly = friendlyError(e?.message || "");
-      toast.error(friendly);
+      toast.error(friendlyError(e?.message || "", provider));
     } finally {
       setPaying(null);
     }
