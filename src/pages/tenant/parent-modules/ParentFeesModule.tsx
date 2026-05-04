@@ -499,7 +499,7 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
                     navigator.clipboard.writeText(receiptTxn.txn_ref_no);
                     toast.success("Reference copied");
                   }}>Copy reference</Button>
-                  <Button onClick={() => downloadReceipt(receiptText, receiptTxn.txn_ref_no)}>
+                  <Button onClick={() => downloadReceipt(receiptText, receiptTxn.txn_ref_no, receiptTxn.provider || "jazzcash")}>
                     <Download className="h-4 w-4 mr-1" /> Download
                   </Button>
                 </DialogFooter>
