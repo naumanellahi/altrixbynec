@@ -5519,6 +5519,7 @@ export type Database = {
         Args: { _invoice_id: string }
         Returns: undefined
       }
+      shares_school: { Args: { _a: string; _b: string }; Returns: boolean }
       student_sibling_rank: {
         Args: { _school_id: string; _student_id: string }
         Returns: number
