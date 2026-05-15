@@ -96,12 +96,12 @@ export function OwnerFinanceModule({ schoolId }: Props) {
       );
 
       // Invoice metrics
-      const totalInvoiced = invoices.reduce((sum, i) => sum + Number(i.total || 0), 0);
+      const totalInvoiced = invoices.reduce((sum, i: any) => sum + Number(i.total_amount || i.total || 0), 0);
       const paidInvoices = invoices.filter((i) => i.status === "paid");
-      const collectedAmount = paidInvoices.reduce((sum, i) => sum + Number(i.total || 0), 0);
+      const collectedAmount = paidInvoices.reduce((sum, i: any) => sum + Number(i.total_amount || i.total || 0), 0);
       const collectionRate = totalInvoiced > 0 ? Math.round((collectedAmount / totalInvoiced) * 100) : 0;
       const pendingInvoices = invoices.filter((i) => i.status !== "paid");
-      const unpaidAmount = pendingInvoices.reduce((sum, i) => sum + Number(i.total || 0), 0);
+      const unpaidAmount = pendingInvoices.reduce((sum, i: any) => sum + Number(i.total_amount || i.total || 0), 0);
 
       // Expense breakdown by category
       const expenseByCategory: Record<string, number> = {};
