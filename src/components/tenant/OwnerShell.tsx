@@ -196,7 +196,8 @@ export function OwnerShell({ title, subtitle, schoolSlug, children }: Props) {
             {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          <OwnerContextSwitcher schoolId={schoolId} schoolSlug={schoolSlug} compact />
           <OfflineStatusIndicator
             isOnline={offline.isOnline}
             isSyncing={offline.isSyncing}
