@@ -122,6 +122,10 @@ export function OwnerShell({ title, subtitle, schoolSlug, children }: Props) {
         </div>
       </div>
 
+      <div className="mt-4">
+        <OwnerContextSwitcher schoolId={schoolId} schoolSlug={schoolSlug} />
+      </div>
+
       <ScrollArea className="mt-6 flex-1">
         <nav className="space-y-1 pr-2">
           {navItems.map((item) => (
