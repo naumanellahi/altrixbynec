@@ -87,6 +87,8 @@ export function OwnerOverviewModule({ schoolId }: Props) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
+  const activeCampusId = useActiveCampus(schoolId);
+  const campusEq = (q: any) => (activeCampusId ? q.eq("campus_id", activeCampusId) : q);
 
   const basePath = `/${schoolSlug}/school_owner`;
 
