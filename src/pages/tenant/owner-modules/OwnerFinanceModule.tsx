@@ -39,6 +39,7 @@ import {
   Line,
 } from "recharts";
 import { format, subMonths, startOfMonth, startOfYear, endOfMonth } from "date-fns";
+import { useActiveCampus } from "@/hooks/useActiveCampus";
 
 interface Props {
   schoolId: string | null;
@@ -49,6 +50,8 @@ const COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2))", "hsl(var(--chart-3
 export function OwnerFinanceModule({ schoolId }: Props) {
   const [activeTab, setActiveTab] = useState("overview");
   const [periodFilter, setPeriodFilter] = useState("12m");
+  const activeCampusId = useActiveCampus(schoolId);
+  const campusEq = (q: any) => (activeCampusId ? q.eq("campus_id", activeCampusId) : q);
 
   // Date ranges
   const monthStart = useMemo(() => startOfMonth(new Date()), []);
@@ -56,14 +59,14 @@ export function OwnerFinanceModule({ schoolId }: Props) {
 
   // Fetch financial data
   const { data: financeData, isLoading } = useQuery({
-    queryKey: ["owner_finance", schoolId],
+    queryKey: ["owner_finance", schoolId, activeCampusId],
     queryFn: async () => {
       if (!schoolId) return null;
 
       const [paymentsRes, expensesRes, invoicesRes, payRunsRes, salariesRes] = await Promise.all([
-        supabase.from("finance_payments").select("*").eq("school_id", schoolId),
+        campusEq(supabase.from("fee_payments").select("*").eq("school_id", schoolId).eq("status", "success")),
         supabase.from("finance_expenses").select("*").eq("school_id", schoolId),
-        supabase.from("finance_invoices").select("*").eq("school_id", schoolId),
+        campusEq(supabase.from("fee_invoices").select("*").eq("school_id", schoolId)),
         supabase.from("hr_pay_runs").select("*").eq("school_id", schoolId),
         supabase.from("hr_salary_records").select("*").eq("school_id", schoolId).eq("is_active", true),
       ]);
@@ -93,12 +96,12 @@ export function OwnerFinanceModule({ schoolId }: Props) {
       );
 
       // Invoice metrics
-      const totalInvoiced = invoices.reduce((sum, i) => sum + Number(i.total || 0), 0);
+      const totalInvoiced = invoices.reduce((sum, i: any) => sum + Number(i.total_amount || i.total || 0), 0);
       const paidInvoices = invoices.filter((i) => i.status === "paid");
-      const collectedAmount = paidInvoices.reduce((sum, i) => sum + Number(i.total || 0), 0);
+      const collectedAmount = paidInvoices.reduce((sum, i: any) => sum + Number(i.total_amount || i.total || 0), 0);
       const collectionRate = totalInvoiced > 0 ? Math.round((collectedAmount / totalInvoiced) * 100) : 0;
       const pendingInvoices = invoices.filter((i) => i.status !== "paid");
-      const unpaidAmount = pendingInvoices.reduce((sum, i) => sum + Number(i.total || 0), 0);
+      const unpaidAmount = pendingInvoices.reduce((sum, i: any) => sum + Number(i.total_amount || i.total || 0), 0);
 
       // Expense breakdown by category
       const expenseByCategory: Record<string, number> = {};
