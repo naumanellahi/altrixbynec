@@ -39,6 +39,7 @@ import {
   Line,
 } from "recharts";
 import { format, subMonths, startOfMonth, startOfYear, endOfMonth } from "date-fns";
+import { useActiveCampus } from "@/hooks/useActiveCampus";
 
 interface Props {
   schoolId: string | null;
@@ -49,6 +50,8 @@ const COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2))", "hsl(var(--chart-3
 export function OwnerFinanceModule({ schoolId }: Props) {
   const [activeTab, setActiveTab] = useState("overview");
   const [periodFilter, setPeriodFilter] = useState("12m");
+  const activeCampusId = useActiveCampus(schoolId);
+  const campusEq = (q: any) => (activeCampusId ? q.eq("campus_id", activeCampusId) : q);
 
   // Date ranges
   const monthStart = useMemo(() => startOfMonth(new Date()), []);
@@ -56,7 +59,7 @@ export function OwnerFinanceModule({ schoolId }: Props) {
 
   // Fetch financial data
   const { data: financeData, isLoading } = useQuery({
-    queryKey: ["owner_finance", schoolId],
+    queryKey: ["owner_finance", schoolId, activeCampusId],
     queryFn: async () => {
       if (!schoolId) return null;
 
