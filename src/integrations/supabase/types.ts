@@ -3665,6 +3665,42 @@ export type Database = {
           },
         ]
       }
+      owner_active_context: {
+        Row: {
+          active_campus_id: string | null
+          active_school_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active_campus_id?: string | null
+          active_school_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active_campus_id?: string | null
+          active_school_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "owner_active_context_active_campus_id_fkey"
+            columns: ["active_campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "owner_active_context_active_school_id_fkey"
+            columns: ["active_school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parent_behavior_notes: {
         Row: {
           behavior: string | null
@@ -4141,6 +4177,38 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "school_memberships_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      school_owner_assignments: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          owner_user_id: string
+          school_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          owner_user_id: string
+          school_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          owner_user_id?: string
+          school_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_owner_assignments_school_id_fkey"
             columns: ["school_id"]
             isOneToOne: false
             referencedRelation: "schools"
@@ -5385,6 +5453,10 @@ export type Database = {
             Args: { _role: string; _school_id: string; _user_id: string }
             Returns: boolean
           }
+      is_campus_member: {
+        Args: { _campus_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_easypaisa_enabled: { Args: { _school_id: string }; Returns: boolean }
       is_jazzcash_enabled: { Args: { _school_id: string }; Returns: boolean }
       is_my_child: {
@@ -5422,6 +5494,27 @@ export type Database = {
         }[]
       }
       my_student_id: { Args: { _school_id: string }; Returns: string }
+      owner_campuses: {
+        Args: { _school_id: string }
+        Returns: {
+          code: string
+          id: string
+          is_active: boolean
+          name: string
+          principal_user_id: string
+          school_id: string
+        }[]
+      }
+      owner_schools: {
+        Args: never
+        Returns: {
+          id: string
+          is_active: boolean
+          logo_url: string
+          name: string
+          slug: string
+        }[]
+      }
       recalc_invoice_totals: {
         Args: { _invoice_id: string }
         Returns: undefined
