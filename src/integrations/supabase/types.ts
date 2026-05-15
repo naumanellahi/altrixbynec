@@ -17,6 +17,7 @@ export type Database = {
       academic_assessments: {
         Row: {
           assessment_date: string | null
+          campus_id: string | null
           class_section_id: string
           created_at: string | null
           created_by: string | null
@@ -31,6 +32,7 @@ export type Database = {
         }
         Insert: {
           assessment_date?: string | null
+          campus_id?: string | null
           class_section_id: string
           created_at?: string | null
           created_by?: string | null
@@ -45,6 +47,7 @@ export type Database = {
         }
         Update: {
           assessment_date?: string | null
+          campus_id?: string | null
           class_section_id?: string
           created_at?: string | null
           created_by?: string | null
@@ -58,6 +61,13 @@ export type Database = {
           title?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "academic_assessments_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "academic_assessments_class_section_id_fkey"
             columns: ["class_section_id"]
@@ -235,6 +245,7 @@ export type Database = {
       admin_messages: {
         Row: {
           attachment_urls: string[] | null
+          campus_id: string | null
           content: string | null
           created_at: string | null
           created_by: string | null
@@ -248,6 +259,7 @@ export type Database = {
         }
         Insert: {
           attachment_urls?: string[] | null
+          campus_id?: string | null
           content?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -261,6 +273,7 @@ export type Database = {
         }
         Update: {
           attachment_urls?: string[] | null
+          campus_id?: string | null
           content?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -273,6 +286,13 @@ export type Database = {
           subject?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "admin_messages_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "admin_messages_reply_to_id_fkey"
             columns: ["reply_to_id"]
@@ -934,6 +954,7 @@ export type Database = {
       app_notifications: {
         Row: {
           body: string | null
+          campus_id: string | null
           created_at: string | null
           entity_id: string | null
           entity_type: string | null
@@ -946,6 +967,7 @@ export type Database = {
         }
         Insert: {
           body?: string | null
+          campus_id?: string | null
           created_at?: string | null
           entity_id?: string | null
           entity_type?: string | null
@@ -958,6 +980,7 @@ export type Database = {
         }
         Update: {
           body?: string | null
+          campus_id?: string | null
           created_at?: string | null
           entity_id?: string | null
           entity_type?: string | null
@@ -969,6 +992,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "app_notifications_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "app_notifications_school_id_fkey"
             columns: ["school_id"]
@@ -1060,6 +1090,7 @@ export type Database = {
       assignments: {
         Row: {
           attachment_urls: string[] | null
+          campus_id: string | null
           class_section_id: string
           created_at: string | null
           created_by: string | null
@@ -1075,6 +1106,7 @@ export type Database = {
         }
         Insert: {
           attachment_urls?: string[] | null
+          campus_id?: string | null
           class_section_id: string
           created_at?: string | null
           created_by?: string | null
@@ -1090,6 +1122,7 @@ export type Database = {
         }
         Update: {
           attachment_urls?: string[] | null
+          campus_id?: string | null
           class_section_id?: string
           created_at?: string | null
           created_by?: string | null
@@ -1104,6 +1137,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "assignments_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "assignments_class_section_id_fkey"
             columns: ["class_section_id"]
@@ -1122,6 +1162,7 @@ export type Database = {
       }
       attendance_entries: {
         Row: {
+          campus_id: string | null
           created_at: string | null
           created_by: string | null
           id: string
@@ -1132,6 +1173,7 @@ export type Database = {
           student_id: string
         }
         Insert: {
+          campus_id?: string | null
           created_at?: string | null
           created_by?: string | null
           id?: string
@@ -1142,6 +1184,7 @@ export type Database = {
           student_id: string
         }
         Update: {
+          campus_id?: string | null
           created_at?: string | null
           created_by?: string | null
           id?: string
@@ -1152,6 +1195,13 @@ export type Database = {
           student_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "attendance_entries_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "attendance_entries_school_id_fkey"
             columns: ["school_id"]
@@ -1177,6 +1227,7 @@ export type Database = {
       }
       attendance_sessions: {
         Row: {
+          campus_id: string | null
           class_section_id: string
           created_at: string | null
           created_by: string | null
@@ -1186,6 +1237,7 @@ export type Database = {
           session_date: string
         }
         Insert: {
+          campus_id?: string | null
           class_section_id: string
           created_at?: string | null
           created_by?: string | null
@@ -1195,6 +1247,7 @@ export type Database = {
           session_date: string
         }
         Update: {
+          campus_id?: string | null
           class_section_id?: string
           created_at?: string | null
           created_by?: string | null
@@ -1204,6 +1257,13 @@ export type Database = {
           session_date?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "attendance_sessions_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "attendance_sessions_class_section_id_fkey"
             columns: ["class_section_id"]
@@ -1222,6 +1282,7 @@ export type Database = {
       }
       behavior_notes: {
         Row: {
+          campus_id: string | null
           content: string | null
           created_at: string | null
           created_by: string | null
@@ -1234,6 +1295,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          campus_id?: string | null
           content?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -1246,6 +1308,7 @@ export type Database = {
           title: string
         }
         Update: {
+          campus_id?: string | null
           content?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -1258,6 +1321,13 @@ export type Database = {
           title?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "behavior_notes_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "behavior_notes_school_id_fkey"
             columns: ["school_id"]
@@ -1476,6 +1546,7 @@ export type Database = {
       }
       complaints: {
         Row: {
+          campus_id: string | null
           category: string | null
           content: string
           created_at: string
@@ -1492,6 +1563,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          campus_id?: string | null
           category?: string | null
           content: string
           created_at?: string
@@ -1508,6 +1580,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          campus_id?: string | null
           category?: string | null
           content?: string
           created_at?: string
@@ -1524,6 +1597,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "complaints_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "complaints_school_id_fkey"
             columns: ["school_id"]
@@ -2356,6 +2436,7 @@ export type Database = {
       }
       fee_invoices: {
         Row: {
+          campus_id: string | null
           created_at: string
           discount_amount: number
           due_date: string
@@ -2377,6 +2458,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          campus_id?: string | null
           created_at?: string
           discount_amount?: number
           due_date: string
@@ -2398,6 +2480,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          campus_id?: string | null
           created_at?: string
           discount_amount?: number
           due_date?: string
@@ -2420,6 +2503,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fee_invoices_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fee_invoices_fee_plan_id_fkey"
             columns: ["fee_plan_id"]
             isOneToOne: false
@@ -2431,6 +2521,7 @@ export type Database = {
       fee_payments: {
         Row: {
           amount: number
+          campus_id: string | null
           created_at: string
           id: string
           invoice_id: string
@@ -2445,6 +2536,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          campus_id?: string | null
           created_at?: string
           id?: string
           invoice_id: string
@@ -2459,6 +2551,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          campus_id?: string | null
           created_at?: string
           id?: string
           invoice_id?: string
@@ -2472,6 +2565,13 @@ export type Database = {
           transaction_ref?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fee_payments_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fee_payments_invoice_id_fkey"
             columns: ["invoice_id"]
@@ -3930,6 +4030,7 @@ export type Database = {
         Row: {
           academic_year: string | null
           attendance_percentage: number | null
+          campus_id: string | null
           created_at: string
           exam_id: string | null
           gpa: number | null
@@ -3954,6 +4055,7 @@ export type Database = {
         Insert: {
           academic_year?: string | null
           attendance_percentage?: number | null
+          campus_id?: string | null
           created_at?: string
           exam_id?: string | null
           gpa?: number | null
@@ -3978,6 +4080,7 @@ export type Database = {
         Update: {
           academic_year?: string | null
           attendance_percentage?: number | null
+          campus_id?: string | null
           created_at?: string
           exam_id?: string | null
           gpa?: number | null
@@ -4000,6 +4103,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "report_cards_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "report_cards_exam_id_fkey"
             columns: ["exam_id"]
@@ -4552,6 +4662,7 @@ export type Database = {
       student_marks: {
         Row: {
           assessment_id: string
+          campus_id: string | null
           computed_grade: string | null
           created_at: string | null
           created_by: string | null
@@ -4563,6 +4674,7 @@ export type Database = {
         }
         Insert: {
           assessment_id: string
+          campus_id?: string | null
           computed_grade?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -4574,6 +4686,7 @@ export type Database = {
         }
         Update: {
           assessment_id?: string
+          campus_id?: string | null
           computed_grade?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -4589,6 +4702,13 @@ export type Database = {
             columns: ["assessment_id"]
             isOneToOne: false
             referencedRelation: "academic_assessments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_marks_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
             referencedColumns: ["id"]
           },
           {
