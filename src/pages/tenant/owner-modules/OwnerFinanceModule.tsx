@@ -64,9 +64,9 @@ export function OwnerFinanceModule({ schoolId }: Props) {
       if (!schoolId) return null;
 
       const [paymentsRes, expensesRes, invoicesRes, payRunsRes, salariesRes] = await Promise.all([
-        supabase.from("finance_payments").select("*").eq("school_id", schoolId),
+        campusEq(supabase.from("fee_payments").select("*").eq("school_id", schoolId).eq("status", "success")),
         supabase.from("finance_expenses").select("*").eq("school_id", schoolId),
-        supabase.from("finance_invoices").select("*").eq("school_id", schoolId),
+        campusEq(supabase.from("fee_invoices").select("*").eq("school_id", schoolId)),
         supabase.from("hr_pay_runs").select("*").eq("school_id", schoolId),
         supabase.from("hr_salary_records").select("*").eq("school_id", schoolId).eq("is_active", true),
       ]);
