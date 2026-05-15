@@ -27,6 +27,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { GlobalCommandPalette } from "@/components/global/GlobalCommandPalette";
 import { NotificationsBell } from "@/components/global/NotificationsBell";
+import { OwnerContextSwitcher } from "@/components/tenant/OwnerContextSwitcher";
 import { useUnreadMessagesOptimized } from "@/hooks/useUnreadMessagesOptimized";
 import { useTenantOptimized } from "@/hooks/useTenantOptimized";
 import { useSession } from "@/hooks/useSession";
@@ -92,8 +93,8 @@ export function OwnerShell({ title, subtitle, schoolSlug, children }: Props) {
   const NavContent = () => (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between">
-        <div>
-          <p className="font-display text-lg font-semibold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+        <div className="min-w-0">
+          <p className="font-display text-lg font-semibold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent truncate">
             {schoolName || "AltRix"}
           </p>
           <p className="text-xs text-muted-foreground">School Owner • CEO View</p>
@@ -119,6 +120,10 @@ export function OwnerShell({ title, subtitle, schoolSlug, children }: Props) {
             <Sparkles className="h-4 w-4" />
           </Button>
         </div>
+      </div>
+
+      <div className="mt-4">
+        <OwnerContextSwitcher schoolId={schoolId} schoolSlug={schoolSlug} />
       </div>
 
       <ScrollArea className="mt-6 flex-1">
@@ -191,7 +196,8 @@ export function OwnerShell({ title, subtitle, schoolSlug, children }: Props) {
             {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          <OwnerContextSwitcher schoolId={schoolId} schoolSlug={schoolSlug} compact />
           <OfflineStatusIndicator
             isOnline={offline.isOnline}
             isSyncing={offline.isSyncing}
