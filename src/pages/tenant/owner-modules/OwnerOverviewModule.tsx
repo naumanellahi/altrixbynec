@@ -260,8 +260,8 @@ export function OwnerOverviewModule({ schoolId }: Props) {
       const pendingInvoices = invoices.filter((i) => i.status === "pending" || i.status === "unpaid").length;
       const paidInvoices = invoices.filter((i) => i.status === "paid").length;
       const unpaidAmount = invoices
-        .filter((i) => i.status !== "paid")
-        .reduce((sum, i) => sum + Number(i.total || 0), 0);
+        .filter((i: any) => i.status !== "paid")
+        .reduce((sum: number, i: any) => sum + Number(i.total_amount || 0), 0);
       const collectionRate = invoices.length > 0 ? Math.round((paidInvoices / invoices.length) * 100) : 0;
 
       // Teacher utilization (placeholder - would need timetable data)
