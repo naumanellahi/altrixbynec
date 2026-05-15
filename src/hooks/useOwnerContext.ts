@@ -114,6 +114,11 @@ export function useOwnerContext(currentSchoolId: string | null) {
     async (campusId: string | null) => {
       setActiveCampusIdState(campusId);
       writeCache({ schoolId: currentSchoolId, campusId });
+      try {
+        window.dispatchEvent(new Event("eduverse:owner-campus-change"));
+      } catch {
+        // ignore
+      }
       if (!user) return;
       await (supabase as any)
         .from("owner_active_context")
