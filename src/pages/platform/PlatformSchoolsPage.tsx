@@ -55,6 +55,8 @@ export default function PlatformSchoolsPage() {
   // Owner assignment (Phase 5)
   type OwnerOption = { user_id: string; email: string; display_name: string; school_count: number };
   const [ownerOptions, setOwnerOptions] = useState<OwnerOption[]>([]);
+  const [ownersLoading, setOwnersLoading] = useState(false);
+  const [ownersError, setOwnersError] = useState<string | null>(null);
   const [ownerMode, setOwnerMode] = useState<"none" | "existing" | "new">("none");
   const [ownerUserId, setOwnerUserId] = useState<string>("");
   const [ownerEmail, setOwnerEmail] = useState("");
