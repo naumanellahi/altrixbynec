@@ -136,19 +136,31 @@ export default function PlatformSchoolsPage() {
       .limit(200);
     if (!aErr) setAudit((a ?? []) as unknown as AuditRow[]);
 
-    const { data: owners } = await (supabase as any).rpc("list_existing_school_owners");
-    setOwnerOptions((owners ?? []) as OwnerOption[]);
+    setOwnersLoading(true);
+    setOwnersError(null);
+    const { data: owners, error: ownersErr } = await (supabase as any).rpc("list_existing_school_owners");
+    if (ownersErr) {
+      setOwnersError(ownersErr.message || "Failed to load owners");
+    } else {
+      setOwnerOptions((owners ?? []) as OwnerOption[]);
+    }
+    setOwnersLoading(false);
   };
 
-  const getDetailFromInvokeError = (error: unknown) => {
+  // Parse `{ ok:false, code, error }` body from a functions.invoke error.
+  const parseInvokeErrorBody = (error: unknown): { code?: string; error?: string } | null => {
     const raw = (error as any)?.context?.body;
     if (typeof raw !== "string") return null;
     try {
-      const parsed = JSON.parse(raw);
-      return parsed?.error ? String(parsed.error) : null;
+      return JSON.parse(raw) as { code?: string; error?: string };
     } catch {
       return null;
     }
+  };
+
+  const getDetailFromInvokeError = (error: unknown) => {
+    const body = parseInvokeErrorBody(error);
+    return body?.error ?? null;
   };
 
   const createSchoolDirect = async () => {
