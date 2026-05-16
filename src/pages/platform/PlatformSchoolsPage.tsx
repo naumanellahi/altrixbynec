@@ -52,6 +52,15 @@ export default function PlatformSchoolsPage() {
   const [principalDisplayName, setPrincipalDisplayName] = useState("Principal");
   const [creatingSchool, setCreatingSchool] = useState(false);
 
+  // Owner assignment (Phase 5)
+  type OwnerOption = { user_id: string; email: string; display_name: string; school_count: number };
+  const [ownerOptions, setOwnerOptions] = useState<OwnerOption[]>([]);
+  const [ownerMode, setOwnerMode] = useState<"none" | "existing" | "new">("none");
+  const [ownerUserId, setOwnerUserId] = useState<string>("");
+  const [ownerEmail, setOwnerEmail] = useState("");
+  const [ownerPassword, setOwnerPassword] = useState("");
+  const [ownerDisplayName, setOwnerDisplayName] = useState("");
+
   // Direct staff creation
   const [staffSchoolId, setStaffSchoolId] = useState<string>("__none__");
   const [staffEmail, setStaffEmail] = useState("");
