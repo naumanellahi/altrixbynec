@@ -139,21 +139,42 @@ serve(async (req) => {
     // ---- Phase 5: optional School Owner assignment ----
     let ownerUserId: string | null = null;
     let ownerEmailResolved: string | null = null;
+    let ownerAssignmentExisted = false;
     try {
       if (body.ownerUserId) {
         ownerUserId = body.ownerUserId;
-        const { data: ouser } = await admin.auth.admin.getUserById(ownerUserId);
-        ownerEmailResolved = ouser?.user?.email?.toLowerCase() ?? null;
+        const { data: ouser, error: ouserErr } = await admin.auth.admin.getUserById(ownerUserId);
+        if (ouserErr || !ouser?.user) {
+          return json(
+            { ok: false, error: `Selected owner user does not exist (id=${ownerUserId}).` },
+            404,
+            traceId,
+          );
+        }
+        ownerEmailResolved = ouser.user.email?.toLowerCase() ?? null;
       } else if (body.ownerEmail) {
         const ownerEmail = body.ownerEmail.trim().toLowerCase();
         if (!ownerEmail.includes("@")) {
-          return json({ ok: false, error: "Invalid ownerEmail" }, 400, traceId);
+          return json({ ok: false, error: "Invalid ownerEmail format." }, 400, traceId);
         }
         const existingOwner = existing?.users?.find((u) => (u.email ?? "").toLowerCase() === ownerEmail);
         if (existingOwner) {
           ownerUserId = existingOwner.id;
         } else {
-          if (!body.ownerPassword || body.ownerPassword.length < 8) {
+          // Explicit "not found" path. If caller didn't provide a password we treat this as a
+          // lookup failure rather than silently creating a brand-new account.
+          if (!body.ownerPassword) {
+            return json(
+              {
+                ok: false,
+                code: "owner_email_not_found",
+                error: `No existing user found for ${ownerEmail}. Provide ownerPassword to create a new owner account, or pick from the existing owners list.`,
+              },
+              404,
+              traceId,
+            );
+          }
+          if (body.ownerPassword.length < 8) {
             return json({ ok: false, error: "Owner password must be at least 8 characters (new owner)." }, 400, traceId);
           }
           const { data: createdOwner, error: ownerCreateErr } = await admin.auth.admin.createUser({
@@ -168,6 +189,16 @@ serve(async (req) => {
       }
 
       if (ownerUserId) {
+        // Backend validation: do not create a duplicate assignment row for the same
+        // (school_id, owner_user_id). Unique constraint backs this up at the DB level.
+        const { data: existingAssignment } = await admin
+          .from("school_owner_assignments")
+          .select("id")
+          .eq("school_id", school.id)
+          .eq("owner_user_id", ownerUserId)
+          .maybeSingle();
+        ownerAssignmentExisted = !!existingAssignment?.id;
+
         const ownerDisplay = body.ownerDisplayName?.trim() || "School Owner";
         await admin.from("profiles").upsert(
           { user_id: ownerUserId, display_name: ownerDisplay },
@@ -181,10 +212,21 @@ serve(async (req) => {
           { school_id: school.id, user_id: ownerUserId, role: "school_owner", created_by: actorUserId },
           { onConflict: "school_id,user_id,role" },
         );
-        await admin.from("school_owner_assignments").upsert(
-          { school_id: school.id, owner_user_id: ownerUserId, created_by: actorUserId },
-          { onConflict: "owner_user_id,school_id" },
-        );
+
+        if (!ownerAssignmentExisted) {
+          const { error: soaErr } = await admin.from("school_owner_assignments").insert({
+            school_id: school.id,
+            owner_user_id: ownerUserId,
+            created_by: actorUserId,
+          });
+          // 23505 = unique_violation — handle the race where another request inserted between
+          // our pre-check and our insert.
+          if (soaErr && (soaErr as { code?: string }).code !== "23505") {
+            return json({ ok: false, error: `Owner assignment failed: ${soaErr.message}` }, 400, traceId);
+          }
+          if (soaErr) ownerAssignmentExisted = true;
+        }
+
         if (ownerEmailResolved) {
           await admin.from("school_user_directory").upsert(
             { school_id: school.id, user_id: ownerUserId, email: ownerEmailResolved, display_name: ownerDisplay },
