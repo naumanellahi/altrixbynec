@@ -133,6 +133,9 @@ export default function PlatformSchoolsPage() {
       .order("created_at", { ascending: false })
       .limit(200);
     if (!aErr) setAudit((a ?? []) as unknown as AuditRow[]);
+
+    const { data: owners } = await (supabase as any).rpc("list_existing_school_owners");
+    setOwnerOptions((owners ?? []) as OwnerOption[]);
   };
 
   const getDetailFromInvokeError = (error: unknown) => {
