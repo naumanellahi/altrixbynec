@@ -108,19 +108,19 @@ serve(async (req) => {
     }
     if (!userId) return json({ ok: false, error: "Failed to create user" }, 500, traceId);
 
-    // Profile
+    // Profile (profiles.id == auth user id)
     if (body.displayName?.trim()) {
       const { error: profErr } = await admin
         .from("profiles")
-        .upsert({ user_id: userId, display_name: body.displayName.trim() }, { onConflict: "user_id" });
-      if (profErr) return json({ ok: false, error: profErr.message }, 400, traceId);
+        .upsert({ id: userId, display_name: body.displayName.trim() }, { onConflict: "id" });
+      if (profErr) return json({ ok: false, error: `profiles: ${profErr.message}` }, 200, traceId);
     }
 
-    // Membership + role + directory
+    // Membership + role
     const { error: memErr } = await admin
       .from("school_memberships")
       .upsert({ school_id: school.id, user_id: userId, status: "active", created_by: actorUserId }, { onConflict: "school_id,user_id" });
-    if (memErr) return json({ ok: false, error: memErr.message }, 400, traceId);
+    if (memErr) return json({ ok: false, error: `school_memberships: ${memErr.message}` }, 200, traceId);
 
     const { error: roleErr } = await admin
       .from("user_roles")
@@ -128,19 +128,7 @@ serve(async (req) => {
         { school_id: school.id, user_id: userId, role: body.role, created_by: actorUserId },
         { onConflict: "school_id,user_id,role" },
       );
-    if (roleErr) return json({ ok: false, error: roleErr.message }, 400, traceId);
-
-    await admin
-      .from("school_user_directory")
-      .upsert(
-        {
-          school_id: school.id,
-          user_id: userId,
-          email,
-          display_name: body.displayName?.trim() ?? null,
-        },
-        { onConflict: "school_id,user_id" },
-      );
+    if (roleErr) return json({ ok: false, error: `user_roles: ${roleErr.message}` }, 200, traceId);
 
     await admin.from("audit_logs").insert({
       school_id: school.id,
