@@ -1,8 +1,17 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Building2, Users, GraduationCap, MapPin } from "lucide-react";
+import { Building2, Users, GraduationCap, MapPin, Download, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
+import { exportToCSV } from "@/lib/csv";
 
 interface Props {
   schoolId: string | null;
@@ -19,6 +28,22 @@ interface Campus {
 }
 
 export function OwnerCampusesModule({ schoolId }: Props) {
+  const [requestOpen, setRequestOpen] = useState(false);
+  const [reqType, setReqType] = useState<"new_school" | "new_campus">("new_campus");
+  const [reqSubject, setReqSubject] = useState("");
+  const [reqMessage, setReqMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const { data: school } = useQuery({
+    queryKey: ["owner_school_name", schoolId],
+    queryFn: async () => {
+      if (!schoolId) return null;
+      const { data } = await supabase.from("schools").select("name,slug").eq("id", schoolId).maybeSingle();
+      return data;
+    },
+    enabled: !!schoolId,
+  });
+
   const { data: campuses = [], isLoading } = useQuery({
     queryKey: ["owner_campuses_list", schoolId],
     queryFn: async () => {
@@ -62,6 +87,58 @@ export function OwnerCampusesModule({ schoolId }: Props) {
   const totalStudents = Object.values(kpis).reduce((s, v) => s + v.students, 0);
   const totalStaff = Object.values(kpis).reduce((s, v) => s + v.staff, 0);
 
+  const handleExport = () => {
+    if (!campuses.length) {
+      toast({ title: "Nothing to export", description: "No campuses found." });
+      return;
+    }
+    const rows = campuses.map((c) => {
+      const k = kpis[c.id] || { students: 0, staff: 0 };
+      return {
+        school: school?.name ?? "",
+        campus_name: c.name,
+        code: c.code ?? "",
+        address: c.address ?? "",
+        status: c.is_active ? "Active" : "Inactive",
+        students: k.students,
+        staff: k.staff,
+      };
+    });
+    const fname = `${(school?.slug || "school")}-campuses-${new Date().toISOString().slice(0, 10)}`;
+    exportToCSV(rows, fname);
+    toast({ title: "Exported", description: `${rows.length} campus row(s) downloaded.` });
+  };
+
+  const submitRequest = async () => {
+    if (!reqSubject.trim() || !reqMessage.trim()) {
+      toast({ title: "Missing info", description: "Subject and message are required.", variant: "destructive" });
+      return;
+    }
+    setSubmitting(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast({ title: "Not signed in", variant: "destructive" });
+      setSubmitting(false);
+      return;
+    }
+    const { error } = await supabase.from("platform_requests" as any).insert({
+      requester_user_id: user.id,
+      school_id: schoolId,
+      request_type: reqType,
+      subject: reqSubject.trim(),
+      message: reqMessage.trim(),
+    });
+    setSubmitting(false);
+    if (error) {
+      toast({ title: "Failed to send", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Request sent", description: "The platform super admin will review your request." });
+    setRequestOpen(false);
+    setReqSubject("");
+    setReqMessage("");
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -70,6 +147,14 @@ export function OwnerCampusesModule({ schoolId }: Props) {
           <p className="text-muted-foreground">
             Read-only overview across all your schools and campuses. New schools and campuses can only be created by the platform super admin.
           </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExport} disabled={!campuses.length}>
+            <Download className="h-4 w-4" /> Export CSV
+          </Button>
+          <Button onClick={() => setRequestOpen(true)}>
+            <Send className="h-4 w-4" /> Request new campus/school
+          </Button>
         </div>
       </div>
 
@@ -123,6 +208,48 @@ export function OwnerCampusesModule({ schoolId }: Props) {
           })}
         </div>
       )}
+
+      <Dialog open={requestOpen} onOpenChange={setRequestOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Request new campus or school</DialogTitle>
+            <DialogDescription>
+              Send a message to the platform super admin. They will review and follow up.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Request type</Label>
+              <Select value={reqType} onValueChange={(v) => setReqType(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="new_campus">New campus</SelectItem>
+                  <SelectItem value="new_school">New school</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Subject</Label>
+              <Input value={reqSubject} onChange={(e) => setReqSubject(e.target.value)} placeholder="e.g. Add new campus in Lahore" />
+            </div>
+            <div>
+              <Label>Message</Label>
+              <Textarea
+                value={reqMessage}
+                onChange={(e) => setReqMessage(e.target.value)}
+                rows={5}
+                placeholder="Describe the campus/school name, location, intended slug, and any other details."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRequestOpen(false)} disabled={submitting}>Cancel</Button>
+            <Button onClick={submitRequest} disabled={submitting}>
+              <Send className="h-4 w-4" /> {submitting ? "Sending…" : "Send request"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

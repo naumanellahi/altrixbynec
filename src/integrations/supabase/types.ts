@@ -3981,6 +3981,45 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          id: string
+          message: string
+          request_type: string
+          requester_user_id: string
+          school_id: string | null
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          message: string
+          request_type: string
+          requester_user_id: string
+          school_id?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          message?: string
+          request_type?: string
+          requester_user_id?: string
+          school_id?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_super_admins: {
         Row: {
           created_at: string | null
