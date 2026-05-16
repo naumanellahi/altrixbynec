@@ -160,11 +160,17 @@ serve(async (req) => {
     if (action === "set_password") {
       const password = String(body.password ?? "");
       if (!password || password.length < 8) {
-        return json({ ok: false, error: "Password must be at least 8 characters." }, 400, traceId);
+        return json({ ok: false, error: "Password must be at least 8 characters." }, 200, traceId);
       }
 
       const { error: updErr } = await admin.auth.admin.updateUserById(targetUserId, { password });
-      if (updErr) return json({ ok: false, error: updErr.message }, 400, traceId);
+      if (updErr) {
+        const msg = updErr.message || "Failed to update password";
+        const friendly = /pwned|leaked|breach|weak/i.test(msg)
+          ? "This password is too weak or has been found in a known data breach. Please choose a stronger password."
+          : msg;
+        return json({ ok: false, error: friendly }, 200, traceId);
+      }
 
       await admin.from("audit_logs").insert({
         school_id: school.id,
