@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import CampusCreatorCard from "./CampusCreatorCard";
+import PlatformRequestsCard from "./PlatformRequestsCard";
 
 type SchoolRow = {
   id: string;
@@ -798,6 +799,8 @@ export default function PlatformSchoolsPage() {
                 </div>
               </CardContent>
             </Card>
+
+            <PlatformRequestsCard schools={schools} />
 
             <Card className="shadow-elevated">
               <CardHeader>
