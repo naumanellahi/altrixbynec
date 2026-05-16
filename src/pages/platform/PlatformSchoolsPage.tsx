@@ -464,19 +464,66 @@ export default function PlatformSchoolsPage() {
 
                   {ownerMode === "existing" && (
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Existing Owner</label>
-                      <Select value={ownerUserId} onValueChange={setOwnerUserId}>
-                        <SelectTrigger>
-                          <SelectValue placeholder={ownerOptions.length ? "Select an owner" : "No owners yet — create one"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ownerOptions.map((o) => (
-                            <SelectItem key={o.user_id} value={o.user_id}>
-                              {o.display_name} · {o.email} {o.school_count > 0 ? `(${o.school_count} schools)` : ""}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium">Existing Owner</label>
+                        <button
+                          type="button"
+                          onClick={() => void refresh()}
+                          className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+                          disabled={ownersLoading}
+                        >
+                          {ownersLoading ? "Refreshing…" : "Refresh list"}
+                        </button>
+                      </div>
+
+                      {ownersLoading ? (
+                        <div className="flex items-center gap-2 rounded-xl border border-dashed border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+                          <span className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                          Loading existing owners…
+                        </div>
+                      ) : ownersError ? (
+                        <div className="flex items-center justify-between rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                          <span>Could not load owners: {ownersError}</span>
+                          <button type="button" onClick={() => void refresh()} className="underline">
+                            Retry
+                          </button>
+                        </div>
+                      ) : ownerOptions.length === 0 ? (
+                        <div className="flex flex-col gap-2 rounded-xl border border-dashed border-border bg-muted/30 px-3 py-3 text-sm">
+                          <span className="text-muted-foreground">
+                            No School Owners assigned yet. Create the first owner to populate this list.
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-fit"
+                            onClick={() => setOwnerMode("new")}
+                          >
+                            <UserPlus className="mr-2 h-3.5 w-3.5" /> Create new owner instead
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <Select value={ownerUserId} onValueChange={setOwnerUserId}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select an owner" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ownerOptions.map((o) => (
+                                <SelectItem key={o.user_id} value={o.user_id}>
+                                  {o.display_name} · {o.email}{" "}
+                                  {o.school_count > 0 ? `(${o.school_count} school${o.school_count === 1 ? "" : "s"})` : ""}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">
+                            {ownerOptions.length} owner{ownerOptions.length === 1 ? "" : "s"} available. Reassigning an
+                            existing owner to this school is safe — duplicates are blocked at the database level.
+                          </p>
+                        </>
+                      )}
                     </div>
                   )}
 
