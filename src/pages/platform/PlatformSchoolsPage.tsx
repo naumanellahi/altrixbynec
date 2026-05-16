@@ -155,6 +155,20 @@ export default function PlatformSchoolsPage() {
     if (!principalEmail.trim()) return toast.error("Principal email is required");
     if (principalPassword.trim().length < 8) return toast.error("Principal password must be at least 8 characters");
 
+    let ownerPayload: Record<string, unknown> = {};
+    if (ownerMode === "existing") {
+      if (!ownerUserId) return toast.error("Pick an existing owner");
+      ownerPayload = { ownerUserId };
+    } else if (ownerMode === "new") {
+      if (!ownerEmail.trim()) return toast.error("Owner email is required");
+      if (ownerPassword.trim().length < 8) return toast.error("Owner password must be at least 8 characters");
+      ownerPayload = {
+        ownerEmail: ownerEmail.trim().toLowerCase(),
+        ownerPassword,
+        ownerDisplayName: ownerDisplayName.trim() || "School Owner",
+      };
+    }
+
     setCreatingSchool(true);
     try {
       const { data, error } = await supabase.functions.invoke("eduverse-admin-create-school", {
@@ -165,6 +179,7 @@ export default function PlatformSchoolsPage() {
           principalEmail: principalEmail.trim().toLowerCase(),
           principalPassword: principalPassword,
           principalDisplayName: principalDisplayName.trim() || "Principal",
+          ...ownerPayload,
         },
       });
       if (error) {
@@ -172,12 +187,18 @@ export default function PlatformSchoolsPage() {
         return;
       }
 
-      toast.success("School created + principal set");
+      const assignedOwner = (data as any)?.ownerUserId;
+      toast.success(assignedOwner ? "School created + principal set + owner assigned" : "School created + principal set");
       setNewSlug("");
       setNewName("");
       setPrincipalEmail("");
       setPrincipalPassword("");
       setPrincipalDisplayName("Principal");
+      setOwnerMode("none");
+      setOwnerUserId("");
+      setOwnerEmail("");
+      setOwnerPassword("");
+      setOwnerDisplayName("");
       await refresh();
 
       const created = (data as any)?.school as { slug?: string } | undefined;
