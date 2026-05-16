@@ -737,6 +737,8 @@ export default function PlatformSchoolsPage() {
               </CardContent>
             </Card>
 
+            <CampusCreatorCard schools={schools} onCreated={refresh} />
+
             <Card className="shadow-elevated">
               <CardHeader>
                 <CardTitle className="font-display text-xl">All Schools</CardTitle>
