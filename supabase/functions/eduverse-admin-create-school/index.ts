@@ -217,10 +217,10 @@ serve(async (req) => {
       action: "school_created_direct",
       entity_type: "school",
       entity_id: slug,
-      metadata: { principalEmail },
+      metadata: { principalEmail, ownerUserId, ownerEmail: ownerEmailResolved },
     });
 
-    return json({ ok: true, school, principalUserId }, 200, traceId);
+    return json({ ok: true, school, principalUserId, ownerUserId }, 200, traceId);
   } catch (e) {
     console.error("eduverse-admin-create-school error:", e);
     const err = e as { message?: string };
