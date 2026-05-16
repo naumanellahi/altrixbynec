@@ -55,6 +55,8 @@ export default function PlatformSchoolsPage() {
   // Owner assignment (Phase 5)
   type OwnerOption = { user_id: string; email: string; display_name: string; school_count: number };
   const [ownerOptions, setOwnerOptions] = useState<OwnerOption[]>([]);
+  const [ownersLoading, setOwnersLoading] = useState(false);
+  const [ownersError, setOwnersError] = useState<string | null>(null);
   const [ownerMode, setOwnerMode] = useState<"none" | "existing" | "new">("none");
   const [ownerUserId, setOwnerUserId] = useState<string>("");
   const [ownerEmail, setOwnerEmail] = useState("");
@@ -134,19 +136,31 @@ export default function PlatformSchoolsPage() {
       .limit(200);
     if (!aErr) setAudit((a ?? []) as unknown as AuditRow[]);
 
-    const { data: owners } = await (supabase as any).rpc("list_existing_school_owners");
-    setOwnerOptions((owners ?? []) as OwnerOption[]);
+    setOwnersLoading(true);
+    setOwnersError(null);
+    const { data: owners, error: ownersErr } = await (supabase as any).rpc("list_existing_school_owners");
+    if (ownersErr) {
+      setOwnersError(ownersErr.message || "Failed to load owners");
+    } else {
+      setOwnerOptions((owners ?? []) as OwnerOption[]);
+    }
+    setOwnersLoading(false);
   };
 
-  const getDetailFromInvokeError = (error: unknown) => {
+  // Parse `{ ok:false, code, error }` body from a functions.invoke error.
+  const parseInvokeErrorBody = (error: unknown): { code?: string; error?: string } | null => {
     const raw = (error as any)?.context?.body;
     if (typeof raw !== "string") return null;
     try {
-      const parsed = JSON.parse(raw);
-      return parsed?.error ? String(parsed.error) : null;
+      return JSON.parse(raw) as { code?: string; error?: string };
     } catch {
       return null;
     }
+  };
+
+  const getDetailFromInvokeError = (error: unknown) => {
+    const body = parseInvokeErrorBody(error);
+    return body?.error ?? null;
   };
 
   const createSchoolDirect = async () => {
@@ -183,12 +197,30 @@ export default function PlatformSchoolsPage() {
         },
       });
       if (error) {
-        toast.error(getDetailFromInvokeError(error) ?? error.message);
+        const body = parseInvokeErrorBody(error);
+        if (body?.code === "owner_email_not_found") {
+          toast.error(body.error || "Owner email not found", {
+            description: "Switch to 'Create new owner' to create the account, or pick from the existing owners list.",
+            action: {
+              label: "Create new owner",
+              onClick: () => setOwnerMode("new"),
+            },
+          });
+          return;
+        }
+        toast.error(body?.error ?? error.message);
         return;
       }
 
       const assignedOwner = (data as any)?.ownerUserId;
-      toast.success(assignedOwner ? "School created + principal set + owner assigned" : "School created + principal set");
+      const ownerExisted = (data as any)?.ownerAssignmentExisted;
+      toast.success(
+        assignedOwner
+          ? ownerExisted
+            ? "School created + principal set (owner was already assigned)"
+            : "School created + principal set + owner assigned"
+          : "School created + principal set",
+      );
       setNewSlug("");
       setNewName("");
       setPrincipalEmail("");
@@ -432,19 +464,66 @@ export default function PlatformSchoolsPage() {
 
                   {ownerMode === "existing" && (
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Existing Owner</label>
-                      <Select value={ownerUserId} onValueChange={setOwnerUserId}>
-                        <SelectTrigger>
-                          <SelectValue placeholder={ownerOptions.length ? "Select an owner" : "No owners yet — create one"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ownerOptions.map((o) => (
-                            <SelectItem key={o.user_id} value={o.user_id}>
-                              {o.display_name} · {o.email} {o.school_count > 0 ? `(${o.school_count} schools)` : ""}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium">Existing Owner</label>
+                        <button
+                          type="button"
+                          onClick={() => void refresh()}
+                          className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+                          disabled={ownersLoading}
+                        >
+                          {ownersLoading ? "Refreshing…" : "Refresh list"}
+                        </button>
+                      </div>
+
+                      {ownersLoading ? (
+                        <div className="flex items-center gap-2 rounded-xl border border-dashed border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+                          <span className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                          Loading existing owners…
+                        </div>
+                      ) : ownersError ? (
+                        <div className="flex items-center justify-between rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                          <span>Could not load owners: {ownersError}</span>
+                          <button type="button" onClick={() => void refresh()} className="underline">
+                            Retry
+                          </button>
+                        </div>
+                      ) : ownerOptions.length === 0 ? (
+                        <div className="flex flex-col gap-2 rounded-xl border border-dashed border-border bg-muted/30 px-3 py-3 text-sm">
+                          <span className="text-muted-foreground">
+                            No School Owners assigned yet. Create the first owner to populate this list.
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-fit"
+                            onClick={() => setOwnerMode("new")}
+                          >
+                            <UserPlus className="mr-2 h-3.5 w-3.5" /> Create new owner instead
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <Select value={ownerUserId} onValueChange={setOwnerUserId}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select an owner" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ownerOptions.map((o) => (
+                                <SelectItem key={o.user_id} value={o.user_id}>
+                                  {o.display_name} · {o.email}{" "}
+                                  {o.school_count > 0 ? `(${o.school_count} school${o.school_count === 1 ? "" : "s"})` : ""}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">
+                            {ownerOptions.length} owner{ownerOptions.length === 1 ? "" : "s"} available. Reassigning an
+                            existing owner to this school is safe — duplicates are blocked at the database level.
+                          </p>
+                        </>
+                      )}
                     </div>
                   )}
 
