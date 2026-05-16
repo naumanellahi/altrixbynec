@@ -411,8 +411,63 @@ export default function PlatformSchoolsPage() {
                   </div>
                 </div>
 
+                {/* Phase 5: School Owner picker */}
+                <div className="space-y-3 rounded-2xl border border-border bg-card/50 p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">School Owner</p>
+                      <p className="text-xs text-muted-foreground">Assign a School Owner now (writes to school_owner_assignments). Optional.</p>
+                    </div>
+                    <Select value={ownerMode} onValueChange={(v) => setOwnerMode(v as any)}>
+                      <SelectTrigger className="w-48">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No owner yet</SelectItem>
+                        <SelectItem value="existing">Pick existing owner</SelectItem>
+                        <SelectItem value="new">Create new owner</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {ownerMode === "existing" && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Existing Owner</label>
+                      <Select value={ownerUserId} onValueChange={setOwnerUserId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={ownerOptions.length ? "Select an owner" : "No owners yet — create one"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ownerOptions.map((o) => (
+                            <SelectItem key={o.user_id} value={o.user_id}>
+                              {o.display_name} · {o.email} {o.school_count > 0 ? `(${o.school_count} schools)` : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {ownerMode === "new" && (
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Owner Email</label>
+                        <Input value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} placeholder="owner@school.com" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Owner Password</label>
+                        <Input value={ownerPassword} onChange={(e) => setOwnerPassword(e.target.value)} type="password" placeholder="Minimum 8 characters" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Owner Display Name</label>
+                        <Input value={ownerDisplayName} onChange={(e) => setOwnerDisplayName(e.target.value)} placeholder="School Owner" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <Button variant="hero" size="xl" onClick={createSchoolDirect} disabled={creatingSchool} className="w-full">
-                  Create school + principal
+                  Create school + principal{ownerMode !== "none" ? " + owner" : ""}
                 </Button>
               </CardContent>
             </Card>
