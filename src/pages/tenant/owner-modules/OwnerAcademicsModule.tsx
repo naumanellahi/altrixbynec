@@ -33,6 +33,7 @@ import {
   PolarRadiusAxis,
   Radar,
 } from "recharts";
+import { useActiveCampus } from "@/hooks/useActiveCampus";
 
 interface Props {
   schoolId: string | null;
@@ -42,18 +43,20 @@ const COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2))", "hsl(var(--chart-3
 
 export function OwnerAcademicsModule({ schoolId }: Props) {
   const [activeTab, setActiveTab] = useState("overview");
+  const activeCampusId = useActiveCampus(schoolId);
+  const campusEq = (q: any) => (activeCampusId ? q.eq("campus_id", activeCampusId) : q);
 
   // Fetch academic data
   const { data: academicData, isLoading } = useQuery({
-    queryKey: ["owner_academics", schoolId],
+    queryKey: ["owner_academics", schoolId, activeCampusId],
     queryFn: async () => {
       if (!schoolId) return null;
 
       const [classesRes, sectionsRes, studentsRes, marksRes, teachersRes, subjectsRes] = await Promise.all([
         supabase.from("academic_classes").select("*").eq("school_id", schoolId),
-        supabase.from("class_sections").select("*").eq("school_id", schoolId),
-        supabase.from("students").select("id,status,first_name,last_name").eq("school_id", schoolId),
-        supabase.from("student_marks").select("marks,student_id,assessment_id").eq("school_id", schoolId).not("marks", "is", null),
+        campusEq(supabase.from("class_sections").select("*").eq("school_id", schoolId)),
+        campusEq(supabase.from("students").select("id,status,first_name,last_name").eq("school_id", schoolId)),
+        campusEq(supabase.from("student_marks").select("marks,student_id,assessment_id").eq("school_id", schoolId).not("marks", "is", null)),
         supabase.from("user_roles").select("user_id").eq("school_id", schoolId).eq("role", "teacher"),
         supabase.from("subjects").select("*").eq("school_id", schoolId),
       ]);
