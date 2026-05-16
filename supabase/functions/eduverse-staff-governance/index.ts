@@ -84,16 +84,42 @@ serve(async (req) => {
     if (psaErr) return json({ ok: false, error: psaErr.message }, 400, traceId);
     const isPlatformSuperAdmin = !!psa?.user_id;
 
+    let actorRoles: string[] = [];
+    let isSchoolOwnerAssignment = false;
     if (!isPlatformSuperAdmin) {
       const { data: roleRows, error: roleErr } = await admin
         .from("user_roles")
         .select("role")
         .eq("school_id", school.id)
-        .eq("user_id", actorUserId)
-        .in("role", ["super_admin", "school_owner", "principal", "vice_principal", "hr_manager"])
-        .limit(1);
-      if (roleErr) return json({ ok: false, error: roleErr.message }, 400, traceId);
-      if (!roleRows || roleRows.length === 0) return json({ ok: false, error: "Forbidden" }, 403, traceId);
+        .eq("user_id", actorUserId);
+      if (roleErr) {
+        console.error("[governance] role lookup failed", roleErr);
+        return json({ ok: false, step: "permission_lookup", error: roleErr.message }, 200, traceId);
+      }
+      actorRoles = (roleRows ?? []).map((r: any) => String(r.role));
+
+      // Also check school_owner_assignments (multi-school owners)
+      const { data: ownerAssign } = await admin
+        .from("school_owner_assignments")
+        .select("id")
+        .eq("school_id", school.id)
+        .eq("owner_user_id", actorUserId)
+        .maybeSingle();
+      isSchoolOwnerAssignment = !!ownerAssign?.id;
+
+      const allowed = ["super_admin", "school_owner", "principal", "vice_principal", "hr_manager"];
+      const hasAllowedRole = actorRoles.some((r) => allowed.includes(r));
+      if (!hasAllowedRole && !isSchoolOwnerAssignment) {
+        return json(
+          {
+            ok: false,
+            step: "permission_check",
+            error: `You do not have permission to manage staff in this school. Required role: super_admin, school_owner, principal, vice_principal, or hr_manager. Your roles: ${actorRoles.join(", ") || "(none)"}.`,
+          },
+          200,
+          traceId,
+        );
+      }
     }
 
     // Snapshot existing roles for audit metadata
