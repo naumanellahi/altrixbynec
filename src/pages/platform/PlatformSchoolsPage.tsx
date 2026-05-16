@@ -800,6 +800,8 @@ export default function PlatformSchoolsPage() {
               </CardContent>
             </Card>
 
+            <PlatformRequestsCard schools={schools} />
+
             <Card className="shadow-elevated">
               <CardHeader>
                 <CardTitle className="font-display text-xl">Audit Logs</CardTitle>
