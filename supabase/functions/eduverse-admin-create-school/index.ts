@@ -182,8 +182,8 @@ serve(async (req) => {
           { onConflict: "school_id,user_id,role" },
         );
         await admin.from("school_owner_assignments").upsert(
-          { school_id: school.id, owner_user_id: ownerUserId, assigned_by: actorUserId },
-          { onConflict: "school_id,owner_user_id" },
+          { school_id: school.id, owner_user_id: ownerUserId, created_by: actorUserId },
+          { onConflict: "owner_user_id,school_id" },
         );
         if (ownerEmailResolved) {
           await admin.from("school_user_directory").upsert(
