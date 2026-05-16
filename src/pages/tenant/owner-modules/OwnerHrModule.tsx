@@ -31,6 +31,8 @@ import {
   Pie,
 } from "recharts";
 
+import { useActiveCampus } from "@/hooks/useActiveCampus";
+
 interface Props {
   schoolId: string | null;
 }
@@ -39,18 +41,32 @@ const COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2))", "hsl(var(--chart-3
 
 export function OwnerHrModule({ schoolId }: Props) {
   const [activeTab, setActiveTab] = useState("overview");
+  const activeCampusId = useActiveCampus(schoolId);
 
   // Fetch HR data
   const { data: hrData, isLoading } = useQuery({
-    queryKey: ["owner_hr", schoolId],
+    queryKey: ["owner_hr", schoolId, activeCampusId],
     queryFn: async () => {
       if (!schoolId) return null;
 
+      // Optionally restrict to staff assigned to active campus
+      let staffUserIds: string[] | null = null;
+      if (activeCampusId) {
+        const { data: sca } = await supabase
+          .from("staff_campus_assignments")
+          .select("user_id")
+          .eq("campus_id", activeCampusId);
+        staffUserIds = (sca || []).map((r: any) => r.user_id);
+      }
+
+      const applyUserFilter = (q: any) =>
+        staffUserIds ? (staffUserIds.length ? q.in("user_id", staffUserIds) : q.eq("user_id", "00000000-0000-0000-0000-000000000000")) : q;
+
       const [staffRes, rolesRes, salariesRes, leavesRes, payRunsRes] = await Promise.all([
-        supabase.from("school_memberships").select("*").eq("school_id", schoolId),
-        supabase.from("user_roles").select("*").eq("school_id", schoolId),
-        supabase.from("hr_salary_records").select("*").eq("school_id", schoolId),
-        supabase.from("hr_leave_requests").select("*").eq("school_id", schoolId),
+        applyUserFilter(supabase.from("school_memberships").select("*").eq("school_id", schoolId)),
+        applyUserFilter(supabase.from("user_roles").select("*").eq("school_id", schoolId)),
+        applyUserFilter(supabase.from("hr_salary_records").select("*").eq("school_id", schoolId)),
+        applyUserFilter(supabase.from("hr_leave_requests").select("*").eq("school_id", schoolId)),
         supabase.from("hr_pay_runs").select("*").eq("school_id", schoolId),
       ]);
 

@@ -52,6 +52,15 @@ export default function PlatformSchoolsPage() {
   const [principalDisplayName, setPrincipalDisplayName] = useState("Principal");
   const [creatingSchool, setCreatingSchool] = useState(false);
 
+  // Owner assignment (Phase 5)
+  type OwnerOption = { user_id: string; email: string; display_name: string; school_count: number };
+  const [ownerOptions, setOwnerOptions] = useState<OwnerOption[]>([]);
+  const [ownerMode, setOwnerMode] = useState<"none" | "existing" | "new">("none");
+  const [ownerUserId, setOwnerUserId] = useState<string>("");
+  const [ownerEmail, setOwnerEmail] = useState("");
+  const [ownerPassword, setOwnerPassword] = useState("");
+  const [ownerDisplayName, setOwnerDisplayName] = useState("");
+
   // Direct staff creation
   const [staffSchoolId, setStaffSchoolId] = useState<string>("__none__");
   const [staffEmail, setStaffEmail] = useState("");
@@ -124,6 +133,9 @@ export default function PlatformSchoolsPage() {
       .order("created_at", { ascending: false })
       .limit(200);
     if (!aErr) setAudit((a ?? []) as unknown as AuditRow[]);
+
+    const { data: owners } = await (supabase as any).rpc("list_existing_school_owners");
+    setOwnerOptions((owners ?? []) as OwnerOption[]);
   };
 
   const getDetailFromInvokeError = (error: unknown) => {
@@ -143,6 +155,20 @@ export default function PlatformSchoolsPage() {
     if (!principalEmail.trim()) return toast.error("Principal email is required");
     if (principalPassword.trim().length < 8) return toast.error("Principal password must be at least 8 characters");
 
+    let ownerPayload: Record<string, unknown> = {};
+    if (ownerMode === "existing") {
+      if (!ownerUserId) return toast.error("Pick an existing owner");
+      ownerPayload = { ownerUserId };
+    } else if (ownerMode === "new") {
+      if (!ownerEmail.trim()) return toast.error("Owner email is required");
+      if (ownerPassword.trim().length < 8) return toast.error("Owner password must be at least 8 characters");
+      ownerPayload = {
+        ownerEmail: ownerEmail.trim().toLowerCase(),
+        ownerPassword,
+        ownerDisplayName: ownerDisplayName.trim() || "School Owner",
+      };
+    }
+
     setCreatingSchool(true);
     try {
       const { data, error } = await supabase.functions.invoke("eduverse-admin-create-school", {
@@ -153,6 +179,7 @@ export default function PlatformSchoolsPage() {
           principalEmail: principalEmail.trim().toLowerCase(),
           principalPassword: principalPassword,
           principalDisplayName: principalDisplayName.trim() || "Principal",
+          ...ownerPayload,
         },
       });
       if (error) {
@@ -160,12 +187,18 @@ export default function PlatformSchoolsPage() {
         return;
       }
 
-      toast.success("School created + principal set");
+      const assignedOwner = (data as any)?.ownerUserId;
+      toast.success(assignedOwner ? "School created + principal set + owner assigned" : "School created + principal set");
       setNewSlug("");
       setNewName("");
       setPrincipalEmail("");
       setPrincipalPassword("");
       setPrincipalDisplayName("Principal");
+      setOwnerMode("none");
+      setOwnerUserId("");
+      setOwnerEmail("");
+      setOwnerPassword("");
+      setOwnerDisplayName("");
       await refresh();
 
       const created = (data as any)?.school as { slug?: string } | undefined;
@@ -378,8 +411,63 @@ export default function PlatformSchoolsPage() {
                   </div>
                 </div>
 
+                {/* Phase 5: School Owner picker */}
+                <div className="space-y-3 rounded-2xl border border-border bg-card/50 p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">School Owner</p>
+                      <p className="text-xs text-muted-foreground">Assign a School Owner now (writes to school_owner_assignments). Optional.</p>
+                    </div>
+                    <Select value={ownerMode} onValueChange={(v) => setOwnerMode(v as any)}>
+                      <SelectTrigger className="w-48">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No owner yet</SelectItem>
+                        <SelectItem value="existing">Pick existing owner</SelectItem>
+                        <SelectItem value="new">Create new owner</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {ownerMode === "existing" && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Existing Owner</label>
+                      <Select value={ownerUserId} onValueChange={setOwnerUserId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={ownerOptions.length ? "Select an owner" : "No owners yet — create one"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ownerOptions.map((o) => (
+                            <SelectItem key={o.user_id} value={o.user_id}>
+                              {o.display_name} · {o.email} {o.school_count > 0 ? `(${o.school_count} schools)` : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {ownerMode === "new" && (
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Owner Email</label>
+                        <Input value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} placeholder="owner@school.com" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Owner Password</label>
+                        <Input value={ownerPassword} onChange={(e) => setOwnerPassword(e.target.value)} type="password" placeholder="Minimum 8 characters" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Owner Display Name</label>
+                        <Input value={ownerDisplayName} onChange={(e) => setOwnerDisplayName(e.target.value)} placeholder="School Owner" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <Button variant="hero" size="xl" onClick={createSchoolDirect} disabled={creatingSchool} className="w-full">
-                  Create school + principal
+                  Create school + principal{ownerMode !== "none" ? " + owner" : ""}
                 </Button>
               </CardContent>
             </Card>

@@ -16,6 +16,13 @@ type CreateSchoolRequest = {
   principalEmail: string;
   principalPassword: string;
   principalDisplayName?: string;
+  // Optional owner assignment (Phase 5):
+  //  - ownerUserId: pick an existing user as owner
+  //  - OR ownerEmail (+ ownerPassword/ownerDisplayName for new account creation)
+  ownerUserId?: string | null;
+  ownerEmail?: string | null;
+  ownerPassword?: string | null;
+  ownerDisplayName?: string | null;
 };
 
 const makeTraceId = () => crypto.randomUUID();
@@ -129,6 +136,68 @@ serve(async (req) => {
       { onConflict: "school_id,user_id" },
     );
 
+    // ---- Phase 5: optional School Owner assignment ----
+    let ownerUserId: string | null = null;
+    let ownerEmailResolved: string | null = null;
+    try {
+      if (body.ownerUserId) {
+        ownerUserId = body.ownerUserId;
+        const { data: ouser } = await admin.auth.admin.getUserById(ownerUserId);
+        ownerEmailResolved = ouser?.user?.email?.toLowerCase() ?? null;
+      } else if (body.ownerEmail) {
+        const ownerEmail = body.ownerEmail.trim().toLowerCase();
+        if (!ownerEmail.includes("@")) {
+          return json({ ok: false, error: "Invalid ownerEmail" }, 400, traceId);
+        }
+        const existingOwner = existing?.users?.find((u) => (u.email ?? "").toLowerCase() === ownerEmail);
+        if (existingOwner) {
+          ownerUserId = existingOwner.id;
+        } else {
+          if (!body.ownerPassword || body.ownerPassword.length < 8) {
+            return json({ ok: false, error: "Owner password must be at least 8 characters (new owner)." }, 400, traceId);
+          }
+          const { data: createdOwner, error: ownerCreateErr } = await admin.auth.admin.createUser({
+            email: ownerEmail,
+            password: body.ownerPassword,
+            email_confirm: true,
+          });
+          if (ownerCreateErr) return json({ ok: false, error: ownerCreateErr.message }, 400, traceId);
+          ownerUserId = createdOwner.user?.id ?? null;
+        }
+        ownerEmailResolved = ownerEmail;
+      }
+
+      if (ownerUserId) {
+        const ownerDisplay = body.ownerDisplayName?.trim() || "School Owner";
+        await admin.from("profiles").upsert(
+          { user_id: ownerUserId, display_name: ownerDisplay },
+          { onConflict: "user_id" },
+        );
+        await admin.from("school_memberships").upsert(
+          { school_id: school.id, user_id: ownerUserId, status: "active", created_by: actorUserId },
+          { onConflict: "school_id,user_id" },
+        );
+        await admin.from("user_roles").upsert(
+          { school_id: school.id, user_id: ownerUserId, role: "school_owner", created_by: actorUserId },
+          { onConflict: "school_id,user_id,role" },
+        );
+        await admin.from("school_owner_assignments").upsert(
+          { school_id: school.id, owner_user_id: ownerUserId, created_by: actorUserId },
+          { onConflict: "owner_user_id,school_id" },
+        );
+        if (ownerEmailResolved) {
+          await admin.from("school_user_directory").upsert(
+            { school_id: school.id, user_id: ownerUserId, email: ownerEmailResolved, display_name: ownerDisplay },
+            { onConflict: "school_id,user_id" },
+          );
+        }
+      }
+    } catch (ownerErr) {
+      console.error("owner assignment error:", ownerErr);
+      const err = ownerErr as { message?: string };
+      return json({ ok: false, error: `Owner assignment failed: ${err?.message ?? "unknown"}` }, 400, traceId);
+    }
+
     // Mark as bootstrapped (so bootstrap secret isn't required later)
     await admin
       .from("school_bootstrap")
@@ -148,10 +217,10 @@ serve(async (req) => {
       action: "school_created_direct",
       entity_type: "school",
       entity_id: slug,
-      metadata: { principalEmail },
+      metadata: { principalEmail, ownerUserId, ownerEmail: ownerEmailResolved },
     });
 
-    return json({ ok: true, school, principalUserId }, 200, traceId);
+    return json({ ok: true, school, principalUserId, ownerUserId }, 200, traceId);
   } catch (e) {
     console.error("eduverse-admin-create-school error:", e);
     const err = e as { message?: string };
