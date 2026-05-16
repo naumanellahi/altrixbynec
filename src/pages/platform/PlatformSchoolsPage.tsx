@@ -197,12 +197,30 @@ export default function PlatformSchoolsPage() {
         },
       });
       if (error) {
-        toast.error(getDetailFromInvokeError(error) ?? error.message);
+        const body = parseInvokeErrorBody(error);
+        if (body?.code === "owner_email_not_found") {
+          toast.error(body.error || "Owner email not found", {
+            description: "Switch to 'Create new owner' to create the account, or pick from the existing owners list.",
+            action: {
+              label: "Create new owner",
+              onClick: () => setOwnerMode("new"),
+            },
+          });
+          return;
+        }
+        toast.error(body?.error ?? error.message);
         return;
       }
 
       const assignedOwner = (data as any)?.ownerUserId;
-      toast.success(assignedOwner ? "School created + principal set + owner assigned" : "School created + principal set");
+      const ownerExisted = (data as any)?.ownerAssignmentExisted;
+      toast.success(
+        assignedOwner
+          ? ownerExisted
+            ? "School created + principal set (owner was already assigned)"
+            : "School created + principal set + owner assigned"
+          : "School created + principal set",
+      );
       setNewSlug("");
       setNewName("");
       setPrincipalEmail("");
