@@ -16,6 +16,13 @@ type CreateSchoolRequest = {
   principalEmail: string;
   principalPassword: string;
   principalDisplayName?: string;
+  // Optional owner assignment (Phase 5):
+  //  - ownerUserId: pick an existing user as owner
+  //  - OR ownerEmail (+ ownerPassword/ownerDisplayName for new account creation)
+  ownerUserId?: string | null;
+  ownerEmail?: string | null;
+  ownerPassword?: string | null;
+  ownerDisplayName?: string | null;
 };
 
 const makeTraceId = () => crypto.randomUUID();
