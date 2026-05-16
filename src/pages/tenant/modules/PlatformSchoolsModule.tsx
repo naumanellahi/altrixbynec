@@ -153,6 +153,10 @@ export function PlatformSchoolsModule() {
         </CardContent>
       </Card>
 
+      {perms.isPlatformSuperAdmin && (
+        <PlatformRequestsCard schools={schools} />
+      )}
+
       <Card className="shadow-elevated">
         <CardHeader>
           <CardTitle className="font-display text-xl">Audit Logs</CardTitle>
