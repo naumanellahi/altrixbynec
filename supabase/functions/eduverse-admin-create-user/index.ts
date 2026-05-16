@@ -99,12 +99,12 @@ serve(async (req) => {
         password,
         email_confirm: true,
       });
-      if (createErr) return json({ ok: false, error: createErr.message }, 400, traceId);
+      if (createErr) return json({ ok: false, error: createErr.message }, 200, traceId);
       userId = createdUser.user?.id ?? null;
     } else {
       // Set/reset password explicitly
       const { error: updErr } = await admin.auth.admin.updateUserById(userId, { password });
-      if (updErr) return json({ ok: false, error: updErr.message }, 400, traceId);
+      if (updErr) return json({ ok: false, error: updErr.message }, 200, traceId);
     }
     if (!userId) return json({ ok: false, error: "Failed to create user" }, 500, traceId);
 
