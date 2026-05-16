@@ -139,12 +139,10 @@ export function OwnerCampusesModule({ schoolId }: Props) {
           <p className="text-muted-foreground">Campus comparison, rankings, and performance benchmarking</p>
         </div>
         <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
-          <DialogTrigger asChild>
-            <Button onClick={reset}><Plus className="h-4 w-4 mr-1.5" /> New campus</Button>
-          </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editing ? "Edit campus" : "Create campus"}</DialogTitle>
+              <DialogTitle>Edit campus</DialogTitle>
+              <p className="text-xs text-muted-foreground">New campuses can only be created by the platform super admin.</p>
             </DialogHeader>
             <div className="space-y-3">
               <div>

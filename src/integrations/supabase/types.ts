@@ -1354,6 +1354,7 @@ export type Database = {
           name: string
           principal_user_id: string | null
           school_id: string
+          slug: string
           updated_at: string | null
         }
         Insert: {
@@ -1365,6 +1366,7 @@ export type Database = {
           name: string
           principal_user_id?: string | null
           school_id: string
+          slug: string
           updated_at?: string | null
         }
         Update: {
@@ -1376,6 +1378,7 @@ export type Database = {
           name?: string
           principal_user_id?: string | null
           school_id?: string
+          slug?: string
           updated_at?: string | null
         }
         Relationships: [
@@ -5506,6 +5509,43 @@ export type Database = {
       }
     }
     Functions: {
+      admin_create_campus: {
+        Args: {
+          _address?: string
+          _code?: string
+          _is_active?: boolean
+          _name: string
+          _school_id: string
+          _slug: string
+        }
+        Returns: {
+          address: string | null
+          code: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          principal_user_id: string | null
+          school_id: string
+          slug: string
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "campuses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_list_schools_basic: {
+        Args: never
+        Returns: {
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+        }[]
+      }
       can_access_complaint: {
         Args: { _complaint_id: string }
         Returns: boolean

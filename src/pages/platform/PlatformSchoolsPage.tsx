@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import CampusCreatorCard from "./CampusCreatorCard";
 
 type SchoolRow = {
   id: string;
@@ -736,6 +737,8 @@ export default function PlatformSchoolsPage() {
                 )}
               </CardContent>
             </Card>
+
+            <CampusCreatorCard schools={schools} onCreated={refresh} />
 
             <Card className="shadow-elevated">
               <CardHeader>
