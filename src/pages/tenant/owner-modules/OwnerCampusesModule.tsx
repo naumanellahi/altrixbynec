@@ -1,22 +1,8 @@
-import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, Plus, Users, GraduationCap, MapPin, Pencil, Check } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Building2, Users, GraduationCap, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
 
 interface Props {
   schoolId: string | null;
@@ -33,12 +19,6 @@ interface Campus {
 }
 
 export function OwnerCampusesModule({ schoolId }: Props) {
-  const qc = useQueryClient();
-  const { toast } = useToast();
-  const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<Campus | null>(null);
-  const [form, setForm] = useState({ name: "", code: "", address: "", is_active: true });
-
   const { data: campuses = [], isLoading } = useQuery({
     queryKey: ["owner_campuses_list", schoolId],
     queryFn: async () => {
@@ -53,7 +33,6 @@ export function OwnerCampusesModule({ schoolId }: Props) {
     enabled: !!schoolId,
   });
 
-  // Per-campus KPIs (students + staff)
   const { data: kpis = {} } = useQuery({
     queryKey: ["owner_campuses_kpis", schoolId],
     queryFn: async () => {
@@ -78,54 +57,6 @@ export function OwnerCampusesModule({ schoolId }: Props) {
     enabled: !!schoolId,
   });
 
-  const reset = () => {
-    setEditing(null);
-    setForm({ name: "", code: "", address: "", is_active: true });
-  };
-
-  const startEdit = (c: Campus) => {
-    setEditing(c);
-    setForm({
-      name: c.name,
-      code: c.code || "",
-      address: c.address || "",
-      is_active: c.is_active,
-    });
-    setOpen(true);
-  };
-
-  const submit = async () => {
-    if (!schoolId || !form.name.trim()) {
-      toast({ title: "Name required", variant: "destructive" });
-      return;
-    }
-    const payload = {
-      school_id: schoolId,
-      name: form.name.trim(),
-      code: form.code.trim() || null,
-      address: form.address.trim() || null,
-      is_active: form.is_active,
-    };
-    if (editing) {
-      const { error } = await supabase.from("campuses").update(payload).eq("id", editing.id);
-      if (error) return toast({ title: "Update failed", description: error.message, variant: "destructive" });
-      toast({ title: "Campus updated" });
-    } else {
-      const { error } = await supabase.from("campuses").insert(payload);
-      if (error) return toast({ title: "Create failed", description: error.message, variant: "destructive" });
-      toast({ title: "Campus created" });
-    }
-    setOpen(false);
-    reset();
-    qc.invalidateQueries({ queryKey: ["owner_campuses_list", schoolId] });
-    qc.invalidateQueries({ queryKey: ["owner_campuses_kpis", schoolId] });
-  };
-
-  const toggleActive = async (c: Campus) => {
-    await supabase.from("campuses").update({ is_active: !c.is_active }).eq("id", c.id);
-    qc.invalidateQueries({ queryKey: ["owner_campuses_list", schoolId] });
-  };
-
   const total = campuses.length;
   const active = campuses.filter((c) => c.is_active).length;
   const totalStudents = Object.values(kpis).reduce((s, v) => s + v.students, 0);
@@ -136,37 +67,10 @@ export function OwnerCampusesModule({ schoolId }: Props) {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold tracking-tight">Multi-Campus View</h1>
-          <p className="text-muted-foreground">Campus comparison, rankings, and performance benchmarking</p>
+          <p className="text-muted-foreground">
+            Read-only overview across all your schools and campuses. New schools and campuses can only be created by the platform super admin.
+          </p>
         </div>
-        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit campus</DialogTitle>
-              <p className="text-xs text-muted-foreground">New campuses can only be created by the platform super admin.</p>
-            </DialogHeader>
-            <div className="space-y-3">
-              <div>
-                <Label>Name</Label>
-                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              </div>
-              <div>
-                <Label>Code</Label>
-                <Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="e.g. MAIN" />
-              </div>
-              <div>
-                <Label>Address</Label>
-                <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
-              </div>
-              <div className="flex items-center justify-between">
-                <Label>Active</Label>
-                <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button onClick={submit}><Check className="h-4 w-4 mr-1.5" />{editing ? "Save" : "Create"}</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -179,7 +83,7 @@ export function OwnerCampusesModule({ schoolId }: Props) {
       {isLoading ? (
         <Card><CardContent className="py-12 text-center text-muted-foreground">Loading…</CardContent></Card>
       ) : campuses.length === 0 ? (
-        <Card><CardContent className="py-12 text-center text-muted-foreground">No campuses yet. Create one to start segmenting students, staff, fees and analytics.</CardContent></Card>
+        <Card><CardContent className="py-12 text-center text-muted-foreground">No campuses configured for this school yet. Ask the platform super admin to add one.</CardContent></Card>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {campuses.map((c) => {
@@ -199,12 +103,9 @@ export function OwnerCampusesModule({ schoolId }: Props) {
                         )}
                       </p>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Switch checked={c.is_active} onCheckedChange={() => toggleActive(c)} />
-                      <Button size="icon" variant="ghost" onClick={() => startEdit(c)} aria-label="Edit campus">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <Badge variant={c.is_active ? "default" : "outline"} className="h-5 text-[10px]">
+                      {c.is_active ? "Active" : "Inactive"}
+                    </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-3 pt-0">
