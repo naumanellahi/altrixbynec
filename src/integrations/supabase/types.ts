@@ -5588,6 +5588,15 @@ export type Database = {
         Args: { _school_id: string; _user_id: string }
         Returns: boolean
       }
+      list_existing_school_owners: {
+        Args: never
+        Returns: {
+          display_name: string
+          email: string
+          school_count: number
+          user_id: string
+        }[]
+      }
       list_school_user_profiles: {
         Args: { _school_id: string }
         Returns: {
