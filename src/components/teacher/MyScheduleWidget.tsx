@@ -51,8 +51,36 @@ function getStatusIcon(status: string) {
 export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps) {
   // Determine initial day: today if weekday, else Monday
   const { user } = useSession();
-  const { rows: presenceRows, setStatus: setPresenceStatus, saving: presenceSaving } =
+  const { rows: presenceRows, setStatus: setPresenceStatus, saving: presenceSaving, realtimeStatus, lastEcho } =
     useTeacherPresence(schoolId, user?.id ?? null);
+
+  // Track entries awaiting realtime echo confirmation
+  const pendingRef = useRef<Map<string, { status: string; label: string; ts: number }>>(new Map());
+
+  useEffect(() => {
+    if (!lastEcho) return;
+    const pending = pendingRef.current.get(lastEcho.entryId);
+    if (pending && pending.status === lastEcho.status) {
+      pendingRef.current.delete(lastEcho.entryId);
+      sonner.success("Synced live", {
+        description: pending.label,
+        duration: 1800,
+      });
+    }
+  }, [lastEcho]);
+
+  // Notify on realtime reconnection state changes
+  const prevRtRef = useRef(realtimeStatus);
+  useEffect(() => {
+    if (prevRtRef.current !== realtimeStatus) {
+      if (realtimeStatus === "reconnecting" || realtimeStatus === "offline") {
+        sonner("Reconnecting live updates…", { duration: 1500 });
+      } else if (realtimeStatus === "live" && prevRtRef.current !== "connecting") {
+        sonner.success("Live updates restored", { duration: 1500 });
+      }
+      prevRtRef.current = realtimeStatus;
+    }
+  }, [realtimeStatus]);
 
   // Determine initial day: today if weekday, else Monday
   const [selectedDay, setSelectedDay] = useState(() => {
