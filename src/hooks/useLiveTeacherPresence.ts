@@ -54,7 +54,7 @@ export function useLiveTeacherPresence(schoolId: string | null) {
   const [periods, setPeriods] = useState<Period[]>([]);
   const [sections, setSections] = useState<Map<string, { name: string; class_name: string | null }>>(new Map());
   const [teachers, setTeachers] = useState<Map<string, string>>(new Map());
-  const [presenceRows, setPresenceRows] = useState<Map<string, { status: string; entered_at: string | null; left_at: string | null; updated_at: string }>>(new Map());
+  const [presenceRows, setPresenceRows] = useState<Map<string, { status: string; entered_at: string | null; left_at: string | null; updated_at: string; reason: string | null }>>(new Map());
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(() => new Date());
 
