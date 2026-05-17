@@ -183,5 +183,73 @@ export function useLiveTeacherPresence(schoolId: string | null) {
     return result.sort((a, b) => a.teacherName.localeCompare(b.teacherName));
   }, [entries, periodMap, presenceRows, sections, teachers, now]);
 
-  return { liveTeachers, loading, refetch: loadPresence };
+  // Per-teacher full-day timeline (all scheduled periods today, with current status)
+  const teacherTimelines = useMemo(() => {
+    type TimelineEntry = {
+      timetableEntryId: string;
+      periodLabel: string;
+      startTime: string | null;
+      endTime: string | null;
+      subject: string;
+      sectionLabel: string | null;
+      className: string | null;
+      room: string | null;
+      status: "in_class" | "left" | "late" | "not_checked_in";
+      enteredAt: string | null;
+      leftAt: string | null;
+    };
+    const byTeacher = new Map<string, { teacherName: string; entries: TimelineEntry[] }>();
+    entries.forEach((e) => {
+      if (!e.teacher_user_id) return;
+      const p = periodMap.get(e.period_id);
+      if (p?.is_break) return;
+      const presence = presenceRows.get(e.id);
+      const sec = e.class_section_id ? sections.get(e.class_section_id) : undefined;
+      const item: TimelineEntry = {
+        timetableEntryId: e.id,
+        periodLabel: p?.label ?? "Period",
+        startTime: e.start_time ?? p?.start_time ?? null,
+        endTime: e.end_time ?? p?.end_time ?? null,
+        subject: e.subject_name,
+        sectionLabel: sec?.name ?? null,
+        className: sec?.class_name ?? null,
+        room: e.room,
+        status: (presence?.status as any) ?? "not_checked_in",
+        enteredAt: presence?.entered_at ?? null,
+        leftAt: presence?.left_at ?? null,
+      };
+      const bucket = byTeacher.get(e.teacher_user_id) ?? {
+        teacherName: teachers.get(e.teacher_user_id) ?? "Teacher",
+        entries: [],
+      };
+      bucket.entries.push(item);
+      byTeacher.set(e.teacher_user_id, bucket);
+    });
+    return Array.from(byTeacher.entries())
+      .map(([teacherUserId, v]) => ({
+        teacherUserId,
+        teacherName: v.teacherName,
+        entries: v.entries.sort((a, b) => (a.startTime ?? "").localeCompare(b.startTime ?? "")),
+      }))
+      .sort((a, b) => a.teacherName.localeCompare(b.teacherName));
+  }, [entries, periodMap, presenceRows, sections, teachers]);
+
+  // Lookup helpers for toast notifications
+  const lookupEntry = useCallback(
+    (entryId: string) => {
+      const e = entries.find((x) => x.id === entryId);
+      if (!e) return null;
+      const p = periodMap.get(e.period_id);
+      const sec = e.class_section_id ? sections.get(e.class_section_id) : undefined;
+      return {
+        teacherName: e.teacher_user_id ? teachers.get(e.teacher_user_id) ?? "Teacher" : "Teacher",
+        subject: e.subject_name,
+        periodLabel: p?.label ?? "Period",
+        sectionLabel: sec?.name ?? null,
+      };
+    },
+    [entries, periodMap, sections, teachers],
+  );
+
+  return { liveTeachers, teacherTimelines, lookupEntry, loading, refetch: loadPresence };
 }
