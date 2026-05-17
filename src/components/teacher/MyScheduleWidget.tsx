@@ -234,6 +234,58 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
                           {entry.room}
                         </Badge>
                       )}
+                      {isToday && (() => {
+                        const presence = presenceRows.get(entry.id);
+                        const isIn = presence?.status === "in_class";
+                        const isOut = presence?.status === "left";
+                        const busy = presenceSaving === entry.id;
+                        const handleSet = async (status: "in_class" | "left") => {
+                          const err = await setPresenceStatus(entry.id, status);
+                          toast({
+                            title: err
+                              ? "Failed to update"
+                              : status === "in_class"
+                                ? "Marked as In Class"
+                                : "Marked as Left",
+                            description: err
+                              ? (err as Error).message ?? "Try again"
+                              : `${entry.subjectName} • ${entry.periodLabel}`,
+                            variant: err ? "destructive" : "default",
+                          });
+                        };
+                        return (
+                          <>
+                            <Button
+                              type="button"
+                              size="icon"
+                              disabled={busy}
+                              onClick={() => handleSet("in_class")}
+                              title="I'm in class"
+                              className={`h-7 w-7 rounded-full ${
+                                isIn
+                                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                  : "bg-background text-primary border border-primary/40 hover:bg-primary/10"
+                              }`}
+                            >
+                              <LogIn className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              type="button"
+                              size="icon"
+                              disabled={busy}
+                              onClick={() => handleSet("left")}
+                              title="Left the class / late"
+                              className={`h-7 w-7 rounded-full ${
+                                isOut
+                                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  : "bg-background text-destructive border border-destructive/40 hover:bg-destructive/10"
+                              }`}
+                            >
+                              <DoorOpen className="h-3.5 w-3.5" />
+                            </Button>
+                          </>
+                        );
+                      })()}
                       <Button
                         variant={log ? "ghost" : "outline"}
                         size="icon"
