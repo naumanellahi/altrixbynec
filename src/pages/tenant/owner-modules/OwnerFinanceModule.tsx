@@ -331,11 +331,13 @@ export function OwnerFinanceModule({ schoolId }: Props) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="overview">Cash Flow</TabsTrigger>
           <TabsTrigger value="expenses">Expense Breakdown</TabsTrigger>
           <TabsTrigger value="profitability">Profitability</TabsTrigger>
           <TabsTrigger value="collections">Collections</TabsTrigger>
+          <TabsTrigger value="defaulters">Fee Defaulters</TabsTrigger>
+          <TabsTrigger value="forecast">Salary Forecast</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-6">
