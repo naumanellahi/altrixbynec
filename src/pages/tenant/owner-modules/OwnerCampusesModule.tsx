@@ -21,11 +21,26 @@ interface Campus {
   id: string;
   school_id: string;
   name: string;
+  slug: string;
   code: string | null;
   address: string | null;
   is_active: boolean;
   principal_user_id: string | null;
 }
+
+const STAFF_ROLES = [
+  "super_admin",
+  "school_owner",
+  "principal",
+  "vice_principal",
+  "school_admin",
+  "academic_coordinator",
+  "teacher",
+  "accountant",
+  "hr_manager",
+  "counselor",
+  "marketing_staff",
+];
 
 export function OwnerCampusesModule({ schoolId }: Props) {
   const [requestOpen, setRequestOpen] = useState(false);
@@ -62,21 +77,48 @@ export function OwnerCampusesModule({ schoolId }: Props) {
     queryKey: ["owner_campuses_kpis", schoolId],
     queryFn: async () => {
       if (!schoolId) return {};
-      const [studentsRes, staffRes] = await Promise.all([
+      const [schoolRes, campusesRes, studentsRes, staffRolesRes] = await Promise.all([
+        supabase.from("schools").select("slug").eq("id", schoolId).maybeSingle(),
+        supabase.from("campuses").select("id,slug").eq("school_id", schoolId),
         supabase.from("students").select("campus_id").eq("school_id", schoolId),
-        supabase.from("staff_campus_assignments").select("campus_id"),
+        supabase.from("user_roles").select("user_id,role").eq("school_id", schoolId).in("role", STAFF_ROLES),
       ]);
+      const campusRows = campusesRes.data || [];
+      const campusIds = new Set(campusRows.map((c: any) => c.id));
+      const mainCampusId =
+        campusRows.find((c: any) => c.slug === schoolRes.data?.slug)?.id || campusRows[0]?.id || null;
+      const staffUserIds = new Set((staffRolesRes.data || []).map((r: any) => r.user_id));
+      const staffAssignmentsRes = campusRows.length
+        ? await supabase
+            .from("staff_campus_assignments")
+            .select("user_id,campus_id")
+            .in("campus_id", Array.from(campusIds))
+        : { data: [] };
       const map: Record<string, { students: number; staff: number }> = {};
+      campusRows.forEach((c: any) => {
+        map[c.id] = { students: 0, staff: 0 };
+      });
       (studentsRes.data || []).forEach((s: any) => {
-        const k = s.campus_id || "_none";
+        const k = s.campus_id || mainCampusId || "_none";
         map[k] = map[k] || { students: 0, staff: 0 };
         map[k].students++;
       });
-      (staffRes.data || []).forEach((s: any) => {
-        const k = s.campus_id || "_none";
+      const explicitlyAssignedStaff = new Set<string>();
+      (staffAssignmentsRes.data || []).forEach((s: any) => {
+        if (!staffUserIds.has(s.user_id) || !campusIds.has(s.campus_id)) return;
+        explicitlyAssignedStaff.add(s.user_id);
+        const k = s.campus_id;
         map[k] = map[k] || { students: 0, staff: 0 };
         map[k].staff++;
       });
+      if (mainCampusId) {
+        staffUserIds.forEach((userId) => {
+          if (!explicitlyAssignedStaff.has(userId)) {
+            map[mainCampusId] = map[mainCampusId] || { students: 0, staff: 0 };
+            map[mainCampusId].staff++;
+          }
+        });
+      }
       return map;
     },
     enabled: !!schoolId,
