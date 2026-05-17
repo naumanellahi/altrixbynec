@@ -65,7 +65,7 @@ export function useOwnerContext(currentSchoolId: string | null) {
     if (!user) return;
     let cancel = false;
     (async () => {
-      const { data, error } = await (supabase as any).rpc("owner_schools");
+      const { data, error } = await (supabase as any).rpc("owner_schools_strict");
       if (cancel) return;
       if (!error && Array.isArray(data)) setSchools(data as OwnerSchool[]);
       setLoading(false);
