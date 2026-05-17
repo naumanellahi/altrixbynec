@@ -320,42 +320,48 @@ export function OwnerAcademicsModule({ schoolId }: Props) {
                   <div className="flex items-center justify-between text-sm">
                     <span>Pass Rate</span>
                     <span className="font-medium">
-                      {academicData?.performanceDistribution
-                        ? Math.round(
-                            ((academicData.performanceDistribution.excellent +
-                              academicData.performanceDistribution.good +
-                              academicData.performanceDistribution.average) /
-                              Math.max(
-                                1,
-                                Object.values(academicData.performanceDistribution).reduce((a, b) => a + b, 0)
-                              )) *
-                              100
-                          )
-                        : 0}
+                      {(() => {
+                        const d = academicData?.performanceDistribution;
+                        if (!d) return 0;
+                        const total = Math.max(1, d.excellent + d.good + d.average + d.belowAverage);
+                        return Math.round(((d.excellent + d.good + d.average) / total) * 100);
+                      })()}
                       %
                     </span>
                   </div>
-                  <Progress value={85} className="mt-2 h-2" />
+                  <Progress
+                    value={(() => {
+                      const d = academicData?.performanceDistribution;
+                      if (!d) return 0;
+                      const total = Math.max(1, d.excellent + d.good + d.average + d.belowAverage);
+                      return Math.round(((d.excellent + d.good + d.average) / total) * 100);
+                    })()}
+                    className="mt-2 h-2"
+                  />
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between text-sm">
                     <span>Excellence Rate (90%+)</span>
                     <span className="font-medium">
-                      {academicData?.performanceDistribution
-                        ? Math.round(
-                            (academicData.performanceDistribution.excellent /
-                              Math.max(
-                                1,
-                                Object.values(academicData.performanceDistribution).reduce((a, b) => a + b, 0)
-                              )) *
-                              100
-                          )
-                        : 0}
+                      {(() => {
+                        const d = academicData?.performanceDistribution;
+                        if (!d) return 0;
+                        const total = Math.max(1, d.excellent + d.good + d.average + d.belowAverage);
+                        return Math.round((d.excellent / total) * 100);
+                      })()}
                       %
                     </span>
                   </div>
-                  <Progress value={academicData?.performanceDistribution.excellent || 0} className="mt-2 h-2" />
+                  <Progress
+                    value={(() => {
+                      const d = academicData?.performanceDistribution;
+                      if (!d) return 0;
+                      const total = Math.max(1, d.excellent + d.good + d.average + d.belowAverage);
+                      return Math.round((d.excellent / total) * 100);
+                    })()}
+                    className="mt-2 h-2"
+                  />
                 </div>
               </CardContent>
             </Card>
