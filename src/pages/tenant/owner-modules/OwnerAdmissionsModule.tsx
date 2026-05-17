@@ -379,7 +379,7 @@ export function OwnerAdmissionsModule({ schoolId }: Props) {
                       .map(([userId, perf]) => (
                         <div key={userId} className="rounded-xl bg-muted/50 p-4">
                           <div className="flex items-center justify-between">
-                            <span className="font-medium truncate">{userId.slice(0, 8)}...</span>
+                            <span className="font-medium truncate">{perf.name}</span>
                             <Badge variant="outline">
                               {perf.assigned > 0 ? Math.round((perf.won / perf.assigned) * 100) : 0}% conv.
                             </Badge>
