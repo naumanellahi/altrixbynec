@@ -32,6 +32,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DashboardAlertsPanel, AlertsSummaryBadge } from "@/components/dashboard/DashboardAlertsPanel";
 import { AlertSettingsDialog } from "@/components/dashboard/AlertSettingsDialog";
 import { PrincipalTeachersTab } from "@/components/principal/PrincipalTeachersTab";
+import { LiveTeacherPresenceCard } from "@/components/principal/LiveTeacherPresenceCard";
 import { PrincipalStudentsTab } from "@/components/principal/PrincipalStudentsTab";
 import { SendMessageDialog } from "@/components/principal/SendMessageDialog";
 import { BrandingSettingsDialog } from "@/components/principal/BrandingSettingsDialog";
@@ -250,6 +251,9 @@ export function PrincipalHome() {
       </TabsList>
 
       <TabsContent value="overview" className="space-y-4 lg:space-y-6">
+        {/* Live Teacher Presence */}
+        <LiveTeacherPresenceCard schoolId={schoolId} />
+
         {/* Real-time Alerts Panel */}
         {alerts.length > 0 && (
           <DashboardAlertsPanel

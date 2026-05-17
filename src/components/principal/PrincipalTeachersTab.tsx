@@ -313,6 +313,7 @@ export function PrincipalTeachersTab({ schoolId }: PrincipalTeachersTabProps) {
 
   return (
     <div className="space-y-3 sm:space-y-4">
+      <LiveTeacherPresenceCard schoolId={schoolId} />
       {/* Header Stats */}
       <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4">
         <div className="rounded-xl border bg-surface-2 p-3 sm:rounded-2xl sm:p-4">
