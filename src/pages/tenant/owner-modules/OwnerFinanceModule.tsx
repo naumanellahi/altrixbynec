@@ -16,6 +16,9 @@ import {
   Wallet,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { exportToCSV } from "@/lib/csv";
+import { FeeDefaultersReport } from "@/components/accountant/FeeDefaultersReport";
+import { SalaryBudgetForecast } from "@/components/accountant/SalaryBudgetForecast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -57,9 +60,11 @@ export function OwnerFinanceModule({ schoolId }: Props) {
   const monthStart = useMemo(() => startOfMonth(new Date()), []);
   const yearStart = useMemo(() => startOfYear(new Date()), []);
 
+  const trendMonths = periodFilter === "3m" ? 3 : periodFilter === "6m" ? 6 : periodFilter === "ytd" ? Math.max(1, new Date().getMonth() + 1) : 12;
+
   // Fetch financial data
   const { data: financeData, isLoading } = useQuery({
-    queryKey: ["owner_finance", schoolId, activeCampusId],
+    queryKey: ["owner_finance", schoolId, activeCampusId, trendMonths],
     queryFn: async () => {
       if (!schoolId) return null;
 
@@ -110,9 +115,9 @@ export function OwnerFinanceModule({ schoolId }: Props) {
         expenseByCategory[cat] = (expenseByCategory[cat] || 0) + Number(e.amount || 0);
       });
 
-      // Monthly trend (12 months)
+      // Monthly trend (driven by period filter)
       const monthlyTrend: { month: string; revenue: number; expenses: number; profit: number; payroll: number }[] = [];
-      for (let i = 11; i >= 0; i--) {
+      for (let i = trendMonths - 1; i >= 0; i--) {
         const start = startOfMonth(subMonths(new Date(), i));
         const end = startOfMonth(subMonths(new Date(), i - 1));
 
@@ -213,7 +218,21 @@ export function OwnerFinanceModule({ schoolId }: Props) {
               <SelectItem value="ytd">Year to Date</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="icon">
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Export financial summary as CSV"
+            onClick={() => {
+              const rows = (financeData?.monthlyTrend || []).map((m) => ({
+                month: m.month,
+                revenue: m.revenue,
+                expenses: m.expenses,
+                payroll: m.payroll,
+                profit: m.profit,
+              }));
+              if (rows.length) exportToCSV(rows, `finance-summary-${new Date().toISOString().slice(0,10)}`);
+            }}
+          >
             <Download className="h-4 w-4" />
           </Button>
         </div>
@@ -312,11 +331,13 @@ export function OwnerFinanceModule({ schoolId }: Props) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="overview">Cash Flow</TabsTrigger>
           <TabsTrigger value="expenses">Expense Breakdown</TabsTrigger>
           <TabsTrigger value="profitability">Profitability</TabsTrigger>
           <TabsTrigger value="collections">Collections</TabsTrigger>
+          <TabsTrigger value="defaulters">Fee Defaulters</TabsTrigger>
+          <TabsTrigger value="forecast">Salary Forecast</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-6">
@@ -516,6 +537,14 @@ export function OwnerFinanceModule({ schoolId }: Props) {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="defaulters" className="mt-6">
+          {schoolId ? <FeeDefaultersReport schoolId={schoolId} /> : null}
+        </TabsContent>
+
+        <TabsContent value="forecast" className="mt-6">
+          <SalaryBudgetForecast />
         </TabsContent>
       </Tabs>
     </div>
