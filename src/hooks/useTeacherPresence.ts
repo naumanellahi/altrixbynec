@@ -22,6 +22,13 @@ function todayISO() {
 export function useTeacherPresence(schoolId: string | null, teacherUserId: string | null) {
   const [rows, setRows] = useState<Map<string, PresenceRow>>(new Map());
   const [saving, setSaving] = useState<string | null>(null);
+  const [reconnectVersion, setReconnectVersion] = useState(0);
+  const [realtimeStatus, setRealtimeStatus] = useState<
+    "connecting" | "live" | "reconnecting" | "offline"
+  >("connecting");
+  const [lastEcho, setLastEcho] = useState<
+    { entryId: string; status: PresenceStatus; ts: number } | null
+  >(null);
 
   const load = useCallback(async () => {
     if (!schoolId || !teacherUserId) return;
@@ -41,11 +48,32 @@ export function useTeacherPresence(schoolId: string | null, teacherUserId: strin
     load();
   }, [load]);
 
+  // Reconnect on network restore / tab refocus
+  useEffect(() => {
+    const bump = () => {
+      setRealtimeStatus("reconnecting");
+      setReconnectVersion((v) => v + 1);
+    };
+    const onOnline = () => bump();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") bump();
+    };
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", () => setRealtimeStatus("offline"));
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", () => setRealtimeStatus("offline"));
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
+
   // Realtime sync of own presence — merge payload directly for instant updates
   useEffect(() => {
     if (!schoolId || !teacherUserId) return;
+    let backoffTimer: ReturnType<typeof setTimeout> | null = null;
     const ch = supabase
-      .channel(`teacher_presence_self_${teacherUserId}`)
+      .channel(`teacher_presence_self_${teacherUserId}_${reconnectVersion}`)
       .on(
         "postgres_changes",
         {
@@ -76,13 +104,36 @@ export function useTeacherPresence(schoolId: string | null, teacherUserId: strin
             }
             return next;
           });
+          if (payload.eventType !== "DELETE" && row.status) {
+            setLastEcho({
+              entryId: row.timetable_entry_id,
+              status: row.status as PresenceStatus,
+              ts: Date.now(),
+            });
+          }
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          setRealtimeStatus("live");
+          load();
+        } else if (
+          status === "CHANNEL_ERROR" ||
+          status === "TIMED_OUT" ||
+          status === "CLOSED"
+        ) {
+          setRealtimeStatus("reconnecting");
+          if (backoffTimer) clearTimeout(backoffTimer);
+          backoffTimer = setTimeout(() => {
+            setReconnectVersion((v) => v + 1);
+          }, 2000);
+        }
+      });
     return () => {
+      if (backoffTimer) clearTimeout(backoffTimer);
       supabase.removeChannel(ch);
     };
-  }, [schoolId, teacherUserId, load]);
+  }, [schoolId, teacherUserId, load, reconnectVersion]);
 
   const setStatus = useCallback(
     async (
@@ -91,13 +142,11 @@ export function useTeacherPresence(schoolId: string | null, teacherUserId: strin
       opts?: { reason?: string | null; startTime?: string | null },
     ) => {
       if (!schoolId || !teacherUserId) return;
-      // Prevent overlapping writes for the same entry
       if (saving === timetableEntryId) return { error: null, effectiveStatus: status };
       setSaving(timetableEntryId);
       const nowIso = new Date().toISOString();
       const existing = rows.get(timetableEntryId);
 
-      // Auto-promote in_class to late if the teacher checks in after the period start
       let effectiveStatus: PresenceStatus = status;
       if (status === "in_class" && opts?.startTime) {
         const [h, m] = opts.startTime.split(":").map(Number);
@@ -107,7 +156,6 @@ export function useTeacherPresence(schoolId: string | null, teacherUserId: strin
         if (curMin > startMin) effectiveStatus = "late";
       }
 
-      // Idempotent guard: skip identical state with no new reason
       if (
         existing &&
         existing.status === effectiveStatus &&
@@ -144,5 +192,5 @@ export function useTeacherPresence(schoolId: string | null, teacherUserId: strin
     [schoolId, teacherUserId, rows, load, saving],
   );
 
-  return { rows, setStatus, saving, refetch: load };
+  return { rows, setStatus, saving, refetch: load, realtimeStatus, lastEcho };
 }

@@ -58,7 +58,7 @@ function statusDotClass(s: string): string {
 }
 
 export function LiveTeacherPresenceCard({ schoolId }: Props) {
-  const { liveTeachers, teacherTimelines, lookupEntry, loading } =
+  const { liveTeachers, teacherTimelines, lookupEntry, loading, realtimeStatus } =
     useLiveTeacherPresence(schoolId);
 
   const [timelineOpen, setTimelineOpen] = useState(false);
@@ -176,6 +176,26 @@ export function LiveTeacherPresenceCard({ schoolId }: Props) {
             Live — Who's Teaching Now
           </CardTitle>
           <div className="flex items-center gap-2">
+            <Badge
+              variant="outline"
+              className="gap-1"
+              title={`Realtime: ${realtimeStatus}`}
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  realtimeStatus === "live"
+                    ? "bg-primary animate-pulse"
+                    : realtimeStatus === "offline"
+                      ? "bg-destructive"
+                      : "bg-accent animate-pulse"
+                }`}
+              />
+              {realtimeStatus === "live"
+                ? "Live"
+                : realtimeStatus === "offline"
+                  ? "Offline"
+                  : "Reconnecting…"}
+            </Badge>
             <Badge variant="outline" className="gap-1">
               <Radio className="h-3 w-3" />
               {filteredLive.length}/{liveTeachers.length} active

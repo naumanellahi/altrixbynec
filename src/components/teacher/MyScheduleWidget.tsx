@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarDays, Check, ChevronRight, Clock, Coffee, DoorOpen, LogIn, Pencil, X } from "lucide-react";
+import { CalendarDays, Check, ChevronRight, Clock, Coffee, DoorOpen, LogIn, Pencil, Wifi, WifiOff, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { useTeacherSchedule, ScheduleEntry, PeriodLog } from "@/hooks/useTeacher
 import { useTeacherPresence } from "@/hooks/useTeacherPresence";
 import { useSession } from "@/hooks/useSession";
 import { toast } from "@/hooks/use-toast";
+import { toast as sonner } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -50,8 +51,36 @@ function getStatusIcon(status: string) {
 export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps) {
   // Determine initial day: today if weekday, else Monday
   const { user } = useSession();
-  const { rows: presenceRows, setStatus: setPresenceStatus, saving: presenceSaving } =
+  const { rows: presenceRows, setStatus: setPresenceStatus, saving: presenceSaving, realtimeStatus, lastEcho } =
     useTeacherPresence(schoolId, user?.id ?? null);
+
+  // Track entries awaiting realtime echo confirmation
+  const pendingRef = useRef<Map<string, { status: string; label: string; ts: number }>>(new Map());
+
+  useEffect(() => {
+    if (!lastEcho) return;
+    const pending = pendingRef.current.get(lastEcho.entryId);
+    if (pending && pending.status === lastEcho.status) {
+      pendingRef.current.delete(lastEcho.entryId);
+      sonner.success("Synced live", {
+        description: pending.label,
+        duration: 1800,
+      });
+    }
+  }, [lastEcho]);
+
+  // Notify on realtime reconnection state changes
+  const prevRtRef = useRef(realtimeStatus);
+  useEffect(() => {
+    if (prevRtRef.current !== realtimeStatus) {
+      if (realtimeStatus === "reconnecting" || realtimeStatus === "offline") {
+        sonner("Reconnecting live updates…", { duration: 1500 });
+      } else if (realtimeStatus === "live" && prevRtRef.current !== "connecting") {
+        sonner.success("Live updates restored", { duration: 1500 });
+      }
+      prevRtRef.current = realtimeStatus;
+    }
+  }, [realtimeStatus]);
 
   // Determine initial day: today if weekday, else Monday
   const [selectedDay, setSelectedDay] = useState(() => {
@@ -141,7 +170,33 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
               {FULL_DAY_NAMES[selectedDay]} {isToday && "(Today)"}
             </p>
           </div>
-          <CalendarDays className="h-5 w-5 text-muted-foreground" />
+          <div className="flex items-center gap-2">
+            <span
+              className="flex items-center gap-1 text-xs text-muted-foreground"
+              title={`Realtime: ${realtimeStatus}`}
+            >
+              {realtimeStatus === "live" ? (
+                <>
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                  </span>
+                  <span className="hidden sm:inline">Live</span>
+                </>
+              ) : realtimeStatus === "offline" ? (
+                <>
+                  <WifiOff className="h-3 w-3" />
+                  <span className="hidden sm:inline">Offline</span>
+                </>
+              ) : (
+                <>
+                  <Wifi className="h-3 w-3 animate-pulse" />
+                  <span className="hidden sm:inline">Reconnecting…</span>
+                </>
+              )}
+            </span>
+            <CalendarDays className="h-5 w-5 text-muted-foreground" />
+          </div>
         </CardHeader>
         <CardContent>
           {/* Day Selector */}
@@ -259,12 +314,20 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
                           status: "in_class" | "left",
                           reason?: string | null,
                         ) => {
+                          const label = `${entry.subjectName} • ${entry.periodLabel}`;
                           const res = await setPresenceStatus(entry.id, status, {
                             reason: reason ?? null,
                             startTime: entry.startTime,
                           });
                           const err = res?.error;
                           const effective = res?.effectiveStatus ?? status;
+                          if (!err) {
+                            pendingRef.current.set(entry.id, {
+                              status: effective,
+                              label,
+                              ts: Date.now(),
+                            });
+                          }
                           toast({
                             title: err
                               ? "Failed to update"
@@ -275,7 +338,7 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
                                   : "Marked as Left",
                             description: err
                               ? (err as { message?: string })?.message ?? "Try again"
-                              : `${entry.subjectName} • ${entry.periodLabel}`,
+                              : label,
                             variant: err ? "destructive" : "default",
                           });
                         };
