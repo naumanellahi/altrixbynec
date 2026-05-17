@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { TeacherPerformanceReport } from "./TeacherPerformanceReport";
+import { LiveTeacherPresenceCard } from "./LiveTeacherPresenceCard";
 import {
   BookOpen,
   CalendarDays,
