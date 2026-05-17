@@ -141,7 +141,28 @@ export function useLiveTeacherPresence(schoolId: string | null) {
           table: "teacher_period_presence",
           filter: `school_id=eq.${schoolId}`,
         },
-        () => loadPresence(),
+        (payload) => {
+          const row = (payload.new ?? payload.old) as any;
+          if (!row?.timetable_entry_id) {
+            loadPresence();
+            return;
+          }
+          setPresenceRows((prev) => {
+            const next = new Map(prev);
+            if (payload.eventType === "DELETE") {
+              next.delete(row.timetable_entry_id);
+            } else {
+              next.set(row.timetable_entry_id, {
+                status: row.status,
+                entered_at: row.entered_at ?? null,
+                left_at: row.left_at ?? null,
+                updated_at: row.updated_at ?? new Date().toISOString(),
+                reason: row.reason ?? null,
+              });
+            }
+            return next;
+          });
+        },
       )
       .subscribe();
     return () => {
