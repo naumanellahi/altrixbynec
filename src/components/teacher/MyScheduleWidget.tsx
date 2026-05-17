@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarDays, Check, ChevronRight, Clock, Coffee, DoorOpen, LogIn, Pencil, X } from "lucide-react";
+import { CalendarDays, Check, ChevronRight, Clock, Coffee, DoorOpen, LogIn, Pencil, Wifi, WifiOff, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { useTeacherSchedule, ScheduleEntry, PeriodLog } from "@/hooks/useTeacher
 import { useTeacherPresence } from "@/hooks/useTeacherPresence";
 import { useSession } from "@/hooks/useSession";
 import { toast } from "@/hooks/use-toast";
+import { toast as sonner } from "sonner";
 import {
   Dialog,
   DialogContent,
