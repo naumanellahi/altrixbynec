@@ -41,7 +41,7 @@ export function useTeacherPresence(schoolId: string | null, teacherUserId: strin
     load();
   }, [load]);
 
-  // Realtime sync of own presence
+  // Realtime sync of own presence — merge payload directly for instant updates
   useEffect(() => {
     if (!schoolId || !teacherUserId) return;
     const ch = supabase
@@ -54,7 +54,29 @@ export function useTeacherPresence(schoolId: string | null, teacherUserId: strin
           table: "teacher_period_presence",
           filter: `teacher_user_id=eq.${teacherUserId}`,
         },
-        () => load(),
+        (payload) => {
+          const row = (payload.new ?? payload.old) as any;
+          if (!row?.timetable_entry_id) {
+            load();
+            return;
+          }
+          setRows((prev) => {
+            const next = new Map(prev);
+            if (payload.eventType === "DELETE") {
+              next.delete(row.timetable_entry_id);
+            } else {
+              next.set(row.timetable_entry_id, {
+                id: row.id,
+                timetable_entry_id: row.timetable_entry_id,
+                status: row.status,
+                entered_at: row.entered_at ?? null,
+                left_at: row.left_at ?? null,
+                period_date: row.period_date,
+              });
+            }
+            return next;
+          });
+        },
       )
       .subscribe();
     return () => {
