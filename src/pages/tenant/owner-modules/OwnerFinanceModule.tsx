@@ -115,9 +115,11 @@ export function OwnerFinanceModule({ schoolId }: Props) {
         expenseByCategory[cat] = (expenseByCategory[cat] || 0) + Number(e.amount || 0);
       });
 
-      // Monthly trend (12 months)
+      // Monthly trend (driven by period filter)
       const monthlyTrend: { month: string; revenue: number; expenses: number; profit: number; payroll: number }[] = [];
-      for (let i = 11; i >= 0; i--) {
+      for (let i = trendMonths - 1; i >= 0; i--) {
+        const start = startOfMonth(subMonths(new Date(), i));
+        const end = startOfMonth(subMonths(new Date(), i - 1));
         const start = startOfMonth(subMonths(new Date(), i));
         const end = startOfMonth(subMonths(new Date(), i - 1));
 
