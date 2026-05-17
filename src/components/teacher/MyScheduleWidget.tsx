@@ -1,12 +1,15 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarDays, Check, ChevronRight, Clock, Coffee, Pencil, X } from "lucide-react";
+import { CalendarDays, Check, ChevronRight, Clock, Coffee, DoorOpen, LogIn, Pencil, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PeriodLogDialog } from "./PeriodLogDialog";
 import { useTeacherSchedule, ScheduleEntry, PeriodLog } from "@/hooks/useTeacherSchedule";
+import { useTeacherPresence } from "@/hooks/useTeacherPresence";
+import { useSession } from "@/hooks/useSession";
+import { toast } from "@/hooks/use-toast";
 
 interface MyScheduleWidgetProps {
   schoolId: string | null;
