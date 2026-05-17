@@ -386,8 +386,8 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
         >
           <CardContent className="p-5">
             <div className="flex items-center gap-3 text-left">
-              <div className="rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 p-3 transition-transform group-hover:scale-105">
-                <Brain className="h-5 w-5 text-white" />
+              <div className="rounded-xl bg-primary p-3 transition-transform group-hover:scale-105">
+                <Brain className="h-5 w-5 text-primary-foreground" />
               </div>
               <div>
                 <p className="font-semibold">Student Digital Twins</p>
@@ -406,8 +406,8 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
         >
           <CardContent className="p-5">
             <div className="flex items-center gap-3 text-left">
-              <div className="rounded-xl bg-gradient-to-br from-red-500 to-orange-500 p-3 transition-transform group-hover:scale-105">
-                <Shield className="h-5 w-5 text-white" />
+              <div className="rounded-xl bg-destructive p-3 transition-transform group-hover:scale-105">
+                <Shield className="h-5 w-5 text-destructive-foreground" />
               </div>
               <div>
                 <p className="font-semibold">Early Warning System</p>
@@ -426,8 +426,8 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
         >
           <CardContent className="p-5">
             <div className="flex items-center gap-3 text-left">
-              <div className="rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 p-3 transition-transform group-hover:scale-105">
-                <Wand2 className="h-5 w-5 text-white" />
+              <div className="rounded-xl bg-accent p-3 transition-transform group-hover:scale-105">
+                <Wand2 className="h-5 w-5 text-accent-foreground" />
               </div>
               <div>
                 <p className="font-semibold">Smart Timetable</p>
@@ -444,8 +444,8 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
         >
           <CardContent className="p-5">
             <div className="flex items-center gap-3 text-left">
-              <div className="rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 p-3 transition-transform group-hover:scale-105">
-                <Award className="h-5 w-5 text-white" />
+              <div className="rounded-xl bg-secondary p-3 transition-transform group-hover:scale-105">
+                <Award className="h-5 w-5 text-secondary-foreground" />
               </div>
               <div>
                 <p className="font-semibold">Teacher Analytics</p>
@@ -464,8 +464,8 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
         >
           <CardContent className="p-5">
             <div className="flex items-center gap-3 text-left">
-              <div className="rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 p-3 transition-transform group-hover:scale-105">
-                <Heart className="h-5 w-5 text-white" />
+              <div className="rounded-xl bg-primary p-3 transition-transform group-hover:scale-105">
+                <Heart className="h-5 w-5 text-primary-foreground" />
               </div>
               <div>
                 <p className="font-semibold">School Reputation</p>
@@ -484,8 +484,8 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
         >
           <CardContent className="p-5">
             <div className="flex items-center gap-3 text-left">
-              <div className="rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 p-3 transition-transform group-hover:scale-105">
-                <Briefcase className="h-5 w-5 text-white" />
+              <div className="rounded-xl bg-accent p-3 transition-transform group-hover:scale-105">
+                <Briefcase className="h-5 w-5 text-accent-foreground" />
               </div>
               <div>
                 <p className="font-semibold">Career Guidance</p>
