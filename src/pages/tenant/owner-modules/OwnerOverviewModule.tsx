@@ -163,6 +163,8 @@ export function OwnerOverviewModule({ schoolId }: Props) {
         staffRes,
         teachersRes,
         marksRes,
+        timetableRes,
+        teacherAssignRes,
       ] = await Promise.all([
         // Students (campus-scoped)
         campusEq(supabase.from("students").select("id,status").eq("school_id", schoolId)),
@@ -194,6 +196,10 @@ export function OwnerOverviewModule({ schoolId }: Props) {
             .eq("school_id", schoolId)
             .not("marks", "is", null)
         ),
+        // Timetable entries (to compute teacher utilization)
+        supabase.from("timetable_entries").select("teacher_id").eq("school_id", schoolId),
+        // Teacher subject assignments (active teachers with assignments)
+        supabase.from("teacher_subject_assignments").select("teacher_id").eq("school_id", schoolId),
       ]);
 
       const students = studentsRes.data || [];
@@ -205,6 +211,8 @@ export function OwnerOverviewModule({ schoolId }: Props) {
       const staff = staffRes.data || [];
       const teachers = teachersRes.data || [];
       const marks = marksRes.data || [];
+      const timetable = timetableRes.data || [];
+      const teacherAssignments = teacherAssignRes.data || [];
 
       // Student counts
       const totalStudents = students.length;
@@ -264,8 +272,14 @@ export function OwnerOverviewModule({ schoolId }: Props) {
         .reduce((sum: number, i: any) => sum + Number(i.total_amount || 0), 0);
       const collectionRate = invoices.length > 0 ? Math.round((paidInvoices / invoices.length) * 100) : 0;
 
-      // Teacher utilization (placeholder - would need timetable data)
-      const teacherUtilization = 78; // Placeholder
+      // Teacher utilization: % of teachers actively scheduled or assigned
+      const scheduledTeacherIds = new Set<string>([
+        ...timetable.map((t: any) => t.teacher_id).filter(Boolean),
+        ...teacherAssignments.map((t: any) => t.teacher_id).filter(Boolean),
+      ]);
+      const teacherUtilization = teachers.length > 0
+        ? Math.round((scheduledTeacherIds.size / teachers.length) * 100)
+        : 0;
 
       return {
         totalStudents,
@@ -337,7 +351,7 @@ export function OwnerOverviewModule({ schoolId }: Props) {
     enabled: !!schoolId,
   });
 
-  // AI Insights (mock - will be replaced with real AI)
+  // AI Insights — derived from real KPIs
   const insights = useMemo(() => {
     if (!kpis) return [];
     const list: { type: "warning" | "success" | "info"; message: string; action?: string }[] = [];
