@@ -198,6 +198,7 @@ export function useLiveTeacherPresence(schoolId: string | null) {
       status: "in_class" | "left" | "late" | "not_checked_in";
       enteredAt: string | null;
       leftAt: string | null;
+      reason: string | null;
     };
     const byTeacher = new Map<string, { teacherName: string; entries: TimelineEntry[] }>();
     entries.forEach((e) => {
@@ -218,6 +219,7 @@ export function useLiveTeacherPresence(schoolId: string | null) {
         status: (presence?.status as any) ?? "not_checked_in",
         enteredAt: presence?.entered_at ?? null,
         leftAt: presence?.left_at ?? null,
+        reason: presence?.reason ?? null,
       };
       const bucket = byTeacher.get(e.teacher_user_id) ?? {
         teacherName: teachers.get(e.teacher_user_id) ?? "Teacher",
