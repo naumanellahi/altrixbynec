@@ -237,21 +237,52 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
                       {isToday && (() => {
                         const presence = presenceRows.get(entry.id);
                         const isIn = presence?.status === "in_class";
+                        const isLate = presence?.status === "late";
                         const isOut = presence?.status === "left";
                         const busy = presenceSaving === entry.id;
-                        const handleSet = async (status: "in_class" | "left") => {
-                          const err = await setPresenceStatus(entry.id, status);
+                        const handleSet = async (
+                          status: "in_class" | "left",
+                          reason?: string | null,
+                        ) => {
+                          const res = await setPresenceStatus(entry.id, status, {
+                            reason: reason ?? null,
+                            startTime: entry.startTime,
+                          });
+                          const err = res?.error;
+                          const effective = res?.effectiveStatus ?? status;
                           toast({
                             title: err
                               ? "Failed to update"
-                              : status === "in_class"
+                              : effective === "in_class"
                                 ? "Marked as In Class"
-                                : "Marked as Left",
+                                : effective === "late"
+                                  ? "Marked as Late"
+                                  : "Marked as Left",
                             description: err
-                              ? (err as Error).message ?? "Try again"
+                              ? (err as { message?: string })?.message ?? "Try again"
                               : `${entry.subjectName} • ${entry.periodLabel}`,
                             variant: err ? "destructive" : "default",
                           });
+                        };
+                        const askReasonAndSet = (status: "in_class" | "left") => {
+                          setReasonDialog({
+                            entryId: entry.id,
+                            label: `${entry.subjectName} • ${entry.periodLabel}`,
+                            onSubmit: (reason) => handleSet(status, reason),
+                          });
+                        };
+                        const onGreen = () => {
+                          // If after start, will become Late — ask for reason
+                          if (entry.startTime) {
+                            const [h, m] = entry.startTime.split(":").map(Number);
+                            const startMin = h * 60 + m;
+                            const now = new Date();
+                            if (now.getHours() * 60 + now.getMinutes() > startMin) {
+                              askReasonAndSet("in_class");
+                              return;
+                            }
+                          }
+                          handleSet("in_class");
                         };
                         return (
                           <>
@@ -259,11 +290,13 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
                               type="button"
                               size="icon"
                               disabled={busy}
-                              onClick={() => handleSet("in_class")}
+                              onClick={onGreen}
                               title="I'm in class"
                               className={`h-7 w-7 rounded-full ${
-                                isIn
-                                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                isIn || isLate
+                                  ? isLate
+                                    ? "bg-accent text-accent-foreground hover:bg-accent/90"
+                                    : "bg-primary text-primary-foreground hover:bg-primary/90"
                                   : "bg-background text-primary border border-primary/40 hover:bg-primary/10"
                               }`}
                             >
@@ -273,8 +306,8 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
                               type="button"
                               size="icon"
                               disabled={busy}
-                              onClick={() => handleSet("left")}
-                              title="Left the class / late"
+                              onClick={() => askReasonAndSet("left")}
+                              title="Left the class"
                               className={`h-7 w-7 rounded-full ${
                                 isOut
                                   ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
