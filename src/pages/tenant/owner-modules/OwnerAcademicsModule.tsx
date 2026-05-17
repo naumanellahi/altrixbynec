@@ -34,6 +34,7 @@ import {
   Radar,
 } from "recharts";
 import { useActiveCampus } from "@/hooks/useActiveCampus";
+import { OwnerTeacherEffectiveness } from "./OwnerTeacherEffectiveness";
 
 interface Props {
   schoolId: string | null;
