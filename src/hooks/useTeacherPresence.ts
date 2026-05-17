@@ -119,7 +119,7 @@ export function useTeacherPresence(schoolId: string | null, teacherUserId: strin
       if (!error) await load();
       return { error, effectiveStatus };
     },
-    [schoolId, teacherUserId, rows, load],
+    [schoolId, teacherUserId, rows, load, saving],
   );
 
   return { rows, setStatus, saving, refetch: load };
