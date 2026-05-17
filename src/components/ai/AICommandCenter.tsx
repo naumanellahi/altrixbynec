@@ -38,14 +38,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Props {
   schoolId: string;
+  onNavigate?: (tab: "overview" | "warnings" | "reputation" | "teachers" | "timetable" | "counseling") => void;
 }
 
 const MotionCard = motion.create(Card);
 
-export function AICommandCenter({ schoolId }: Props) {
+export function AICommandCenter({ schoolId, onNavigate }: Props) {
   const { schoolSlug } = useParams();
   const navigate = useNavigate();
   const [refreshing, setRefreshing] = useState(false);
+  const go = (tab: NonNullable<Props["onNavigate"]> extends (t: infer T) => any ? T : never) => {
+    onNavigate?.(tab as any);
+  };
 
   // Fetch AI metrics
   const { data: metrics, refetch, isLoading } = useQuery({
@@ -185,6 +189,7 @@ export function AICommandCenter({ schoolId }: Props) {
         <MotionCard
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
+          onClick={() => go("reputation")}
           className="shadow-sm hover:shadow-md transition-shadow cursor-pointer"
         >
           <CardContent className="p-4">
@@ -199,6 +204,7 @@ export function AICommandCenter({ schoolId }: Props) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
+          onClick={() => go("reputation")}
           className="shadow-sm hover:shadow-md transition-shadow cursor-pointer"
         >
           <CardContent className="p-4">
@@ -212,6 +218,7 @@ export function AICommandCenter({ schoolId }: Props) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
+          onClick={() => go("warnings")}
           className="shadow-sm hover:shadow-md transition-shadow cursor-pointer"
         >
           <CardContent className="p-4">
@@ -232,6 +239,7 @@ export function AICommandCenter({ schoolId }: Props) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
+          onClick={() => go("counseling")}
           className="shadow-sm hover:shadow-md transition-shadow cursor-pointer"
         >
           <CardContent className="p-4">
@@ -247,6 +255,7 @@ export function AICommandCenter({ schoolId }: Props) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
+          onClick={() => go("teachers")}
           className="shadow-sm hover:shadow-md transition-shadow cursor-pointer"
         >
           <CardContent className="p-4">
@@ -260,6 +269,7 @@ export function AICommandCenter({ schoolId }: Props) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
+          onClick={() => go("counseling")}
           className="shadow-sm hover:shadow-md transition-shadow cursor-pointer"
         >
           <CardContent className="p-4">
@@ -281,11 +291,15 @@ export function AICommandCenter({ schoolId }: Props) {
         <CardContent>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {/* Warning Status */}
-            <div className={`rounded-xl p-4 ${
-              (metrics?.criticalWarnings || 0) > 0 
-                ? "bg-red-500/10 border border-red-200" 
-                : "bg-emerald-500/10 border border-emerald-200"
-            }`}>
+            <button
+              type="button"
+              onClick={() => go("warnings")}
+              className={`text-left rounded-xl p-4 transition hover:scale-[1.02] hover:shadow-md ${
+                (metrics?.criticalWarnings || 0) > 0
+                  ? "bg-red-500/10 border border-red-200"
+                  : "bg-emerald-500/10 border border-emerald-200"
+              }`}
+            >
               <div className="flex items-center gap-2">
                 {(metrics?.criticalWarnings || 0) > 0 ? (
                   <AlertTriangle className="h-5 w-5 text-red-600" />
@@ -301,14 +315,18 @@ export function AICommandCenter({ schoolId }: Props) {
                   ? `${metrics?.criticalWarnings} critical warnings require immediate action`
                   : "No critical early warnings detected"}
               </p>
-            </div>
+            </button>
 
             {/* Counseling Status */}
-            <div className={`rounded-xl p-4 ${
-              (metrics?.pendingCounseling || 0) > 3 
-                ? "bg-amber-500/10 border border-amber-200" 
-                : "bg-blue-500/10 border border-blue-200"
-            }`}>
+            <button
+              type="button"
+              onClick={() => go("counseling")}
+              className={`text-left rounded-xl p-4 transition hover:scale-[1.02] hover:shadow-md ${
+                (metrics?.pendingCounseling || 0) > 3
+                  ? "bg-amber-500/10 border border-amber-200"
+                  : "bg-blue-500/10 border border-blue-200"
+              }`}
+            >
               <div className="flex items-center gap-2">
                 <Heart className="h-5 w-5 text-pink-600" />
                 <span className="text-sm font-medium">Counseling Queue</span>
@@ -316,14 +334,18 @@ export function AICommandCenter({ schoolId }: Props) {
               <p className="mt-2 text-xs text-muted-foreground">
                 {metrics?.pendingCounseling || 0} students awaiting counseling session
               </p>
-            </div>
+            </button>
 
             {/* Teacher Training */}
-            <div className={`rounded-xl p-4 ${
-              (metrics?.teachersNeedTraining || 0) > 2 
-                ? "bg-amber-500/10 border border-amber-200" 
-                : "bg-emerald-500/10 border border-emerald-200"
-            }`}>
+            <button
+              type="button"
+              onClick={() => go("teachers")}
+              className={`text-left rounded-xl p-4 transition hover:scale-[1.02] hover:shadow-md ${
+                (metrics?.teachersNeedTraining || 0) > 2
+                  ? "bg-amber-500/10 border border-amber-200"
+                  : "bg-emerald-500/10 border border-emerald-200"
+              }`}
+            >
               <div className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-blue-600" />
                 <span className="text-sm font-medium">Teacher Development</span>
@@ -331,14 +353,18 @@ export function AICommandCenter({ schoolId }: Props) {
               <p className="mt-2 text-xs text-muted-foreground">
                 {metrics?.teachersNeedTraining || 0} teachers flagged for training
               </p>
-            </div>
+            </button>
 
             {/* Prediction Health */}
-            <div className={`rounded-xl p-4 ${
-              (metrics?.avgFailureRisk || 0) > 20 
-                ? "bg-amber-500/10 border border-amber-200" 
-                : "bg-emerald-500/10 border border-emerald-200"
-            }`}>
+            <button
+              type="button"
+              onClick={() => go("warnings")}
+              className={`text-left rounded-xl p-4 transition hover:scale-[1.02] hover:shadow-md ${
+                (metrics?.avgFailureRisk || 0) > 20
+                  ? "bg-amber-500/10 border border-amber-200"
+                  : "bg-emerald-500/10 border border-emerald-200"
+              }`}
+            >
               <div className="flex items-center gap-2">
                 <GraduationCap className="h-5 w-5 text-purple-600" />
                 <span className="text-sm font-medium">Academic Outlook</span>
@@ -346,14 +372,14 @@ export function AICommandCenter({ schoolId }: Props) {
               <p className="mt-2 text-xs text-muted-foreground">
                 Average failure risk: {metrics?.avgFailureRisk || 0}%
               </p>
-            </div>
+            </button>
           </div>
         </CardContent>
       </Card>
 
       {/* Module Quick Access */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+        <Card onClick={() => go("counseling")} className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
           <CardContent className="p-5">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 p-3 group-hover:scale-105 transition-transform">
@@ -369,7 +395,7 @@ export function AICommandCenter({ schoolId }: Props) {
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+        <Card onClick={() => go("warnings")} className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
           <CardContent className="p-5">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-gradient-to-br from-red-500 to-orange-500 p-3 group-hover:scale-105 transition-transform">
@@ -385,7 +411,7 @@ export function AICommandCenter({ schoolId }: Props) {
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+        <Card onClick={() => go("timetable")} className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
           <CardContent className="p-5">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 p-3 group-hover:scale-105 transition-transform">
@@ -399,7 +425,7 @@ export function AICommandCenter({ schoolId }: Props) {
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+        <Card onClick={() => go("teachers")} className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
           <CardContent className="p-5">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 p-3 group-hover:scale-105 transition-transform">
@@ -415,7 +441,7 @@ export function AICommandCenter({ schoolId }: Props) {
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+        <Card onClick={() => go("reputation")} className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
           <CardContent className="p-5">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 p-3 group-hover:scale-105 transition-transform">
@@ -431,7 +457,7 @@ export function AICommandCenter({ schoolId }: Props) {
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+        <Card onClick={() => go("counseling")} className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
           <CardContent className="p-5">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 p-3 group-hover:scale-105 transition-transform">
