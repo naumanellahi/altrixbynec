@@ -189,6 +189,7 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
         <MotionCard
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
+          onClick={() => go("reputation")}
           className="shadow-sm hover:shadow-md transition-shadow cursor-pointer"
         >
           <CardContent className="p-4">
@@ -203,6 +204,7 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
+          onClick={() => go("reputation")}
           className="shadow-sm hover:shadow-md transition-shadow cursor-pointer"
         >
           <CardContent className="p-4">
@@ -216,6 +218,7 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
+          onClick={() => go("warnings")}
           className="shadow-sm hover:shadow-md transition-shadow cursor-pointer"
         >
           <CardContent className="p-4">
@@ -236,6 +239,7 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
+          onClick={() => go("counseling")}
           className="shadow-sm hover:shadow-md transition-shadow cursor-pointer"
         >
           <CardContent className="p-4">
@@ -251,6 +255,7 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
+          onClick={() => go("teachers")}
           className="shadow-sm hover:shadow-md transition-shadow cursor-pointer"
         >
           <CardContent className="p-4">
@@ -264,6 +269,7 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
+          onClick={() => go("counseling")}
           className="shadow-sm hover:shadow-md transition-shadow cursor-pointer"
         >
           <CardContent className="p-4">
