@@ -404,17 +404,8 @@ export function OwnerAcademicsModule({ schoolId }: Props) {
           </Card>
         </TabsContent>
 
-        <TabsContent value="teachers" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Teacher Effectiveness Rankings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-center text-muted-foreground py-8">
-                Teacher performance analytics will be available once assessment data is linked to teachers.
-              </p>
-            </CardContent>
-          </Card>
+        <TabsContent value="teachers" className="mt-6 space-y-4">
+          {schoolId && <OwnerTeacherEffectiveness schoolId={schoolId} />}
         </TabsContent>
       </Tabs>
     </div>
