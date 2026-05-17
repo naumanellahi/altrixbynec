@@ -132,26 +132,31 @@ export function useLiveTeacherPresence(schoolId: string | null) {
   useEffect(() => {
     if (!schoolId) return;
     const ch = supabase
-      .channel(`live_presence_${schoolId}`)
+      .channel(`live_presence_${schoolId}_${Math.random().toString(36).slice(2, 8)}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "teacher_period_presence",
-          filter: `school_id=eq.${schoolId}`,
         },
         (payload) => {
           const row = (payload.new ?? payload.old) as any;
+          // Client-side school filter (server filter can miss events when payload columns vary)
+          if (row?.school_id && row.school_id !== schoolId) return;
           if (!row?.timetable_entry_id) {
             loadPresence();
             return;
           }
-          setPresenceRows((prev) => {
-            const next = new Map(prev);
-            if (payload.eventType === "DELETE") {
+          if (payload.eventType === "DELETE") {
+            setPresenceRows((prev) => {
+              const next = new Map(prev);
               next.delete(row.timetable_entry_id);
-            } else {
+              return next;
+            });
+          } else {
+            setPresenceRows((prev) => {
+              const next = new Map(prev);
               next.set(row.timetable_entry_id, {
                 status: row.status,
                 entered_at: row.entered_at ?? null,
@@ -159,12 +164,19 @@ export function useLiveTeacherPresence(schoolId: string | null) {
                 updated_at: row.updated_at ?? new Date().toISOString(),
                 reason: row.reason ?? null,
               });
-            }
-            return next;
-          });
+              return next;
+            });
+            // Belt-and-suspenders: also refetch to guarantee consistency
+            loadPresence();
+          }
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          // Refresh once channel is live so we don't miss any in-flight updates
+          loadPresence();
+        }
+      });
     return () => {
       supabase.removeChannel(ch);
     };
