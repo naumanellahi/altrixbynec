@@ -351,7 +351,7 @@ export function OwnerOverviewModule({ schoolId }: Props) {
     enabled: !!schoolId,
   });
 
-  // AI Insights (mock - will be replaced with real AI)
+  // AI Insights — derived from real KPIs
   const insights = useMemo(() => {
     if (!kpis) return [];
     const list: { type: "warning" | "success" | "info"; message: string; action?: string }[] = [];
