@@ -157,6 +157,7 @@ const TeacherDashboard = () => {
             <Route path="admin-inbox" element={<TeacherAdminInboxModule />} />
             <Route path="complaints" element={<TeacherComplaintsModule />} />
             <Route path="parent-notes" element={<TeacherParentNotesModule />} />
+            <Route path="presence-history" element={<TeacherPresenceHistoryModule />} />
             <Route path="*" element={<Navigate to={`/${tenant.slug}/teacher`} replace />} />
           </Routes>
         )}
