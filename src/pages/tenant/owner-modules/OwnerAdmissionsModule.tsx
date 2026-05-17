@@ -37,7 +37,8 @@ import {
   PieChart,
   Pie,
 } from "recharts";
-import { format, subMonths, startOfMonth } from "date-fns";
+import { format, subMonths, startOfMonth, startOfYear } from "date-fns";
+import { useActiveCampus } from "@/hooks/useActiveCampus";
 
 interface Props {
   schoolId: string | null;
@@ -45,22 +46,37 @@ interface Props {
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
 
+function periodCutoff(p: string): Date {
+  const now = new Date();
+  if (p === "3m") return subMonths(now, 3);
+  if (p === "6m") return subMonths(now, 6);
+  if (p === "ytd") return startOfYear(now);
+  return subMonths(now, 12);
+}
+
 export function OwnerAdmissionsModule({ schoolId }: Props) {
   const [activeTab, setActiveTab] = useState("funnel");
   const [periodFilter, setPeriodFilter] = useState("12m");
+  const activeCampusId = useActiveCampus(schoolId);
 
   // Fetch CRM data
   const { data: crmData, isLoading } = useQuery({
-    queryKey: ["owner_admissions", schoolId],
+    queryKey: ["owner_admissions", schoolId, activeCampusId, periodFilter],
+    enabled: !!schoolId,
     queryFn: async () => {
       if (!schoolId) return null;
+      const since = periodCutoff(periodFilter).toISOString();
 
-      const [leadsRes, stagesRes, activitiesRes, campaignsRes, callsRes] = await Promise.all([
-        supabase.from("crm_leads").select("*").eq("school_id", schoolId),
+      const baseLeads = supabase.from("crm_leads").select("*").eq("school_id", schoolId).gte("created_at", since);
+      const leadsQuery = activeCampusId ? baseLeads.eq("campus_id", activeCampusId) : baseLeads;
+
+      const [leadsRes, stagesRes, activitiesRes, campaignsRes, callsRes, dirRes] = await Promise.all([
+        leadsQuery,
         supabase.from("crm_stages").select("*").eq("school_id", schoolId).order("sort_order"),
-        supabase.from("crm_activities").select("*").eq("school_id", schoolId),
+        supabase.from("crm_activities").select("*").eq("school_id", schoolId).gte("created_at", since),
         supabase.from("crm_campaigns").select("*").eq("school_id", schoolId),
-        supabase.from("crm_call_logs").select("*").eq("school_id", schoolId),
+        supabase.from("crm_call_logs").select("*").eq("school_id", schoolId).gte("created_at", since),
+        supabase.rpc("get_school_user_directory", { _school_id: schoolId }),
       ]);
 
       const leads = leadsRes.data || [];
@@ -68,6 +84,12 @@ export function OwnerAdmissionsModule({ schoolId }: Props) {
       const activities = activitiesRes.data || [];
       const campaigns = campaignsRes.data || [];
       const calls = callsRes.data || [];
+      const directory: Array<{ user_id: string; display_name: string | null; email: string | null }> = (dirRes.data as any) || [];
+      const nameOf = (uid: string) => {
+        if (uid === "Unassigned" || uid === "Unknown") return uid;
+        const u = directory.find((d) => d.user_id === uid);
+        return u?.display_name || u?.email || `${uid.slice(0, 8)}…`;
+      };
 
       // Calculate metrics
       const totalLeads = leads.length;
