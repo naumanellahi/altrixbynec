@@ -16,6 +16,9 @@ import {
   Wallet,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { exportToCSV } from "@/lib/csv";
+import { FeeDefaultersReport } from "@/components/accountant/FeeDefaultersReport";
+import { SalaryBudgetForecast } from "@/components/accountant/SalaryBudgetForecast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
