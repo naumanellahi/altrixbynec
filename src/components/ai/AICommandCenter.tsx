@@ -379,10 +379,14 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
 
       {/* Module Quick Access */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Card onClick={() => go("counseling")} className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+        <button
+          type="button"
+          onClick={() => go("counseling")}
+          className="group rounded-lg border bg-card text-card-foreground shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
           <CardContent className="p-5">
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 p-3 group-hover:scale-105 transition-transform">
+            <div className="flex items-center gap-3 text-left">
+              <div className="rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 p-3 transition-transform group-hover:scale-105">
                 <Brain className="h-5 w-5 text-white" />
               </div>
               <div>
@@ -393,12 +397,16 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
               </div>
             </div>
           </CardContent>
-        </Card>
+        </button>
 
-        <Card onClick={() => go("warnings")} className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+        <button
+          type="button"
+          onClick={() => go("warnings")}
+          className="group rounded-lg border bg-card text-card-foreground shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
           <CardContent className="p-5">
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-gradient-to-br from-red-500 to-orange-500 p-3 group-hover:scale-105 transition-transform">
+            <div className="flex items-center gap-3 text-left">
+              <div className="rounded-xl bg-gradient-to-br from-red-500 to-orange-500 p-3 transition-transform group-hover:scale-105">
                 <Shield className="h-5 w-5 text-white" />
               </div>
               <div>
@@ -409,12 +417,16 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
               </div>
             </div>
           </CardContent>
-        </Card>
+        </button>
 
-        <Card onClick={() => go("timetable")} className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+        <button
+          type="button"
+          onClick={() => go("timetable")}
+          className="group rounded-lg border bg-card text-card-foreground shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
           <CardContent className="p-5">
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 p-3 group-hover:scale-105 transition-transform">
+            <div className="flex items-center gap-3 text-left">
+              <div className="rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 p-3 transition-transform group-hover:scale-105">
                 <Wand2 className="h-5 w-5 text-white" />
               </div>
               <div>
@@ -423,12 +435,16 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
               </div>
             </div>
           </CardContent>
-        </Card>
+        </button>
 
-        <Card onClick={() => go("teachers")} className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+        <button
+          type="button"
+          onClick={() => go("teachers")}
+          className="group rounded-lg border bg-card text-card-foreground shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
           <CardContent className="p-5">
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 p-3 group-hover:scale-105 transition-transform">
+            <div className="flex items-center gap-3 text-left">
+              <div className="rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 p-3 transition-transform group-hover:scale-105">
                 <Award className="h-5 w-5 text-white" />
               </div>
               <div>
@@ -439,12 +455,16 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
               </div>
             </div>
           </CardContent>
-        </Card>
+        </button>
 
-        <Card onClick={() => go("reputation")} className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+        <button
+          type="button"
+          onClick={() => go("reputation")}
+          className="group rounded-lg border bg-card text-card-foreground shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
           <CardContent className="p-5">
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 p-3 group-hover:scale-105 transition-transform">
+            <div className="flex items-center gap-3 text-left">
+              <div className="rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 p-3 transition-transform group-hover:scale-105">
                 <Heart className="h-5 w-5 text-white" />
               </div>
               <div>
@@ -455,12 +475,16 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
               </div>
             </div>
           </CardContent>
-        </Card>
+        </button>
 
-        <Card onClick={() => go("counseling")} className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+        <button
+          type="button"
+          onClick={() => go("counseling")}
+          className="group rounded-lg border bg-card text-card-foreground shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
           <CardContent className="p-5">
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 p-3 group-hover:scale-105 transition-transform">
+            <div className="flex items-center gap-3 text-left">
+              <div className="rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 p-3 transition-transform group-hover:scale-105">
                 <Briefcase className="h-5 w-5 text-white" />
               </div>
               <div>
@@ -469,7 +493,7 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
               </div>
             </div>
           </CardContent>
-        </Card>
+        </button>
       </div>
     </div>
   );
