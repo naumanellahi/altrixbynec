@@ -14,6 +14,7 @@ import { TenantShell } from "@/components/tenant/TenantShell";
 import { Button } from "@/components/ui/button";
 import { DashboardHome } from "@/pages/tenant/modules/DashboardHome";
 import { AdminConsole } from "@/pages/tenant/modules/AdminConsole";
+import PresenceDebugModule from "@/pages/tenant/modules/PresenceDebugModule";
 import { UsersModule } from "@/pages/tenant/modules/UsersModule";
 import { CrmModule } from "@/pages/tenant/modules/CrmModule";
 import { AcademicModule } from "@/pages/tenant/modules/AcademicModule";
