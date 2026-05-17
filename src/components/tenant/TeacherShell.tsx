@@ -79,6 +79,7 @@ export function TeacherShell({ title, subtitle, schoolSlug, children }: Props) {
     { to: `${basePath}/holidays`, icon: PartyPopper, label: "Holidays", badge: 0 },
     { to: `${basePath}/reports`, icon: GraduationCap, label: "Reports", badge: 0 },
     { to: `${basePath}/timetable`, icon: CalendarDays, label: "Timetable", badge: 0 },
+    { to: `${basePath}/presence-history`, icon: ClipboardCheck, label: "Presence History", badge: 0 },
     { to: `${basePath}/leaves`, icon: Umbrella, label: "Apply Leave", badge: 0 },
     { to: `${basePath}/ai-insights`, icon: Brain, label: "AI Insights", badge: 0 },
     { to: `${basePath}/messages`, icon: MessageSquare, label: "Messages", badge: unreadAdminMessages },

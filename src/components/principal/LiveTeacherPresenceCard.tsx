@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Radio,
   MapPin,
@@ -8,10 +8,13 @@ import {
   CircleDashed,
   ChevronDown,
   History,
+  Download,
+  Search,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Collapsible,
   CollapsibleContent,
@@ -20,6 +23,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useLiveTeacherPresence } from "@/hooks/useLiveTeacherPresence";
+import { exportToCSV } from "@/lib/csv";
 
 interface Props {
   schoolId: string | null;
@@ -58,6 +62,52 @@ export function LiveTeacherPresenceCard({ schoolId }: Props) {
     useLiveTeacherPresence(schoolId);
 
   const [timelineOpen, setTimelineOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "in_class" | "late" | "left" | "not_checked_in"
+  >("all");
+
+  const filteredLive = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return liveTeachers.filter((t) => {
+      if (statusFilter !== "all" && t.status !== statusFilter) return false;
+      if (!q) return true;
+      return (
+        t.teacherName.toLowerCase().includes(q) ||
+        t.subject.toLowerCase().includes(q) ||
+        (t.sectionLabel ?? "").toLowerCase().includes(q) ||
+        (t.className ?? "").toLowerCase().includes(q) ||
+        (t.room ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [liveTeachers, search, statusFilter]);
+
+  const handleExport = () => {
+    const rows: Array<Record<string, string>> = [];
+    teacherTimelines.forEach((t) => {
+      t.entries.forEach((e) => {
+        rows.push({
+          Teacher: t.teacherName,
+          Period: e.periodLabel,
+          Start: e.startTime ?? "",
+          End: e.endTime ?? "",
+          Subject: e.subject,
+          Class: [e.className, e.sectionLabel].filter(Boolean).join(" "),
+          Room: e.room ?? "",
+          Status: statusLabel(e.status),
+          Reason: e.reason ?? "",
+          "Entered At": e.enteredAt ?? "",
+          "Left At": e.leftAt ?? "",
+        });
+      });
+    });
+    if (rows.length === 0) {
+      toast("Nothing to export yet");
+      return;
+    }
+    const today = new Date().toISOString().split("T")[0];
+    exportToCSV(rows, `teacher-presence-${today}`);
+  };
 
   // Toast on real status changes (skip initial silent fetch)
   const seenRef = useRef<Map<string, string>>(new Map()); // entryId -> last status
@@ -117,7 +167,7 @@ export function LiveTeacherPresenceCard({ schoolId }: Props) {
   return (
     <Card className="shadow-elevated">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <span className="relative flex h-2.5 w-2.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
@@ -125,22 +175,61 @@ export function LiveTeacherPresenceCard({ schoolId }: Props) {
             </span>
             Live — Who's Teaching Now
           </CardTitle>
-          <Badge variant="outline" className="gap-1">
-            <Radio className="h-3 w-3" />
-            {liveTeachers.length} active
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="gap-1">
+              <Radio className="h-3 w-3" />
+              {filteredLive.length}/{liveTeachers.length} active
+            </Badge>
+            <Button size="sm" variant="outline" onClick={handleExport} className="gap-1">
+              <Download className="h-3.5 w-3.5" /> CSV
+            </Button>
+          </div>
+        </div>
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search teacher, subject, room…"
+              className="h-9 pl-8"
+            />
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {(
+              [
+                ["all", "All"],
+                ["in_class", "In Class"],
+                ["late", "Late"],
+                ["left", "Left"],
+                ["not_checked_in", "Pending"],
+              ] as const
+            ).map(([key, label]) => (
+              <Button
+                key={key}
+                size="sm"
+                variant={statusFilter === key ? "default" : "outline"}
+                className="h-8 px-2 text-xs"
+                onClick={() => setStatusFilter(key)}
+              >
+                {label}
+              </Button>
+            ))}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {loading ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
-        ) : liveTeachers.length === 0 ? (
+        ) : filteredLive.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No periods are running right now.
+            {liveTeachers.length === 0
+              ? "No periods are running right now."
+              : "No teachers match the current filter."}
           </p>
         ) : (
           <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
-            {liveTeachers.map((t) => {
+            {filteredLive.map((t) => {
               const isIn = t.status === "in_class";
               const isLeft = t.status === "left";
               const isLate = t.status === "late";

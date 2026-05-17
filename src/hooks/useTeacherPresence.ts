@@ -69,6 +69,8 @@ export function useTeacherPresence(schoolId: string | null, teacherUserId: strin
       opts?: { reason?: string | null; startTime?: string | null },
     ) => {
       if (!schoolId || !teacherUserId) return;
+      // Prevent overlapping writes for the same entry
+      if (saving === timetableEntryId) return { error: null, effectiveStatus: status };
       setSaving(timetableEntryId);
       const nowIso = new Date().toISOString();
       const existing = rows.get(timetableEntryId);
@@ -81,6 +83,16 @@ export function useTeacherPresence(schoolId: string | null, teacherUserId: strin
         const now = new Date();
         const curMin = now.getHours() * 60 + now.getMinutes();
         if (curMin > startMin) effectiveStatus = "late";
+      }
+
+      // Idempotent guard: skip identical state with no new reason
+      if (
+        existing &&
+        existing.status === effectiveStatus &&
+        (opts?.reason ?? null) === null
+      ) {
+        setSaving(null);
+        return { error: null, effectiveStatus };
       }
 
       const payload: Record<string, unknown> = {
@@ -107,7 +119,7 @@ export function useTeacherPresence(schoolId: string | null, teacherUserId: strin
       if (!error) await load();
       return { error, effectiveStatus };
     },
-    [schoolId, teacherUserId, rows, load],
+    [schoolId, teacherUserId, rows, load, saving],
   );
 
   return { rows, setStatus, saving, refetch: load };

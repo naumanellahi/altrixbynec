@@ -54,7 +54,7 @@ export function useLiveTeacherPresence(schoolId: string | null) {
   const [periods, setPeriods] = useState<Period[]>([]);
   const [sections, setSections] = useState<Map<string, { name: string; class_name: string | null }>>(new Map());
   const [teachers, setTeachers] = useState<Map<string, string>>(new Map());
-  const [presenceRows, setPresenceRows] = useState<Map<string, { status: string; entered_at: string | null; left_at: string | null; updated_at: string }>>(new Map());
+  const [presenceRows, setPresenceRows] = useState<Map<string, { status: string; entered_at: string | null; left_at: string | null; updated_at: string; reason: string | null }>>(new Map());
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(() => new Date());
 
@@ -105,16 +105,17 @@ export function useLiveTeacherPresence(schoolId: string | null) {
     if (!schoolId) return;
     const { data } = await (supabase as any)
       .from("teacher_period_presence")
-      .select("timetable_entry_id, status, entered_at, left_at, updated_at")
+      .select("timetable_entry_id, status, entered_at, left_at, updated_at, reason")
       .eq("school_id", schoolId)
       .eq("period_date", todayISO());
-    const map = new Map<string, { status: string; entered_at: string | null; left_at: string | null; updated_at: string }>();
+    const map = new Map<string, { status: string; entered_at: string | null; left_at: string | null; updated_at: string; reason: string | null }>();
     (data as any[] | null)?.forEach((r) => {
       map.set(r.timetable_entry_id, {
         status: r.status,
         entered_at: r.entered_at,
         left_at: r.left_at,
         updated_at: r.updated_at,
+        reason: r.reason ?? null,
       });
     });
     setPresenceRows(map);
@@ -197,6 +198,7 @@ export function useLiveTeacherPresence(schoolId: string | null) {
       status: "in_class" | "left" | "late" | "not_checked_in";
       enteredAt: string | null;
       leftAt: string | null;
+      reason: string | null;
     };
     const byTeacher = new Map<string, { teacherName: string; entries: TimelineEntry[] }>();
     entries.forEach((e) => {
@@ -217,6 +219,7 @@ export function useLiveTeacherPresence(schoolId: string | null) {
         status: (presence?.status as any) ?? "not_checked_in",
         enteredAt: presence?.entered_at ?? null,
         leftAt: presence?.left_at ?? null,
+        reason: presence?.reason ?? null,
       };
       const bucket = byTeacher.get(e.teacher_user_id) ?? {
         teacherName: teachers.get(e.teacher_user_id) ?? "Teacher",
