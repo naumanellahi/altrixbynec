@@ -218,7 +218,21 @@ export function OwnerFinanceModule({ schoolId }: Props) {
               <SelectItem value="ytd">Year to Date</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="icon">
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Export financial summary as CSV"
+            onClick={() => {
+              const rows = (financeData?.monthlyTrend || []).map((m) => ({
+                month: m.month,
+                revenue: m.revenue,
+                expenses: m.expenses,
+                payroll: m.payroll,
+                profit: m.profit,
+              }));
+              if (rows.length) exportToCSV(rows, `finance-summary-${new Date().toISOString().slice(0,10)}`);
+            }}
+          >
             <Download className="h-4 w-4" />
           </Button>
         </div>
