@@ -10,7 +10,9 @@ import {
   History,
   Download,
   Search,
+  Activity,
 } from "lucide-react";
+import { Link, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -58,6 +60,7 @@ function statusDotClass(s: string): string {
 }
 
 export function LiveTeacherPresenceCard({ schoolId }: Props) {
+  const { schoolSlug } = useParams();
   const { liveTeachers, teacherTimelines, lookupEntry, loading, realtimeStatus } =
     useLiveTeacherPresence(schoolId);
 
@@ -203,6 +206,13 @@ export function LiveTeacherPresenceCard({ schoolId }: Props) {
             <Button size="sm" variant="outline" onClick={handleExport} className="gap-1">
               <Download className="h-3.5 w-3.5" /> CSV
             </Button>
+            {schoolSlug && (
+              <Button size="sm" variant="ghost" asChild className="gap-1">
+                <Link to={`/${schoolSlug}/presence-debug`} title="Realtime event log">
+                  <Activity className="h-3.5 w-3.5" />
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
         <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">

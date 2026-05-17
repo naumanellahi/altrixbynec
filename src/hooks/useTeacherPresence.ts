@@ -180,13 +180,40 @@ export function useTeacherPresence(schoolId: string | null, teacherUserId: strin
         payload.entered_at = existing?.entered_at ?? null;
         payload.left_at = nowIso;
       }
+
+      // Optimistic local update — flip status immediately for instant feedback
+      const optimisticRow: PresenceRow = {
+        id: existing?.id ?? `optimistic-${timetableEntryId}`,
+        timetable_entry_id: timetableEntryId,
+        status: effectiveStatus,
+        entered_at: (payload.entered_at as string | null) ?? null,
+        left_at: (payload.left_at as string | null) ?? null,
+        period_date: todayISO(),
+      };
+      const prevRow = existing ?? null;
+      setRows((prev) => {
+        const next = new Map(prev);
+        next.set(timetableEntryId, optimisticRow);
+        return next;
+      });
+
       const { error } = await (supabase as any)
         .from("teacher_period_presence")
         .upsert(payload, {
           onConflict: "school_id,teacher_user_id,timetable_entry_id,period_date",
         });
       setSaving(null);
-      if (!error) await load();
+      if (error) {
+        // Roll back optimistic change on failure
+        setRows((prev) => {
+          const next = new Map(prev);
+          if (prevRow) next.set(timetableEntryId, prevRow);
+          else next.delete(timetableEntryId);
+          return next;
+        });
+      } else {
+        await load();
+      }
       return { error, effectiveStatus };
     },
     [schoolId, teacherUserId, rows, load, saving],
