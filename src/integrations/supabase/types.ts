@@ -5151,6 +5151,48 @@ export type Database = {
           },
         ]
       }
+      teacher_period_presence: {
+        Row: {
+          created_at: string
+          entered_at: string | null
+          id: string
+          left_at: string | null
+          notes: string | null
+          period_date: string
+          school_id: string
+          status: string
+          teacher_user_id: string
+          timetable_entry_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          entered_at?: string | null
+          id?: string
+          left_at?: string | null
+          notes?: string | null
+          period_date?: string
+          school_id: string
+          status: string
+          teacher_user_id: string
+          timetable_entry_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          entered_at?: string | null
+          id?: string
+          left_at?: string | null
+          notes?: string | null
+          period_date?: string
+          school_id?: string
+          status?: string
+          teacher_user_id?: string
+          timetable_entry_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       teacher_subject_assignments: {
         Row: {
           class_section_id: string
