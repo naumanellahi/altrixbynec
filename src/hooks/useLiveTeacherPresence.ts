@@ -74,8 +74,8 @@ export function useLiveTeacherPresence(schoolId: string | null) {
         .select("id, subject_name, teacher_user_id, class_section_id, room, period_id, day_of_week, start_time, end_time")
         .eq("school_id", schoolId)
         .eq("day_of_week", today),
-      (supabase as any)
-        .from("school_periods")
+      supabase
+        .from("timetable_periods")
         .select("id, label, start_time, end_time, sort_order, is_break")
         .eq("school_id", schoolId)
         .order("sort_order"),
