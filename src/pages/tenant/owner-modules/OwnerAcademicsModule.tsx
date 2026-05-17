@@ -411,7 +411,7 @@ export function OwnerAcademicsModule({ schoolId }: Props) {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <AlertTriangle className="h-4 w-4 text-red-600" />
-                At-Risk Students (Performance &lt; 50%)
+                At-Risk Students (low attendance, low grades, or declining)
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -427,7 +427,15 @@ export function OwnerAcademicsModule({ schoolId }: Props) {
                           <p className="font-medium">
                             {student.first_name} {student.last_name || ""}
                           </p>
-                          <p className="text-xs text-muted-foreground">Requires intervention</p>
+                          <p className="text-xs text-muted-foreground">
+                            {student.reason || "Requires intervention"}
+                            {typeof student.attendance_rate === "number" && (
+                              <> · Attendance {Math.round(student.attendance_rate)}%</>
+                            )}
+                            {typeof student.avg_grade === "number" && student.avg_grade > 0 && (
+                              <> · Avg {Math.round(student.avg_grade)}%</>
+                            )}
+                          </p>
                         </div>
                         <Badge variant="destructive">At Risk</Badge>
                       </div>
