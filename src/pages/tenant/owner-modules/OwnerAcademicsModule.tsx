@@ -53,13 +53,15 @@ export function OwnerAcademicsModule({ schoolId }: Props) {
     queryFn: async () => {
       if (!schoolId) return null;
 
-      const [classesRes, sectionsRes, studentsRes, marksRes, teachersRes, subjectsRes] = await Promise.all([
+      const [classesRes, sectionsRes, studentsRes, marksRes, teachersRes, subjectsRes, assessmentsRes, atRiskRes] = await Promise.all([
         supabase.from("academic_classes").select("*").eq("school_id", schoolId),
         campusEq(supabase.from("class_sections").select("*").eq("school_id", schoolId)),
         campusEq(supabase.from("students").select("id,status,first_name,last_name").eq("school_id", schoolId)),
         campusEq(supabase.from("student_marks").select("marks,student_id,assessment_id").eq("school_id", schoolId).not("marks", "is", null)),
         supabase.from("user_roles").select("user_id").eq("school_id", schoolId).eq("role", "teacher"),
         supabase.from("subjects").select("*").eq("school_id", schoolId),
+        supabase.from("academic_assessments").select("id,max_marks,subject_id").eq("school_id", schoolId),
+        (supabase as any).rpc("get_at_risk_students", { _school_id: schoolId, _class_section_id: null }),
       ]);
 
       const classes = classesRes.data || [];
@@ -68,26 +70,30 @@ export function OwnerAcademicsModule({ schoolId }: Props) {
       const marks = marksRes.data || [];
       const teachers = teachersRes.data || [];
       const subjects = subjectsRes.data || [];
+      const assessments = assessmentsRes.data || [];
+      const assessmentMap = new Map(assessments.map((a: any) => [a.id, a]));
 
-      // Calculate averages
-      const avgMarks = marks.length > 0
-        ? marks.reduce((sum, m) => sum + Number(m.marks || 0), 0) / marks.length
-        : 0;
-
-      // Student performance distribution
-      const studentPerformance: Record<string, number[]> = {};
-      marks.forEach((m) => {
-        if (!studentPerformance[m.student_id]) studentPerformance[m.student_id] = [];
-        studentPerformance[m.student_id].push(Number(m.marks || 0));
-      });
-
-      const performanceDistribution = {
-        excellent: 0, // 90+
-        good: 0, // 75-89
-        average: 0, // 50-74
-        belowAverage: 0, // <50
+      // Normalize marks → percentage using assessment.max_marks
+      const pctOf = (m: any) => {
+        const a: any = assessmentMap.get(m.assessment_id);
+        const max = Number(a?.max_marks || 0);
+        if (!max) return null;
+        return (Number(m.marks || 0) / max) * 100;
       };
 
+      const pctMarks = marks.map(pctOf).filter((v): v is number => v !== null);
+      const avgMarks = pctMarks.length > 0 ? pctMarks.reduce((a, b) => a + b, 0) / pctMarks.length : 0;
+
+      // Per-student averages (as %)
+      const studentPerformance: Record<string, number[]> = {};
+      marks.forEach((m) => {
+        const p = pctOf(m);
+        if (p === null) return;
+        if (!studentPerformance[m.student_id]) studentPerformance[m.student_id] = [];
+        studentPerformance[m.student_id].push(p);
+      });
+
+      const performanceDistribution = { excellent: 0, good: 0, average: 0, belowAverage: 0 };
       Object.values(studentPerformance).forEach((scores) => {
         const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
         if (avg >= 90) performanceDistribution.excellent++;
@@ -96,14 +102,32 @@ export function OwnerAcademicsModule({ schoolId }: Props) {
         else performanceDistribution.belowAverage++;
       });
 
-      // At-risk students (avg < 50)
-      const atRiskStudents = Object.entries(studentPerformance)
-        .filter(([_, scores]) => {
-          const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-          return avg < 50;
-        })
-        .map(([studentId]) => students.find((s) => s.id === studentId))
-        .filter(Boolean);
+      // Real subject-level averages
+      const subjectScores: Record<string, number[]> = {};
+      marks.forEach((m) => {
+        const a: any = assessmentMap.get(m.assessment_id);
+        if (!a?.subject_id) return;
+        const p = pctOf(m);
+        if (p === null) return;
+        if (!subjectScores[a.subject_id]) subjectScores[a.subject_id] = [];
+        subjectScores[a.subject_id].push(p);
+      });
+      const subjectAverages = subjects.map((s: any) => {
+        const arr = subjectScores[s.id] || [];
+        const avg = arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+        return { id: s.id, name: s.name, avg, sampleSize: arr.length };
+      });
+
+      // At-risk via RPC (handles attendance + grade decline)
+      const atRiskRows = (atRiskRes as any)?.data || [];
+      const atRiskStudents = atRiskRows.map((r: any) => ({
+        id: r.student_id,
+        first_name: r.first_name,
+        last_name: r.last_name,
+        reason: r.risk_reason,
+        attendance_rate: r.attendance_rate,
+        avg_grade: r.avg_grade_percentage,
+      }));
 
       return {
         totalClasses: classes.length,
@@ -118,6 +142,7 @@ export function OwnerAcademicsModule({ schoolId }: Props) {
         classes,
         sections,
         subjects,
+        subjectAverages,
       };
     },
     enabled: !!schoolId,
