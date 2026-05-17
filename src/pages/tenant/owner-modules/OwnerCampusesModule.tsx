@@ -87,7 +87,7 @@ export function OwnerCampusesModule({ schoolId }: Props) {
       const campusIds = new Set(campusRows.map((c: any) => c.id));
       const mainCampusId =
         campusRows.find((c: any) => c.slug === schoolRes.data?.slug)?.id || campusRows[0]?.id || null;
-      const staffUserIds = new Set((staffRolesRes.data || []).map((r: any) => r.user_id));
+      const staffUserIds = new Set<string>((staffRolesRes.data || []).map((r: any) => r.user_id));
       const staffAssignmentsRes = campusRows.length
         ? await supabase
             .from("staff_campus_assignments")
