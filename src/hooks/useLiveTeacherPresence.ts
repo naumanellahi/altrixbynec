@@ -157,12 +157,14 @@ export function useLiveTeacherPresence(schoolId: string | null) {
     entries.forEach((e) => {
       if (!e.teacher_user_id) return;
       const p = periodMap.get(e.period_id);
+      if (p?.is_break) return;
       const start = timeToMin(e.start_time ?? p?.start_time ?? null);
       const end = timeToMin(e.end_time ?? p?.end_time ?? null);
-      if (start == null || end == null) return;
-      if (curMin < start || curMin > end) return;
-      if (p?.is_break) return;
       const presence = presenceRows.get(e.id);
+      const isOngoing = start != null && end != null && curMin >= start && curMin <= end;
+      const isActiveStatus = presence?.status === "in_class" || presence?.status === "late";
+      // Show if the period is currently running OR the teacher is actively checked in
+      if (!isOngoing && !isActiveStatus) return;
       const sec = e.class_section_id ? sections.get(e.class_section_id) : undefined;
       result.push({
         teacherUserId: e.teacher_user_id,
