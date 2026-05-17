@@ -10,6 +10,15 @@ import { useTeacherSchedule, ScheduleEntry, PeriodLog } from "@/hooks/useTeacher
 import { useTeacherPresence } from "@/hooks/useTeacherPresence";
 import { useSession } from "@/hooks/useSession";
 import { toast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 interface MyScheduleWidgetProps {
   schoolId: string | null;
@@ -368,6 +377,56 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
           onSaved={handleLogSaved}
         />
       )}
+
+      {/* Reason Dialog for Late/Left */}
+      <Dialog
+        open={!!reasonDialog}
+        onOpenChange={(o) => {
+          if (!o) {
+            setReasonDialog(null);
+            setReasonText("");
+          }
+        }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Reason (optional)</DialogTitle>
+            <DialogDescription>
+              {reasonDialog?.label}
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={reasonText}
+            onChange={(e) => setReasonText(e.target.value)}
+            placeholder="e.g. Stuck in traffic, called to office…"
+            rows={3}
+          />
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              variant="ghost"
+              onClick={async () => {
+                const d = reasonDialog;
+                setReasonDialog(null);
+                setReasonText("");
+                if (d) await d.onSubmit(null);
+              }}
+            >
+              Skip
+            </Button>
+            <Button
+              onClick={async () => {
+                const d = reasonDialog;
+                const r = reasonText.trim() || null;
+                setReasonDialog(null);
+                setReasonText("");
+                if (d) await d.onSubmit(r);
+              }}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
