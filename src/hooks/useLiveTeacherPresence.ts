@@ -129,10 +129,37 @@ export function useLiveTeacherPresence(schoolId: string | null) {
     loadPresence();
   }, [loadPresence]);
 
+  const [reconnectVersion, setReconnectVersion] = useState(0);
+  const [realtimeStatus, setRealtimeStatus] = useState<
+    "connecting" | "live" | "reconnecting" | "offline"
+  >("connecting");
+
+  // Reconnect on network restore / tab refocus
+  useEffect(() => {
+    const bump = () => {
+      setRealtimeStatus("reconnecting");
+      setReconnectVersion((v) => v + 1);
+    };
+    const onOnline = () => bump();
+    const onOffline = () => setRealtimeStatus("offline");
+    const onVisible = () => {
+      if (document.visibilityState === "visible") bump();
+    };
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
+
   useEffect(() => {
     if (!schoolId) return;
+    let backoffTimer: ReturnType<typeof setTimeout> | null = null;
     const ch = supabase
-      .channel(`live_presence_${schoolId}_${Math.random().toString(36).slice(2, 8)}`)
+      .channel(`live_presence_${schoolId}_${reconnectVersion}`)
       .on(
         "postgres_changes",
         {
@@ -142,7 +169,6 @@ export function useLiveTeacherPresence(schoolId: string | null) {
         },
         (payload) => {
           const row = (payload.new ?? payload.old) as any;
-          // Client-side school filter (server filter can miss events when payload columns vary)
           if (row?.school_id && row.school_id !== schoolId) return;
           if (!row?.timetable_entry_id) {
             loadPresence();
@@ -166,21 +192,31 @@ export function useLiveTeacherPresence(schoolId: string | null) {
               });
               return next;
             });
-            // Belt-and-suspenders: also refetch to guarantee consistency
             loadPresence();
           }
         },
       )
       .subscribe((status) => {
         if (status === "SUBSCRIBED") {
-          // Refresh once channel is live so we don't miss any in-flight updates
+          setRealtimeStatus("live");
           loadPresence();
+        } else if (
+          status === "CHANNEL_ERROR" ||
+          status === "TIMED_OUT" ||
+          status === "CLOSED"
+        ) {
+          setRealtimeStatus("reconnecting");
+          if (backoffTimer) clearTimeout(backoffTimer);
+          backoffTimer = setTimeout(() => {
+            setReconnectVersion((v) => v + 1);
+          }, 2000);
         }
       });
     return () => {
+      if (backoffTimer) clearTimeout(backoffTimer);
       supabase.removeChannel(ch);
     };
-  }, [schoolId, loadPresence]);
+  }, [schoolId, loadPresence, reconnectVersion]);
 
   const periodMap = useMemo(() => new Map(periods.map((p) => [p.id, p])), [periods]);
 
