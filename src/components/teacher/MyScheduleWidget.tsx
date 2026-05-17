@@ -288,12 +288,20 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
                           status: "in_class" | "left",
                           reason?: string | null,
                         ) => {
+                          const label = `${entry.subjectName} • ${entry.periodLabel}`;
                           const res = await setPresenceStatus(entry.id, status, {
                             reason: reason ?? null,
                             startTime: entry.startTime,
                           });
                           const err = res?.error;
                           const effective = res?.effectiveStatus ?? status;
+                          if (!err) {
+                            pendingRef.current.set(entry.id, {
+                              status: effective,
+                              label,
+                              ts: Date.now(),
+                            });
+                          }
                           toast({
                             title: err
                               ? "Failed to update"
@@ -304,7 +312,7 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
                                   : "Marked as Left",
                             description: err
                               ? (err as { message?: string })?.message ?? "Try again"
-                              : `${entry.subjectName} • ${entry.periodLabel}`,
+                              : label,
                             variant: err ? "destructive" : "default",
                           });
                         };
