@@ -48,7 +48,7 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
   const navigate = useNavigate();
   const [refreshing, setRefreshing] = useState(false);
   const go = (tab: NonNullable<Props["onNavigate"]> extends (t: infer T) => any ? T : never) => {
-    if (onNavigate) onNavigate(tab);
+    onNavigate?.(tab as any);
   };
 
   // Fetch AI metrics
