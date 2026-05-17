@@ -23,7 +23,7 @@ import { OwnerAIModule } from "@/pages/tenant/owner-modules/OwnerAIModule";
 import { MessagesModule } from "@/pages/tenant/modules/MessagesModule";
 
 // Cache key for owner auth
-const OWNER_AUTHZ_CACHE = "eduverse_owner_authz_cache";
+const OWNER_AUTHZ_CACHE = "eduverse_owner_authz_cache_strict_v2";
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 interface CachedOwnerAuthz {
@@ -123,36 +123,18 @@ export default function OwnerDashboard() {
     let cancelled = false;
 
     (async () => {
-      // Check platform super admin
-      const { data: psa } = await supabase
-        .from("platform_super_admins")
-        .select("user_id")
-        .eq("user_id", userId)
-        .maybeSingle();
-      if (cancelled) return;
-      if (psa?.user_id) {
-        setAuthzState("ok");
-        setCachedOwnerAuthz(schoolIdVal, userId, true);
-        return;
-      }
-
-      // Check school_owner role
-      const { data: roleRow, error: roleErr } = await supabase
-        .from("user_roles")
-        .select("id")
-        .eq("school_id", schoolIdVal)
-        .eq("user_id", userId)
-        .eq("role", "school_owner")
-        .maybeSingle();
+      const { data: ownedSchools, error: ownerErr } = await (supabase as any).rpc("owner_schools_strict");
 
       if (cancelled) return;
-      if (roleErr) {
+      if (ownerErr) {
         setAuthzState("denied");
-        setAuthzMessage(roleErr.message);
+        setAuthzMessage(ownerErr.message);
         setCachedOwnerAuthz(schoolIdVal, userId, false);
         return;
       }
-      if (!roleRow) {
+
+      const ownsCurrentSchool = Array.isArray(ownedSchools) && ownedSchools.some((school: any) => school.id === schoolIdVal);
+      if (!ownsCurrentSchool) {
         setAuthzState("denied");
         setAuthzMessage("You do not have the School Owner role for this institution.");
         setCachedOwnerAuthz(schoolIdVal, userId, false);
