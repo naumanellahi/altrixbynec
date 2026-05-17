@@ -58,7 +58,7 @@ function statusDotClass(s: string): string {
 }
 
 export function LiveTeacherPresenceCard({ schoolId }: Props) {
-  const { liveTeachers, teacherTimelines, lookupEntry, loading } =
+  const { liveTeachers, teacherTimelines, lookupEntry, loading, realtimeStatus } =
     useLiveTeacherPresence(schoolId);
 
   const [timelineOpen, setTimelineOpen] = useState(false);
