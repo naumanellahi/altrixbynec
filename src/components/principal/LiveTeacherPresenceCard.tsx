@@ -95,6 +95,7 @@ export function LiveTeacherPresenceCard({ schoolId }: Props) {
           Class: [e.className, e.sectionLabel].filter(Boolean).join(" "),
           Room: e.room ?? "",
           Status: statusLabel(e.status),
+          Reason: e.reason ?? "",
           "Entered At": e.enteredAt ?? "",
           "Left At": e.leftAt ?? "",
         });
