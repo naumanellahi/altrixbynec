@@ -272,8 +272,14 @@ export function OwnerOverviewModule({ schoolId }: Props) {
         .reduce((sum: number, i: any) => sum + Number(i.total_amount || 0), 0);
       const collectionRate = invoices.length > 0 ? Math.round((paidInvoices / invoices.length) * 100) : 0;
 
-      // Teacher utilization (placeholder - would need timetable data)
-      const teacherUtilization = 78; // Placeholder
+      // Teacher utilization: % of teachers actively scheduled or assigned
+      const scheduledTeacherIds = new Set<string>([
+        ...timetable.map((t: any) => t.teacher_id).filter(Boolean),
+        ...teacherAssignments.map((t: any) => t.teacher_id).filter(Boolean),
+      ]);
+      const teacherUtilization = teachers.length > 0
+        ? Math.round((scheduledTeacherIds.size / teachers.length) * 100)
+        : 0;
 
       return {
         totalStudents,
