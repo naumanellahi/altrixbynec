@@ -28,6 +28,7 @@ import { TeacherLeavesModule } from "@/pages/tenant/teacher-modules/TeacherLeave
 import { TeacherAIModule } from "@/pages/tenant/teacher-modules/TeacherAIModule";
 import { TeacherComplaintsModule } from "@/pages/tenant/teacher-modules/TeacherComplaintsModule";
 import { TeacherParentNotesModule } from "@/pages/tenant/teacher-modules/TeacherParentNotesModule";
+import { TeacherPresenceHistoryModule } from "@/pages/tenant/teacher-modules/TeacherPresenceHistoryModule";
 import NoticesModule from "@/pages/tenant/modules/NoticesModule";
 import HolidaysModule from "@/pages/tenant/modules/HolidaysModule";
 import DiaryModule from "@/pages/tenant/modules/DiaryModule";
