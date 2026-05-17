@@ -47,7 +47,7 @@ export function OwnerWellbeingModule({ schoolId }: Props) {
       const behavior = behaviorRes.data || [];
       const complaints = complaintsRes.data || [];
       const students = studentsRes.data || [];
-      const studentMap = new Map(students.map((s: any) => [s.id, `${s.first_name} ${s.last_name}`]));
+      const studentMap = new Map<string, string>(students.map((s: any) => [s.id as string, `${s.first_name} ${s.last_name}`]));
 
       // note_type taxonomy: positive | concern | incident | observation
       const incidents = behavior.filter((b: any) => ["incident", "concern"].includes((b.note_type || "").toLowerCase())).length;
