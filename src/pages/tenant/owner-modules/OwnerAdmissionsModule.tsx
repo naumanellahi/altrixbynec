@@ -156,7 +156,6 @@ export function OwnerAdmissionsModule({ schoolId }: Props) {
         campaignBudget: campaigns.reduce((sum, c) => sum + Number(c.budget || 0), 0),
       };
     },
-    enabled: !!schoolId,
   });
 
   const sourceChartData = useMemo(() => {
