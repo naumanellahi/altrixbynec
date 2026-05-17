@@ -40,6 +40,11 @@ function getStatusIcon(status: string) {
 
 export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps) {
   // Determine initial day: today if weekday, else Monday
+  const { user } = useSession();
+  const { rows: presenceRows, setStatus: setPresenceStatus, saving: presenceSaving } =
+    useTeacherPresence(schoolId, user?.id ?? null);
+
+  // Determine initial day: today if weekday, else Monday
   const [selectedDay, setSelectedDay] = useState(() => {
     const today = new Date().getDay();
     return today >= 1 && today <= 5 ? today : 1;
