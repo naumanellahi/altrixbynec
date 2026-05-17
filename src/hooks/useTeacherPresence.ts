@@ -63,26 +63,40 @@ export function useTeacherPresence(schoolId: string | null, teacherUserId: strin
   }, [schoolId, teacherUserId, load]);
 
   const setStatus = useCallback(
-    async (timetableEntryId: string, status: PresenceStatus) => {
+    async (
+      timetableEntryId: string,
+      status: PresenceStatus,
+      opts?: { reason?: string | null; startTime?: string | null },
+    ) => {
       if (!schoolId || !teacherUserId) return;
       setSaving(timetableEntryId);
       const nowIso = new Date().toISOString();
       const existing = rows.get(timetableEntryId);
+
+      // Auto-promote in_class to late if the teacher checks in after the period start
+      let effectiveStatus: PresenceStatus = status;
+      if (status === "in_class" && opts?.startTime) {
+        const [h, m] = opts.startTime.split(":").map(Number);
+        const startMin = h * 60 + m;
+        const now = new Date();
+        const curMin = now.getHours() * 60 + now.getMinutes();
+        if (curMin > startMin) effectiveStatus = "late";
+      }
+
       const payload: Record<string, unknown> = {
         school_id: schoolId,
         teacher_user_id: teacherUserId,
         timetable_entry_id: timetableEntryId,
         period_date: todayISO(),
-        status,
+        status: effectiveStatus,
+        reason: opts?.reason ?? null,
       };
-      if (status === "in_class") {
+      if (effectiveStatus === "in_class" || effectiveStatus === "late") {
         payload.entered_at = existing?.entered_at ?? nowIso;
-        payload.left_at = null;
-      } else if (status === "left") {
+        payload.left_at = effectiveStatus === "late" ? existing?.left_at ?? null : null;
+      } else if (effectiveStatus === "left") {
         payload.entered_at = existing?.entered_at ?? null;
         payload.left_at = nowIso;
-      } else if (status === "late") {
-        payload.entered_at = nowIso;
       }
       const { error } = await (supabase as any)
         .from("teacher_period_presence")
@@ -91,7 +105,7 @@ export function useTeacherPresence(schoolId: string | null, teacherUserId: strin
         });
       setSaving(null);
       if (!error) await load();
-      return error;
+      return { error, effectiveStatus };
     },
     [schoolId, teacherUserId, rows, load],
   );
