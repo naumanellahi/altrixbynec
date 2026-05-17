@@ -10,6 +10,15 @@ import { useTeacherSchedule, ScheduleEntry, PeriodLog } from "@/hooks/useTeacher
 import { useTeacherPresence } from "@/hooks/useTeacherPresence";
 import { useSession } from "@/hooks/useSession";
 import { toast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 interface MyScheduleWidgetProps {
   schoolId: string | null;
@@ -54,6 +63,12 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogEntry, setDialogEntry] = useState<ScheduleEntry | null>(null);
+  const [reasonDialog, setReasonDialog] = useState<{
+    entryId: string;
+    label: string;
+    onSubmit: (reason: string | null) => Promise<void> | void;
+  } | null>(null);
+  const [reasonText, setReasonText] = useState("");
 
   const todayDayOfWeek = new Date().getDay();
   const isToday = selectedDay === todayDayOfWeek;
@@ -237,21 +252,52 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
                       {isToday && (() => {
                         const presence = presenceRows.get(entry.id);
                         const isIn = presence?.status === "in_class";
+                        const isLate = presence?.status === "late";
                         const isOut = presence?.status === "left";
                         const busy = presenceSaving === entry.id;
-                        const handleSet = async (status: "in_class" | "left") => {
-                          const err = await setPresenceStatus(entry.id, status);
+                        const handleSet = async (
+                          status: "in_class" | "left",
+                          reason?: string | null,
+                        ) => {
+                          const res = await setPresenceStatus(entry.id, status, {
+                            reason: reason ?? null,
+                            startTime: entry.startTime,
+                          });
+                          const err = res?.error;
+                          const effective = res?.effectiveStatus ?? status;
                           toast({
                             title: err
                               ? "Failed to update"
-                              : status === "in_class"
+                              : effective === "in_class"
                                 ? "Marked as In Class"
-                                : "Marked as Left",
+                                : effective === "late"
+                                  ? "Marked as Late"
+                                  : "Marked as Left",
                             description: err
-                              ? (err as Error).message ?? "Try again"
+                              ? (err as { message?: string })?.message ?? "Try again"
                               : `${entry.subjectName} • ${entry.periodLabel}`,
                             variant: err ? "destructive" : "default",
                           });
+                        };
+                        const askReasonAndSet = (status: "in_class" | "left") => {
+                          setReasonDialog({
+                            entryId: entry.id,
+                            label: `${entry.subjectName} • ${entry.periodLabel}`,
+                            onSubmit: (reason) => handleSet(status, reason),
+                          });
+                        };
+                        const onGreen = () => {
+                          // If after start, will become Late — ask for reason
+                          if (entry.startTime) {
+                            const [h, m] = entry.startTime.split(":").map(Number);
+                            const startMin = h * 60 + m;
+                            const now = new Date();
+                            if (now.getHours() * 60 + now.getMinutes() > startMin) {
+                              askReasonAndSet("in_class");
+                              return;
+                            }
+                          }
+                          handleSet("in_class");
                         };
                         return (
                           <>
@@ -259,11 +305,13 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
                               type="button"
                               size="icon"
                               disabled={busy}
-                              onClick={() => handleSet("in_class")}
+                              onClick={onGreen}
                               title="I'm in class"
                               className={`h-7 w-7 rounded-full ${
-                                isIn
-                                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                isIn || isLate
+                                  ? isLate
+                                    ? "bg-accent text-accent-foreground hover:bg-accent/90"
+                                    : "bg-primary text-primary-foreground hover:bg-primary/90"
                                   : "bg-background text-primary border border-primary/40 hover:bg-primary/10"
                               }`}
                             >
@@ -273,8 +321,8 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
                               type="button"
                               size="icon"
                               disabled={busy}
-                              onClick={() => handleSet("left")}
-                              title="Left the class / late"
+                              onClick={() => askReasonAndSet("left")}
+                              title="Left the class"
                               className={`h-7 w-7 rounded-full ${
                                 isOut
                                   ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -329,6 +377,56 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
           onSaved={handleLogSaved}
         />
       )}
+
+      {/* Reason Dialog for Late/Left */}
+      <Dialog
+        open={!!reasonDialog}
+        onOpenChange={(o) => {
+          if (!o) {
+            setReasonDialog(null);
+            setReasonText("");
+          }
+        }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Reason (optional)</DialogTitle>
+            <DialogDescription>
+              {reasonDialog?.label}
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={reasonText}
+            onChange={(e) => setReasonText(e.target.value)}
+            placeholder="e.g. Stuck in traffic, called to office…"
+            rows={3}
+          />
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              variant="ghost"
+              onClick={async () => {
+                const d = reasonDialog;
+                setReasonDialog(null);
+                setReasonText("");
+                if (d) await d.onSubmit(null);
+              }}
+            >
+              Skip
+            </Button>
+            <Button
+              onClick={async () => {
+                const d = reasonDialog;
+                const r = reasonText.trim() || null;
+                setReasonDialog(null);
+                setReasonText("");
+                if (d) await d.onSubmit(r);
+              }}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

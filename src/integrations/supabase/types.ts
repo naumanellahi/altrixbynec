@@ -5159,6 +5159,7 @@ export type Database = {
           left_at: string | null
           notes: string | null
           period_date: string
+          reason: string | null
           school_id: string
           status: string
           teacher_user_id: string
@@ -5172,6 +5173,7 @@ export type Database = {
           left_at?: string | null
           notes?: string | null
           period_date?: string
+          reason?: string | null
           school_id: string
           status: string
           teacher_user_id: string
@@ -5185,11 +5187,51 @@ export type Database = {
           left_at?: string | null
           notes?: string | null
           period_date?: string
+          reason?: string | null
           school_id?: string
           status?: string
           teacher_user_id?: string
           timetable_entry_id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      teacher_presence_audit: {
+        Row: {
+          changed_by_user_id: string | null
+          created_at: string
+          id: string
+          new_status: string
+          old_status: string | null
+          period_date: string
+          reason: string | null
+          school_id: string
+          teacher_user_id: string
+          timetable_entry_id: string
+        }
+        Insert: {
+          changed_by_user_id?: string | null
+          created_at?: string
+          id?: string
+          new_status: string
+          old_status?: string | null
+          period_date: string
+          reason?: string | null
+          school_id: string
+          teacher_user_id: string
+          timetable_entry_id: string
+        }
+        Update: {
+          changed_by_user_id?: string | null
+          created_at?: string
+          id?: string
+          new_status?: string
+          old_status?: string | null
+          period_date?: string
+          reason?: string | null
+          school_id?: string
+          teacher_user_id?: string
+          timetable_entry_id?: string
         }
         Relationships: []
       }
