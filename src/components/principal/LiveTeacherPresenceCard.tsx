@@ -60,6 +60,7 @@ function statusDotClass(s: string): string {
 }
 
 export function LiveTeacherPresenceCard({ schoolId }: Props) {
+  const { schoolSlug } = useParams();
   const { liveTeachers, teacherTimelines, lookupEntry, loading, realtimeStatus } =
     useLiveTeacherPresence(schoolId);
 
