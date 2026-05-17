@@ -538,6 +538,14 @@ export function OwnerFinanceModule({ schoolId }: Props) {
             </Card>
           </div>
         </TabsContent>
+
+        <TabsContent value="defaulters" className="mt-6">
+          {schoolId ? <FeeDefaultersReport schoolId={schoolId} /> : null}
+        </TabsContent>
+
+        <TabsContent value="forecast" className="mt-6">
+          <SalaryBudgetForecast />
+        </TabsContent>
       </Tabs>
     </div>
   );
