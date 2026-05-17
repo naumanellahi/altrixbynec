@@ -323,5 +323,5 @@ export function useLiveTeacherPresence(schoolId: string | null) {
     [entries, periodMap, sections, teachers],
   );
 
-  return { liveTeachers, teacherTimelines, lookupEntry, loading, refetch: loadPresence };
+  return { liveTeachers, teacherTimelines, lookupEntry, loading, refetch: loadPresence, realtimeStatus };
 }
