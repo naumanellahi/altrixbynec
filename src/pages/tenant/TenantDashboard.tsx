@@ -444,6 +444,7 @@ const TenantDashboard = () => {
               <DashboardHome />
             } />
             <Route path="admin" element={<AdminConsole />} />
+            <Route path="presence-debug" element={<PresenceDebugModule />} />
             <Route path="schools" element={<PlatformSchoolsModule />} />
             <Route path="messages" element={<MessagesModule schoolId={tenant.schoolId} />} />
             <Route path="users" element={<UsersModule />} />
