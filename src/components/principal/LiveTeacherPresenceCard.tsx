@@ -62,6 +62,51 @@ export function LiveTeacherPresenceCard({ schoolId }: Props) {
     useLiveTeacherPresence(schoolId);
 
   const [timelineOpen, setTimelineOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "in_class" | "late" | "left" | "not_checked_in"
+  >("all");
+
+  const filteredLive = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return liveTeachers.filter((t) => {
+      if (statusFilter !== "all" && t.status !== statusFilter) return false;
+      if (!q) return true;
+      return (
+        t.teacherName.toLowerCase().includes(q) ||
+        t.subject.toLowerCase().includes(q) ||
+        (t.sectionLabel ?? "").toLowerCase().includes(q) ||
+        (t.className ?? "").toLowerCase().includes(q) ||
+        (t.room ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [liveTeachers, search, statusFilter]);
+
+  const handleExport = () => {
+    const rows: Array<Record<string, string>> = [];
+    teacherTimelines.forEach((t) => {
+      t.entries.forEach((e) => {
+        rows.push({
+          Teacher: t.teacherName,
+          Period: e.periodLabel,
+          Start: e.startTime ?? "",
+          End: e.endTime ?? "",
+          Subject: e.subject,
+          Class: [e.className, e.sectionLabel].filter(Boolean).join(" "),
+          Room: e.room ?? "",
+          Status: statusLabel(e.status),
+          "Entered At": e.enteredAt ?? "",
+          "Left At": e.leftAt ?? "",
+        });
+      });
+    });
+    if (rows.length === 0) {
+      toast("Nothing to export yet");
+      return;
+    }
+    const today = new Date().toISOString().split("T")[0];
+    exportToCSV(rows, `teacher-presence-${today}`);
+  };
 
   // Toast on real status changes (skip initial silent fetch)
   const seenRef = useRef<Map<string, string>>(new Map()); // entryId -> last status
