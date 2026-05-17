@@ -128,16 +128,17 @@ export function OwnerAdmissionsModule({ schoolId }: Props) {
       }
 
       // Counselor performance
-      const counselorPerf: Record<string, { assigned: number; won: number; calls: number }> = {};
+      const counselorPerf: Record<string, { name: string; assigned: number; won: number; calls: number }> = {};
       leads.forEach((l) => {
         const assignee = l.assigned_to || "Unassigned";
-        if (!counselorPerf[assignee]) counselorPerf[assignee] = { assigned: 0, won: 0, calls: 0 };
+        if (!counselorPerf[assignee]) counselorPerf[assignee] = { name: nameOf(assignee), assigned: 0, won: 0, calls: 0 };
         counselorPerf[assignee].assigned++;
         if (l.status === "won") counselorPerf[assignee].won++;
       });
       calls.forEach((c) => {
         const caller = c.created_by || "Unknown";
-        if (counselorPerf[caller]) counselorPerf[caller].calls++;
+        if (!counselorPerf[caller]) counselorPerf[caller] = { name: nameOf(caller), assigned: 0, won: 0, calls: 0 };
+        counselorPerf[caller].calls++;
       });
 
       return {
