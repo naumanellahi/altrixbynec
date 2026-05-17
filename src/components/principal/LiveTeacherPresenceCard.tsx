@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Radio,
   MapPin,
@@ -8,10 +8,13 @@ import {
   CircleDashed,
   ChevronDown,
   History,
+  Download,
+  Search,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Collapsible,
   CollapsibleContent,
@@ -20,6 +23,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useLiveTeacherPresence } from "@/hooks/useLiveTeacherPresence";
+import { exportToCSV } from "@/lib/csv";
 
 interface Props {
   schoolId: string | null;
