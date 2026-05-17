@@ -5723,6 +5723,16 @@ export type Database = {
           slug: string
         }[]
       }
+      owner_schools_strict: {
+        Args: never
+        Returns: {
+          id: string
+          is_active: boolean
+          logo_url: string
+          name: string
+          slug: string
+        }[]
+      }
       recalc_invoice_totals: {
         Args: { _invoice_id: string }
         Returns: undefined
