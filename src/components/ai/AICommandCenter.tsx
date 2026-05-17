@@ -379,7 +379,7 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
 
       {/* Module Quick Access */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+        <Card onClick={() => go("counseling")} className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
           <CardContent className="p-5">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 p-3 group-hover:scale-105 transition-transform">
@@ -395,7 +395,7 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+        <Card onClick={() => go("warnings")} className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
           <CardContent className="p-5">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-gradient-to-br from-red-500 to-orange-500 p-3 group-hover:scale-105 transition-transform">
@@ -411,7 +411,7 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+        <Card onClick={() => go("timetable")} className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
           <CardContent className="p-5">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 p-3 group-hover:scale-105 transition-transform">
@@ -425,7 +425,7 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+        <Card onClick={() => go("teachers")} className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
           <CardContent className="p-5">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 p-3 group-hover:scale-105 transition-transform">
@@ -441,7 +441,7 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+        <Card onClick={() => go("reputation")} className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
           <CardContent className="p-5">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 p-3 group-hover:scale-105 transition-transform">
@@ -457,7 +457,7 @@ export function AICommandCenter({ schoolId, onNavigate }: Props) {
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+        <Card onClick={() => go("counseling")} className="shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
           <CardContent className="p-5">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 p-3 group-hover:scale-105 transition-transform">
