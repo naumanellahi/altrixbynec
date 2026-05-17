@@ -375,21 +375,28 @@ export function OwnerAcademicsModule({ schoolId }: Props) {
             </CardHeader>
             <CardContent>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {(academicData?.subjects || []).map((subject) => (
-                  <div key={subject.id} className="rounded-xl bg-muted/50 p-4">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">{subject.name}</span>
-                      <Badge variant="outline">Active</Badge>
+                {(academicData?.subjectAverages || []).map((subject: any) => {
+                  const hasData = subject.avg !== null;
+                  const value = hasData ? Math.round(subject.avg) : 0;
+                  const tone = !hasData ? "outline" : value >= 75 ? "default" : value >= 50 ? "secondary" : "destructive";
+                  return (
+                    <div key={subject.id} className="rounded-xl bg-muted/50 p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">{subject.name}</span>
+                        <Badge variant={tone as any}>
+                          {hasData ? `${value}%` : "No data"}
+                        </Badge>
+                      </div>
+                      <div className="mt-2 flex items-center gap-2">
+                        <Progress value={value} className="h-2 flex-1" />
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          {subject.sampleSize} marks
+                        </span>
+                      </div>
                     </div>
-                    <div className="mt-2 flex items-center gap-2">
-                      <Progress value={75 + Math.random() * 20} className="h-2 flex-1" />
-                      <span className="text-sm text-muted-foreground">
-                        {Math.round(75 + Math.random() * 20)}%
-                      </span>
-                    </div>
-                  </div>
-                ))}
-                {(!academicData?.subjects || academicData.subjects.length === 0) && (
+                  );
+                })}
+                {(!academicData?.subjectAverages || academicData.subjectAverages.length === 0) && (
                   <p className="col-span-full text-center text-muted-foreground py-8">
                     No subjects configured yet
                   </p>
