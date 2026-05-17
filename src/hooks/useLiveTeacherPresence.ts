@@ -105,16 +105,17 @@ export function useLiveTeacherPresence(schoolId: string | null) {
     if (!schoolId) return;
     const { data } = await (supabase as any)
       .from("teacher_period_presence")
-      .select("timetable_entry_id, status, entered_at, left_at, updated_at")
+      .select("timetable_entry_id, status, entered_at, left_at, updated_at, reason")
       .eq("school_id", schoolId)
       .eq("period_date", todayISO());
-    const map = new Map<string, { status: string; entered_at: string | null; left_at: string | null; updated_at: string }>();
+    const map = new Map<string, { status: string; entered_at: string | null; left_at: string | null; updated_at: string; reason: string | null }>();
     (data as any[] | null)?.forEach((r) => {
       map.set(r.timetable_entry_id, {
         status: r.status,
         entered_at: r.entered_at,
         left_at: r.left_at,
         updated_at: r.updated_at,
+        reason: r.reason ?? null,
       });
     });
     setPresenceRows(map);
