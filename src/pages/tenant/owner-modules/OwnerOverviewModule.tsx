@@ -163,6 +163,8 @@ export function OwnerOverviewModule({ schoolId }: Props) {
         staffRes,
         teachersRes,
         marksRes,
+        timetableRes,
+        teacherAssignRes,
       ] = await Promise.all([
         // Students (campus-scoped)
         campusEq(supabase.from("students").select("id,status").eq("school_id", schoolId)),
