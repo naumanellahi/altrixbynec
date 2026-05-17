@@ -120,8 +120,6 @@ export function OwnerFinanceModule({ schoolId }: Props) {
       for (let i = trendMonths - 1; i >= 0; i--) {
         const start = startOfMonth(subMonths(new Date(), i));
         const end = startOfMonth(subMonths(new Date(), i - 1));
-        const start = startOfMonth(subMonths(new Date(), i));
-        const end = startOfMonth(subMonths(new Date(), i - 1));
 
         const monthRevenue = payments
           .filter((p) => new Date(p.paid_at) >= start && new Date(p.paid_at) < end)
