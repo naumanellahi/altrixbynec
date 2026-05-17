@@ -196,6 +196,10 @@ export function OwnerOverviewModule({ schoolId }: Props) {
             .eq("school_id", schoolId)
             .not("marks", "is", null)
         ),
+        // Timetable entries (to compute teacher utilization)
+        supabase.from("timetable_entries").select("teacher_id").eq("school_id", schoolId),
+        // Teacher subject assignments (active teachers with assignments)
+        supabase.from("teacher_subject_assignments").select("teacher_id").eq("school_id", schoolId),
       ]);
 
       const students = studentsRes.data || [];
@@ -207,6 +211,8 @@ export function OwnerOverviewModule({ schoolId }: Props) {
       const staff = staffRes.data || [];
       const teachers = teachersRes.data || [];
       const marks = marksRes.data || [];
+      const timetable = timetableRes.data || [];
+      const teacherAssignments = teacherAssignRes.data || [];
 
       // Student counts
       const totalStudents = students.length;
