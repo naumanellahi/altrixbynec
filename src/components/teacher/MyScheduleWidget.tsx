@@ -54,6 +54,12 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogEntry, setDialogEntry] = useState<ScheduleEntry | null>(null);
+  const [reasonDialog, setReasonDialog] = useState<{
+    entryId: string;
+    label: string;
+    onSubmit: (reason: string | null) => Promise<void> | void;
+  } | null>(null);
+  const [reasonText, setReasonText] = useState("");
 
   const todayDayOfWeek = new Date().getDay();
   const isToday = selectedDay === todayDayOfWeek;
