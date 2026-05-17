@@ -170,7 +170,33 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
               {FULL_DAY_NAMES[selectedDay]} {isToday && "(Today)"}
             </p>
           </div>
-          <CalendarDays className="h-5 w-5 text-muted-foreground" />
+          <div className="flex items-center gap-2">
+            <span
+              className="flex items-center gap-1 text-xs text-muted-foreground"
+              title={`Realtime: ${realtimeStatus}`}
+            >
+              {realtimeStatus === "live" ? (
+                <>
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                  </span>
+                  <span className="hidden sm:inline">Live</span>
+                </>
+              ) : realtimeStatus === "offline" ? (
+                <>
+                  <WifiOff className="h-3 w-3" />
+                  <span className="hidden sm:inline">Offline</span>
+                </>
+              ) : (
+                <>
+                  <Wifi className="h-3 w-3 animate-pulse" />
+                  <span className="hidden sm:inline">Reconnecting…</span>
+                </>
+              )}
+            </span>
+            <CalendarDays className="h-5 w-5 text-muted-foreground" />
+          </div>
         </CardHeader>
         <CardContent>
           {/* Day Selector */}
