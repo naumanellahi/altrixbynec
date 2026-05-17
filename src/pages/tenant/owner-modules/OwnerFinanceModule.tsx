@@ -60,9 +60,11 @@ export function OwnerFinanceModule({ schoolId }: Props) {
   const monthStart = useMemo(() => startOfMonth(new Date()), []);
   const yearStart = useMemo(() => startOfYear(new Date()), []);
 
+  const trendMonths = periodFilter === "3m" ? 3 : periodFilter === "6m" ? 6 : periodFilter === "ytd" ? Math.max(1, new Date().getMonth() + 1) : 12;
+
   // Fetch financial data
   const { data: financeData, isLoading } = useQuery({
-    queryKey: ["owner_finance", schoolId, activeCampusId],
+    queryKey: ["owner_finance", schoolId, activeCampusId, trendMonths],
     queryFn: async () => {
       if (!schoolId) return null;
 
