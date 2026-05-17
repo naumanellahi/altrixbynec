@@ -38,14 +38,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Props {
   schoolId: string;
+  onNavigate?: (tab: "overview" | "warnings" | "reputation" | "teachers" | "timetable" | "counseling") => void;
 }
 
 const MotionCard = motion.create(Card);
 
-export function AICommandCenter({ schoolId }: Props) {
+export function AICommandCenter({ schoolId, onNavigate }: Props) {
   const { schoolSlug } = useParams();
   const navigate = useNavigate();
   const [refreshing, setRefreshing] = useState(false);
+  const go = (tab: NonNullable<Props["onNavigate"]> extends (t: infer T) => any ? T : never) => {
+    if (onNavigate) onNavigate(tab);
+  };
 
   // Fetch AI metrics
   const { data: metrics, refetch, isLoading } = useQuery({
