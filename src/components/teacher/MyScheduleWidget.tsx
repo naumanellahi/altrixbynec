@@ -69,15 +69,10 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
     }
   }, [lastEcho]);
 
-  // Notify on realtime reconnection state changes
+  // Track realtime reconnection state changes silently (no toasts)
   const prevRtRef = useRef(realtimeStatus);
   useEffect(() => {
     if (prevRtRef.current !== realtimeStatus) {
-      if (realtimeStatus === "reconnecting" || realtimeStatus === "offline") {
-        sonner("Reconnecting live updates…", { duration: 1500 });
-      } else if (realtimeStatus === "live" && prevRtRef.current !== "connecting") {
-        sonner.success("Live updates restored", { duration: 1500 });
-      }
       prevRtRef.current = realtimeStatus;
     }
   }, [realtimeStatus]);
