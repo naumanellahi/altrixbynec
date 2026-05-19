@@ -779,11 +779,68 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
             </tbody>
           </table>
 
-          <div className="relative mt-4 grid grid-cols-3 gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm">
-            <div><p className="text-xs text-gray-600">Percentage</p><p className="font-display text-2xl font-bold">{totals.pct}%</p></div>
-            <div><p className="text-xs text-gray-600">GPA</p><p className="font-display text-2xl font-bold">{totals.gpa}</p></div>
-            <div><p className="text-xs text-gray-600">Overall Grade</p><p className="font-display text-2xl font-bold">{totals.grade}</p></div>
+          {/* Premium summary tiles */}
+          <div className="relative mt-5 grid grid-cols-3 gap-3">
+            <div className="rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 p-4 ring-1 ring-primary/20">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Percentage</p>
+              <p className="font-display text-3xl font-bold text-primary">{totals.pct}%</p>
+            </div>
+            <div className="rounded-2xl bg-gradient-to-br from-amber-100 to-amber-50 p-4 ring-1 ring-amber-200">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">GPA</p>
+              <p className="font-display text-3xl font-bold text-amber-700">{totals.gpa}</p>
+            </div>
+            <div className="rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-50 p-4 ring-1 ring-emerald-200">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Overall Grade</p>
+              <p className="font-display text-3xl font-bold text-emerald-700">{totals.grade}</p>
+            </div>
           </div>
+
+          {/* Category breakdown — Quizzes / Tests / Assignments / Projects / Exam etc. */}
+          {categoryBreakdown.visibleCategories.length > 0 && (
+            <div className="relative mt-6">
+              <p className="mb-2 text-sm font-semibold">Continuous Assessment Breakdown</p>
+              <div className="overflow-x-auto rounded-xl ring-1 ring-gray-200">
+                <table className="w-full border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-gradient-to-r from-primary/10 to-primary/5 text-left">
+                      <th className="p-2 font-semibold">Subject</th>
+                      {categoryBreakdown.visibleCategories.map((c) => (
+                        <th key={c.key} className="p-2 text-center font-semibold">{c.label}</th>
+                      ))}
+                      <th className="p-2 text-center font-semibold">Combined</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {subjects.map((s) => {
+                      const row = categoryBreakdown.matrix[s.id];
+                      if (!row) return null;
+                      let tObt = 0, tMax = 0;
+                      Object.values(row).forEach((v) => { tObt += v.obtained; tMax += v.max; });
+                      if (tMax === 0) return null;
+                      return (
+                        <tr key={s.id} className="border-t border-gray-200">
+                          <td className="p-2 font-medium">{s.name}</td>
+                          {categoryBreakdown.visibleCategories.map((c) => {
+                            const v = row[c.key];
+                            return (
+                              <td key={c.key} className="p-2 text-center text-gray-700">
+                                {v ? <span><strong>{v.obtained}</strong><span className="text-gray-400">/{v.max}</span></span> : <span className="text-gray-300">—</span>}
+                              </td>
+                            );
+                          })}
+                          <td className="p-2 text-center font-semibold text-primary">
+                            {tObt}/{tMax}<span className="ml-1 text-[10px] text-gray-500">({tMax ? Math.round((tObt/tMax)*100) : 0}%)</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <p className="mt-1 text-[10px] text-gray-500">Includes all published quizzes, tests, assignments, projects and exam-style assessments in this period.</p>
+            </div>
+          )}
+
 
           {/* Per-assessment appendix */}
           {appendix.length > 0 && (
