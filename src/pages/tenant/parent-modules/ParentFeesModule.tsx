@@ -708,6 +708,58 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
         />
       )}
 
+      {editProof && schoolId && child && (() => {
+        const inv = invoices.find(i => i.id === editProof.invoice_id);
+        return (
+          <ManualProofUploadDialog
+            open={!!editProof}
+            onOpenChange={(v) => !v && setEditProof(null)}
+            schoolId={schoolId}
+            studentId={child.student_id}
+            invoiceId={editProof.invoice_id}
+            invoiceNumber={inv?.invoice_number || ""}
+            amountDue={inv ? Math.max(Number(inv.total_amount) - Number(inv.paid_amount), 0) : Number(editProof.amount)}
+            existingProof={editProof}
+          />
+        );
+      })()}
+
+      <Dialog open={!!deleteProof} onOpenChange={(o) => !o && !deletingProof && setDeleteProof(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete this proof?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This will remove your uploaded receipt. You can upload a new one afterwards. This action cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteProof(null)} disabled={deletingProof}>Cancel</Button>
+            <Button variant="destructive" disabled={deletingProof} onClick={async () => {
+              if (!deleteProof) return;
+              setDeletingProof(true);
+              try {
+                if (deleteProof.file_path) {
+                  await supabase.storage.from("fee-payment-proofs").remove([deleteProof.file_path]);
+                }
+                const { error } = await (supabase as any).from("fee_payment_proofs").delete().eq("id", deleteProof.id);
+                if (error) throw error;
+                toast.success("Proof deleted");
+                setProofs(prev => prev.filter(p => p.id !== deleteProof.id));
+                setDeleteProof(null);
+              } catch (e: any) {
+                toast.error(e?.message || "Failed to delete");
+              } finally {
+                setDeletingProof(false);
+              }
+            }}>
+              {deletingProof ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Trash2 className="h-4 w-4 mr-1" />}
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
       <Dialog open={!!viewProof} onOpenChange={(o) => !o && setViewProof(null)}>
         <DialogContent className="max-w-3xl">
           <DialogHeader><DialogTitle>{viewProof?.name}</DialogTitle></DialogHeader>
