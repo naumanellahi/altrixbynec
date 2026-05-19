@@ -625,7 +625,7 @@ export function AssessmentManagerCard({
               ))}
               {assessments.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-sm text-muted-foreground">
+                  <TableCell colSpan={10} className="text-sm text-muted-foreground">
                     No assessments found.
                   </TableCell>
                 </TableRow>
