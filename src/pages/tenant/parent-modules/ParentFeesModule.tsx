@@ -10,10 +10,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { ChildInfo } from "@/hooks/useMyChildren";
 import { format } from "date-fns";
-import { CheckCircle2, CreditCard, Loader2, XCircle, Clock, RefreshCw, Download, Receipt, Printer, Wallet, AlertCircle, History, Search, X, FileText } from "lucide-react";
+import { CheckCircle2, CreditCard, Loader2, XCircle, Clock, RefreshCw, Download, Receipt, Printer, Wallet, AlertCircle, History, Search, X, FileText, Upload, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { generateVoucherPdf, type VoucherCopyData } from "@/lib/fee-voucher-pdf";
+import { ManualProofUploadDialog } from "@/components/fees/ManualProofUploadDialog";
 
 interface ParentFeesModuleProps {
   child: ChildInfo | null;
@@ -101,6 +102,9 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
   const [invStatus, setInvStatus] = useState("__all");
   const [invFromDate, setInvFromDate] = useState("");
   const [invToDate, setInvToDate] = useState("");
+  const [uploadFor, setUploadFor] = useState<InvoiceRecord | null>(null);
+  const [proofs, setProofs] = useState<any[]>([]);
+  const [viewProof, setViewProof] = useState<{ url: string; name: string } | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const highlightInvoice = useMemo(() => new URLSearchParams(location.search).get("invoice"), [location.search]);
@@ -257,14 +261,23 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
       if (!cancelled) setTxns(merged);
     };
 
+    const loadProofs = async () => {
+      const { data } = await (supabase as any).from("fee_payment_proofs")
+        .select("id, invoice_id, file_path, file_name, amount, paid_at, method, note, status, rejection_reason, created_at, verified_at")
+        .eq("school_id", schoolId).eq("student_id", child.student_id)
+        .order("created_at", { ascending: false }).limit(100);
+      if (!cancelled) setProofs(data || []);
+    };
+
     (async () => {
       setLoading(true);
-      await Promise.all([loadInvoices(), loadProviders(), loadTxns()]);
+      await Promise.all([loadInvoices(), loadProviders(), loadTxns(), loadProofs()]);
       if (!cancelled) setLoading(false);
     })();
 
     const ch = supabase.channel(`pfees-${child.student_id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "fee_invoices", filter: `student_id=eq.${child.student_id}` }, loadInvoices)
+      .on("postgres_changes", { event: "*", schema: "public", table: "fee_payment_proofs", filter: `student_id=eq.${child.student_id}` }, loadProofs)
       .on("postgres_changes", { event: "*", schema: "public", table: "jazzcash_settings", filter: `school_id=eq.${schoolId}` }, loadProviders)
       .on("postgres_changes", { event: "*", schema: "public", table: "easypaisa_settings", filter: `school_id=eq.${schoolId}` }, loadProviders)
       .on("postgres_changes", { event: "*", schema: "public", table: "jazzcash_transactions", filter: `student_id=eq.${child.student_id}` }, (payload) => {
@@ -451,6 +464,8 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
               <TableBody>
                 {filteredInvoices.map(inv => {
                   const due = Math.max(Number(inv.total_amount) - Number(inv.paid_amount), 0);
+                  const myProofs = proofs.filter(p => p.invoice_id === inv.id);
+                  const pendingProof = myProofs.find(p => p.status === "pending");
                   return (
                     <TableRow
                       key={inv.id}
@@ -462,7 +477,13 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
                       <TableCell>{format(new Date(inv.due_date), "MMM d, yyyy")}</TableCell>
                       <TableCell className="text-right">PKR {Number(inv.total_amount).toLocaleString()}</TableCell>
                       <TableCell className="text-right">PKR {due.toLocaleString()}</TableCell>
-                      <TableCell><Badge variant={statusVariant(inv.status)}>{inv.status}</Badge></TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1 items-start">
+                          <Badge variant={statusVariant(inv.status)}>{inv.status}</Badge>
+                          {pendingProof && <Badge variant="secondary" className="text-[10px]">Proof pending</Badge>}
+                          {myProofs.some(p => p.status === "rejected") && <Badge variant="destructive" className="text-[10px]">Proof rejected</Badge>}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-1 flex-wrap">
                           <Button size="sm" variant="outline" onClick={() => downloadVoucher(inv)} disabled={downloadingVoucher === inv.id}>
@@ -481,8 +502,20 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
                               Easypaisa
                             </Button>
                           )}
-                          {due > 0 && !jcEnabled && !epEnabled && (
-                            <span className="text-xs text-muted-foreground">Online payment unavailable</span>
+                          {due > 0 && (
+                            <Button size="sm" variant="outline" onClick={() => setUploadFor(inv)} disabled={!!pendingProof}>
+                              <Upload className="h-3 w-3 mr-1" /> {pendingProof ? "Awaiting verify" : "Upload proof"}
+                            </Button>
+                          )}
+                          {myProofs.length > 0 && (
+                            <Button size="sm" variant="ghost" onClick={async () => {
+                              const p = myProofs[0];
+                              const { data, error } = await supabase.storage.from("fee-payment-proofs").createSignedUrl(p.file_path, 300);
+                              if (error || !data) { toast.error("Could not open file"); return; }
+                              setViewProof({ url: data.signedUrl, name: p.file_name || "proof" });
+                            }}>
+                              <Eye className="h-3 w-3 mr-1" /> View proof
+                            </Button>
                           )}
                           {due > 0 && (
                             <Button size="sm" variant="outline" onClick={() => printChallan(inv)}>
@@ -594,6 +627,29 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
               </div>
             );
           })()}
+        </DialogContent>
+      </Dialog>
+
+      {uploadFor && schoolId && child && (
+        <ManualProofUploadDialog
+          open={!!uploadFor}
+          onOpenChange={(v) => !v && setUploadFor(null)}
+          schoolId={schoolId}
+          studentId={child.student_id}
+          invoiceId={uploadFor.id}
+          invoiceNumber={uploadFor.invoice_number}
+          amountDue={Math.max(Number(uploadFor.total_amount) - Number(uploadFor.paid_amount), 0)}
+        />
+      )}
+
+      <Dialog open={!!viewProof} onOpenChange={(o) => !o && setViewProof(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader><DialogTitle>{viewProof?.name}</DialogTitle></DialogHeader>
+          {viewProof && (
+            viewProof.name.toLowerCase().endsWith(".pdf")
+              ? <iframe src={viewProof.url} className="w-full h-[70vh] rounded border" />
+              : <img src={viewProof.url} alt="proof" className="w-full max-h-[70vh] object-contain rounded border" />
+          )}
         </DialogContent>
       </Dialog>
     </div>
