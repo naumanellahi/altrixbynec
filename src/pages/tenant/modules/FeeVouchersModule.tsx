@@ -336,9 +336,15 @@ function PaymentProofsCard({ schoolId }: { schoolId: string | null }) {
             </CardTitle>
             <p className="text-sm text-muted-foreground">Parents' uploaded bank/cash receipts awaiting verification.</p>
           </div>
-          <div className="text-xs text-muted-foreground">
-            Showing <span className="font-medium text-foreground">{filteredProofs.length}</span> of {proofs.length}
+          <div className="flex items-center gap-3">
+            <div className="text-xs text-muted-foreground">
+              Showing <span className="font-medium text-foreground">{filteredProofs.length}</span> of {proofs.length}
+            </div>
+            <Button size="sm" variant="outline" onClick={exportCsv} disabled={filteredProofs.length === 0}>
+              <FileDown className="h-3 w-3 mr-1" /> Export CSV
+            </Button>
           </div>
+
         </div>
 
         <div className="mt-4 grid grid-cols-1 md:grid-cols-12 gap-2">
