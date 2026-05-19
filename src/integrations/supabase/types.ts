@@ -2867,6 +2867,63 @@ export type Database = {
           },
         ]
       }
+      fee_voucher_deliveries: {
+        Row: {
+          app_notification_id: string | null
+          batch_id: string | null
+          channel: string
+          created_at: string
+          delivered_at: string
+          error: string | null
+          guardian_email: string | null
+          guardian_name: string | null
+          guardian_phone: string | null
+          guardian_user_id: string | null
+          id: string
+          invoice_id: string
+          parent_notification_id: string | null
+          school_id: string
+          status: string
+          student_id: string
+        }
+        Insert: {
+          app_notification_id?: string | null
+          batch_id?: string | null
+          channel?: string
+          created_at?: string
+          delivered_at?: string
+          error?: string | null
+          guardian_email?: string | null
+          guardian_name?: string | null
+          guardian_phone?: string | null
+          guardian_user_id?: string | null
+          id?: string
+          invoice_id: string
+          parent_notification_id?: string | null
+          school_id: string
+          status?: string
+          student_id: string
+        }
+        Update: {
+          app_notification_id?: string | null
+          batch_id?: string | null
+          channel?: string
+          created_at?: string
+          delivered_at?: string
+          error?: string | null
+          guardian_email?: string | null
+          guardian_name?: string | null
+          guardian_phone?: string | null
+          guardian_user_id?: string | null
+          id?: string
+          invoice_id?: string
+          parent_notification_id?: string | null
+          school_id?: string
+          status?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
       finance_expenses: {
         Row: {
           amount: number
