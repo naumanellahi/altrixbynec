@@ -2734,6 +2734,12 @@ export type Database = {
       }
       fee_settings: {
         Row: {
+          bank_account_number: string | null
+          bank_account_title: string | null
+          bank_branch: string | null
+          bank_iban: string | null
+          bank_name: string | null
+          bank_swift: string | null
           created_at: string
           currency: string
           id: string
@@ -2745,8 +2751,15 @@ export type Database = {
           sibling_discount_2nd_pct: number
           sibling_discount_3rd_plus_pct: number
           updated_at: string
+          voucher_footer_note: string | null
         }
         Insert: {
+          bank_account_number?: string | null
+          bank_account_title?: string | null
+          bank_branch?: string | null
+          bank_iban?: string | null
+          bank_name?: string | null
+          bank_swift?: string | null
           created_at?: string
           currency?: string
           id?: string
@@ -2758,8 +2771,15 @@ export type Database = {
           sibling_discount_2nd_pct?: number
           sibling_discount_3rd_plus_pct?: number
           updated_at?: string
+          voucher_footer_note?: string | null
         }
         Update: {
+          bank_account_number?: string | null
+          bank_account_title?: string | null
+          bank_branch?: string | null
+          bank_iban?: string | null
+          bank_name?: string | null
+          bank_swift?: string | null
           created_at?: string
           currency?: string
           id?: string
@@ -2771,6 +2791,7 @@ export type Database = {
           sibling_discount_2nd_pct?: number
           sibling_discount_3rd_plus_pct?: number
           updated_at?: string
+          voucher_footer_note?: string | null
         }
         Relationships: []
       }
