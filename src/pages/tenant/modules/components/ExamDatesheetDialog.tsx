@@ -113,56 +113,89 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
     loadConflicts();
   };
 
-  const exportPdf = () => {
-    const filtered = exportSection === SECTION_ALL
-      ? rows
-      : rows.filter((r) => r.class_section_id === exportSection);
+  const lookups = useMemo(() => ({
+    subjects: new Map(subjects.map((s) => [s.id, s.name])),
+    sections: new Map(sections.map((s) => [s.id, `${s.class_name ? s.class_name + " — " : ""}${s.name}`])),
+    staff: new Map(staff.map((s) => [s.user_id, s.display_name])),
+  }), [subjects, sections, staff]);
+
+  const exportPdf = async () => {
+    const filtered = exportSection === SECTION_ALL ? rows : rows.filter((r) => r.class_section_id === exportSection);
     if (filtered.length === 0) return toast.error("No papers to export");
-    const subjMap = new Map(subjects.map((s) => [s.id, s.name]));
-    const secMap = new Map(sections.map((s) => [s.id, `${s.class_name ? s.class_name + " — " : ""}${s.name}`]));
-    const staffMap = new Map(staff.map((s) => [s.user_id, s.display_name]));
-
-    const doc = new jsPDF({ orientation: "landscape" });
-    const pageW = doc.internal.pageSize.getWidth();
-    doc.setFontSize(16); doc.setFont("helvetica", "bold");
-    doc.text(schoolName || "Datesheet", pageW / 2, 14, { align: "center" });
-    doc.setFontSize(12); doc.setFont("helvetica", "normal");
-    doc.text(`Exam Datesheet — ${examName}`, pageW / 2, 21, { align: "center" });
-    if (exportSection !== SECTION_ALL) {
-      doc.setFontSize(10);
-      doc.text(`Class/Section: ${secMap.get(exportSection) || ""}`, pageW / 2, 27, { align: "center" });
-    }
-
-    const body = filtered
-      .slice()
-      .sort((a, b) => (a.exam_date || "").localeCompare(b.exam_date || "") || (a.start_time || "").localeCompare(b.start_time || ""))
-      .map((r) => [
-        r.exam_date ? format(new Date(r.exam_date), "EEE, MMM d, yyyy") : "—",
-        r.start_time ?? "—",
-        r.duration_minutes ? `${r.duration_minutes} min` : "—",
-        subjMap.get(r.subject_id || "") || "—",
-        secMap.get(r.class_section_id || "") || "—",
-        r.room || "—",
-        r.max_marks?.toString() || "—",
-        r.passing_marks?.toString() || "—",
-        staffMap.get(r.invigilator_user_id || "") || "—",
-      ]);
-
-    autoTable(doc, {
-      startY: exportSection !== SECTION_ALL ? 32 : 27,
-      head: [["Date", "Start", "Duration", "Subject", "Class/Section", "Room", "Max", "Pass", "Invigilator"]],
-      body,
-      styles: { fontSize: 9, cellPadding: 2.5 },
-      headStyles: { fillColor: [33, 90, 165], textColor: 255 },
-      alternateRowStyles: { fillColor: [245, 247, 250] },
-    });
-
-    const finalY = (doc as any).lastAutoTable?.finalY || 60;
-    doc.setFontSize(8); doc.setTextColor(120);
-    doc.text(`Generated ${format(new Date(), "PPp")}`, 14, finalY + 8);
-    doc.save(`datesheet-${examName.replace(/\s+/g, "_")}${exportSection !== SECTION_ALL ? "-" + (secMap.get(exportSection) || "section").replace(/\s+/g, "_") : ""}.pdf`);
+    if (fields.length === 0) return toast.error("Pick at least one column");
+    const sectionLabel = exportSection === SECTION_ALL ? undefined : lookups.sections.get(exportSection);
+    const doc = await buildDatesheetPDF(filtered, { schoolName, examName, sectionLabel }, { fields, includePaperQR: paperQR }, lookups);
+    doc.save(`datesheet-${examName.replace(/\s+/g, "_")}${sectionLabel ? "-" + sectionLabel.replace(/\s+/g, "_") : ""}.pdf`);
     toast.success("Datesheet exported");
   };
+
+  const sendToParents = async () => {
+    if (fields.length === 0) return toast.error("Pick at least one column");
+    setSending(true);
+    try {
+      const sectionIds = Array.from(new Set(rows.map((r) => r.class_section_id).filter(Boolean))) as string[];
+      if (sectionIds.length === 0) { toast.error("No papers with sections assigned"); return; }
+      const { data: enrolls, error: eErr } = await (supabase as any)
+        .from("student_enrollments")
+        .select("student_id,class_section_id,students!inner(id,first_name,last_name,student_code,school_id)")
+        .in("class_section_id", sectionIds)
+        .is("end_date", null)
+        .eq("school_id", schoolId);
+      if (eErr) throw eErr;
+      const students = (enrolls || []) as any[];
+      if (students.length === 0) { toast.error("No enrolled students found"); return; }
+
+      let success = 0; let failed = 0;
+      for (const en of students) {
+        const studentRows = rows.filter((r) => r.class_section_id === en.class_section_id);
+        if (studentRows.length === 0) continue;
+        const secLabel = lookups.sections.get(en.class_section_id);
+        const studentLabel = `${en.students.first_name} ${en.students.last_name}`;
+        const hallTicketUrl = `${window.location.origin}/student/exams/${examId}/hall-ticket/${en.student_id}`;
+        try {
+          const doc = await buildDatesheetPDF(studentRows, {
+            schoolName, examName, sectionLabel: secLabel,
+            studentLabel, studentCode: en.students.student_code,
+            hallTicketUrl: hallTicketQR ? hallTicketUrl : undefined,
+          }, { fields, includePaperQR: paperQR, includeHallTicketQR: hallTicketQR }, lookups);
+          const blob = doc.output("blob");
+          const path = `${schoolId}/${examId}/${en.student_id}.pdf`;
+          const { error: upErr } = await (supabase as any).storage.from("exam-datesheets").upload(path, blob, {
+            upsert: true, contentType: "application/pdf",
+          });
+          if (upErr) throw upErr;
+          await (supabase as any).from("exam_datesheet_distributions").upsert({
+            school_id: schoolId, exam_id: examId, student_id: en.student_id,
+            class_section_id: en.class_section_id, file_path: path, generated_by: user?.id ?? null,
+            generated_at: new Date().toISOString(),
+          }, { onConflict: "exam_id,student_id" } as any);
+
+          const { data: guards } = await (supabase as any)
+            .from("student_guardians").select("user_id").eq("student_id", en.student_id).not("user_id", "is", null);
+          for (const g of (guards || []) as any[]) {
+            await (supabase as any).from("app_notifications").insert({
+              school_id: schoolId, user_id: g.user_id, type: "exam_datesheet",
+              title: `Datesheet ready: ${examName}`,
+              body: `Download ${studentLabel}'s exam datesheet from the Datesheets section.`,
+              entity_type: "exam", entity_id: examId,
+            });
+          }
+          success++;
+        } catch (err: any) {
+          console.error("send fail", en.student_id, err);
+          failed++;
+        }
+      }
+      toast.success(`Sent to ${success} student${success !== 1 ? "s" : ""}${failed ? ` (${failed} failed)` : ""}`);
+    } catch (e: any) {
+      toast.error(e.message || "Send failed");
+    } finally { setSending(false); }
+  };
+
+  const toggleField = (k: DatesheetField) =>
+    setFields((f) => (f.includes(k) ? f.filter((x) => x !== k) : [...f, k]));
+
+
 
 
 
