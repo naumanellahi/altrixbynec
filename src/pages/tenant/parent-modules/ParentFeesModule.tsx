@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { ChildInfo } from "@/hooks/useMyChildren";
 import { format } from "date-fns";
-import { CheckCircle2, CreditCard, Loader2, XCircle, Clock, RefreshCw, Download, Receipt, Printer, Wallet, AlertCircle, History, Search, X, FileText, Upload, Eye, Inbox } from "lucide-react";
+import { CheckCircle2, CreditCard, Loader2, XCircle, Clock, RefreshCw, Download, Receipt, Printer, Wallet, AlertCircle, History, Search, X, FileText, Upload, Eye, Inbox, Pencil, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
