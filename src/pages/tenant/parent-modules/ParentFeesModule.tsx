@@ -298,8 +298,9 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
           else if (newRow.status === "failed") toast.error(`Payment failed: ${newRow.ep_response_message || "Unknown reason"}`);
         }
       })
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "app_notifications", filter: `user_id=eq.${child.student_id ? child.student_id : "00000000-0000-0000-0000-000000000000"}` }, () => { /* placeholder, real subscription below */ })
       .subscribe();
+
+
 
     // Separate channel for app_notifications keyed to current auth user (parent), to refresh on proof verify/reject
     const userChan = supabase.channel(`pfees-notif-${child.student_id}`)
