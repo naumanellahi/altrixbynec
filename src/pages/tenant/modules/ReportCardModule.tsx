@@ -323,14 +323,16 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
       .map((a) => ({
         id: a.id,
         title: a.title,
+        subject_id: a.subject_id,
         subject: a.subject_id ? subjectName.get(a.subject_id) ?? "—" : "—",
         date: a.assessment_date,
         max: a.max_marks,
+        type: a.assessment_type || "test",
         marks: markByA.get(a.id)?.marks ?? null,
         grade: markByA.get(a.id)?.computed_grade ?? null,
       }))
       .sort((x, y) => (x.date || "").localeCompare(y.date || ""));
-  }, [allAssessments, allMarks, subjects, card, periodType, examId, monthIdx, monthYear, currentPeriodRange.start, currentPeriodRange.end]);
+  }, [allAssessments, allMarks, subjects, card, periodType, examId, monthIdx, monthYear, currentPeriodRange.start, currentPeriodRange.end, studentId, JSON.stringify(enrollments)]);
 
   // ───── Per-subject × per-category breakdown (quiz/test/assignment/project/exam/etc.)
   const CATEGORY_ORDER: { key: string; label: string }[] = [
