@@ -175,17 +175,43 @@ type ProofRow = {
 
 function PaymentProofsCard({ schoolId }: { schoolId: string | null }) {
   const qc = useQueryClient();
-  const [statusFilter, setStatusFilter] = useState<string>("pending");
-  const [methodFilter, setMethodFilter] = useState<string>("__all");
-  const [fromDate, setFromDate] = useState<string>("");
-  const [toDate, setToDate] = useState<string>("");
-  const [minAmount, setMinAmount] = useState<string>("");
-  const [maxAmount, setMaxAmount] = useState<string>("");
-  const [search, setSearch] = useState<string>("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const sp = (k: string, d = "") => searchParams.get(k) ?? d;
+  const [statusFilter, setStatusFilter] = useState<string>(sp("pp_status", "pending"));
+  const [methodFilter, setMethodFilter] = useState<string>(sp("pp_method", "__all"));
+  const [fromDate, setFromDate] = useState<string>(sp("pp_from"));
+  const [toDate, setToDate] = useState<string>(sp("pp_to"));
+  const [minAmount, setMinAmount] = useState<string>(sp("pp_min"));
+  const [maxAmount, setMaxAmount] = useState<string>(sp("pp_max"));
+  const [search, setSearch] = useState<string>(sp("pp_q"));
+  const [debouncedSearch, setDebouncedSearch] = useState<string>(search);
   const [viewing, setViewing] = useState<{ url: string; name: string; pdf: boolean } | null>(null);
   const [rejectFor, setRejectFor] = useState<ProofRow | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+
+  // Debounce search input (300ms)
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Persist filters to URL (uses debounced search to avoid history spam)
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    const setOrDel = (k: string, v: string, dflt = "") => {
+      if (v && v !== dflt) next.set(k, v); else next.delete(k);
+    };
+    setOrDel("pp_q", debouncedSearch);
+    setOrDel("pp_status", statusFilter, "pending");
+    setOrDel("pp_method", methodFilter, "__all");
+    setOrDel("pp_from", fromDate);
+    setOrDel("pp_to", toDate);
+    setOrDel("pp_min", minAmount);
+    setOrDel("pp_max", maxAmount);
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, statusFilter, methodFilter, fromDate, toDate, minAmount, maxAmount]);
 
   const { data: proofs = [] } = useQuery({
     queryKey: ["fee_payment_proofs", schoolId, statusFilter],
