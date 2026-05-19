@@ -498,15 +498,12 @@ function GenerateVoucherDialog({
         const doc = generateVoucherPdf(pdfs[0].data);
         doc.save(`voucher-${pdfs[0].data.invoiceNumber}.pdf`);
       } else if (pdfs.length > 1) {
-        // Combine all into one multi-page PDF
-        const first = generateVoucherPdf(pdfs[0].data);
+        const { appendVoucherPage } = await import("@/lib/fee-voucher-pdf");
+        const combined = generateVoucherPdf(pdfs[0].data);
         for (let i = 1; i < pdfs.length; i++) {
-          first.addPage("a4", "landscape");
-          // jsPDF v4 doesn't directly support copying pages between docs; use the same draw cycle on the new page
-          const { addCopyPage } = await import("@/lib/fee-voucher-pdf-helpers");
-          addCopyPage(first, pdfs[i].data);
+          appendVoucherPage(combined, pdfs[i].data);
         }
-        first.save(`vouchers-batch-${batch.id}.pdf`);
+        combined.save(`vouchers-batch-${batch.id}.pdf`);
       }
 
       toast.success(`Generated ${successCount} voucher(s); parents notified.`);
