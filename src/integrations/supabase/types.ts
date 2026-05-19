@@ -2219,6 +2219,80 @@ export type Database = {
           },
         ]
       }
+      exam_result_publications: {
+        Row: {
+          class_section_id: string | null
+          created_at: string
+          created_by: string | null
+          exam_id: string
+          id: string
+          is_published: boolean
+          notes: string | null
+          publish_at: string | null
+          school_id: string
+          scope: string
+          student_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          class_section_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          exam_id: string
+          id?: string
+          is_published?: boolean
+          notes?: string | null
+          publish_at?: string | null
+          school_id: string
+          scope: string
+          student_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          class_section_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          exam_id?: string
+          id?: string
+          is_published?: boolean
+          notes?: string | null
+          publish_at?: string | null
+          school_id?: string
+          scope?: string
+          student_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_result_publications_class_section_id_fkey"
+            columns: ["class_section_id"]
+            isOneToOne: false
+            referencedRelation: "class_sections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_result_publications_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_result_publications_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_result_publications_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exam_results: {
         Row: {
           created_at: string
@@ -6024,6 +6098,7 @@ export type Database = {
       can_manage_jazzcash: { Args: { _school_id: string }; Returns: boolean }
       can_manage_staff: { Args: { _school_id: string }; Returns: boolean }
       can_manage_students: { Args: { _school_id: string }; Returns: boolean }
+      can_publish_results: { Args: { _school_id: string }; Returns: boolean }
       can_view_fees: { Args: { _school_id: string }; Returns: boolean }
       can_work_crm: { Args: { _school_id: string }; Returns: boolean }
       convert_admission_to_student: {
