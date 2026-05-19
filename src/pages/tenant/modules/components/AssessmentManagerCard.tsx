@@ -249,6 +249,9 @@ export function AssessmentManagerCard({
       term_label: filterTerm || "",
       assessment_date: new Date().toISOString().slice(0, 10),
       max_marks: 100,
+      assessment_type: (filterType as AssessmentType) || "test",
+      weightage_percent: "",
+      passing_marks: "",
     });
   };
 
@@ -261,6 +264,9 @@ export function AssessmentManagerCard({
       term_label: a.term_label ?? "",
       assessment_date: a.assessment_date,
       max_marks: a.max_marks,
+      assessment_type: (a.assessment_type as AssessmentType) || "test",
+      weightage_percent: a.weightage_percent ?? "",
+      passing_marks: a.passing_marks ?? "",
     });
   };
 
