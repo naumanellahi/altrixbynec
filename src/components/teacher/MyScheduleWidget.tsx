@@ -65,6 +65,7 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
   const [reasonDialog, setReasonDialog] = useState<{
     entryId: string;
     label: string;
+    reasonType: "late" | "left";
     onSubmit: (reason: string | null) => Promise<void> | void;
   } | null>(null);
   const [reasonText, setReasonText] = useState("");
