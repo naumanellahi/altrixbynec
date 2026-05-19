@@ -95,17 +95,19 @@ export default function ExamPublishDialog({
     const { error } = await (supabase as any).from("exams").update(patch).eq("id", examId);
     if (error) return toast.error(error.message);
 
-    await (supabase as any).from("exam_result_publications").upsert(
-      {
-        school_id: schoolId, exam_id: examId, scope: "exam",
-        is_published: publish,
-        publish_at: publishAtIso,
-        notes: examNotes || null,
-        created_by: user?.id ?? null,
-        processed_at: scheduled ? null : new Date().toISOString(),
-      },
-      { onConflict: "exam_id", ignoreDuplicates: false } as any
-    );
+    await (supabase as any)
+      .from("exam_result_publications")
+      .delete()
+      .eq("exam_id", examId)
+      .eq("scope", "exam");
+    await (supabase as any).from("exam_result_publications").insert({
+      school_id: schoolId, exam_id: examId, scope: "exam",
+      is_published: publish,
+      publish_at: publishAtIso,
+      notes: examNotes || null,
+      created_by: user?.id ?? null,
+      processed_at: scheduled ? null : new Date().toISOString(),
+    });
 
     if (!scheduled) {
       const { data: notified } = await (supabase as any).rpc("notify_exam_result_publish", {
@@ -125,18 +127,21 @@ export default function ExamPublishDialog({
     if (!secId) return toast.error("Pick a section");
     const publishAtIso = secAt ? new Date(secAt).toISOString() : null;
     const scheduled = isFuture(publishAtIso);
-    const { error } = await (supabase as any).from("exam_result_publications").upsert(
-      {
-        school_id: schoolId, exam_id: examId, scope: "section",
-        class_section_id: secId,
-        is_published: secPublished,
-        publish_at: publishAtIso,
-        notes: secNotes || null,
-        created_by: user?.id ?? null,
-        processed_at: scheduled ? null : new Date().toISOString(),
-      },
-      { onConflict: "exam_id,class_section_id" } as any
-    );
+    await (supabase as any)
+      .from("exam_result_publications")
+      .delete()
+      .eq("exam_id", examId)
+      .eq("scope", "section")
+      .eq("class_section_id", secId);
+    const { error } = await (supabase as any).from("exam_result_publications").insert({
+      school_id: schoolId, exam_id: examId, scope: "section",
+      class_section_id: secId,
+      is_published: secPublished,
+      publish_at: publishAtIso,
+      notes: secNotes || null,
+      created_by: user?.id ?? null,
+      processed_at: scheduled ? null : new Date().toISOString(),
+    });
     if (error) return toast.error(error.message);
     if (!scheduled) {
       const { data: notified } = await (supabase as any).rpc("notify_exam_result_publish", {
@@ -155,18 +160,21 @@ export default function ExamPublishDialog({
     if (!studId) return toast.error("Pick a student");
     const publishAtIso = studAt ? new Date(studAt).toISOString() : null;
     const scheduled = isFuture(publishAtIso);
-    const { error } = await (supabase as any).from("exam_result_publications").upsert(
-      {
-        school_id: schoolId, exam_id: examId, scope: "student",
-        student_id: studId,
-        is_published: studPublished,
-        publish_at: publishAtIso,
-        notes: studNotes || null,
-        created_by: user?.id ?? null,
-        processed_at: scheduled ? null : new Date().toISOString(),
-      },
-      { onConflict: "exam_id,student_id" } as any
-    );
+    await (supabase as any)
+      .from("exam_result_publications")
+      .delete()
+      .eq("exam_id", examId)
+      .eq("scope", "student")
+      .eq("student_id", studId);
+    const { error } = await (supabase as any).from("exam_result_publications").insert({
+      school_id: schoolId, exam_id: examId, scope: "student",
+      student_id: studId,
+      is_published: studPublished,
+      publish_at: publishAtIso,
+      notes: studNotes || null,
+      created_by: user?.id ?? null,
+      processed_at: scheduled ? null : new Date().toISOString(),
+    });
     if (error) return toast.error(error.message);
     if (!scheduled) {
       const { data: notified } = await (supabase as any).rpc("notify_exam_result_publish", {
