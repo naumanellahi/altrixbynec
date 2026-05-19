@@ -469,6 +469,121 @@ function GenerateVoucherDialog({
     return { pct: 0, tier: null };
   }
 
+  // Build voucher PDF data for a single student WITHOUT persisting (used for preview)
+  function buildPreviewData(args: {
+    student: Student;
+    meta: Awaited<ReturnType<typeof fetchSchoolMeta>>;
+    items: FeePlanItem[];
+    plan: FeePlan | undefined;
+    avgGrade: number;
+  }): VoucherCopyData {
+    const { student: st, meta, items, plan, avgGrade } = args;
+    const subtotalCalc = items.reduce((s, i) => s + Number(i.amount || 0), 0);
+    const baseExtraPct = Number(discountPct) || 0;
+    const baseExtraAmt = Number(discountAmount) || 0;
+    const { pct: gradePct, tier } = pickGradeTierPct(avgGrade);
+    const totalExtraPct = baseExtraPct + gradePct;
+    const merit = baseExtraAmt + Math.round(subtotalCalc * totalExtraPct) / 100;
+    const reasonParts: string[] = [];
+    if (discountReason) reasonParts.push(discountReason);
+    if (tier) reasonParts.push(`Merit ≥${tier.minGrade}% → ${tier.discountPct}%`);
+    const total = Math.max(subtotalCalc - merit, 0);
+    const sec = sections.find((s) => s.id === sectionId);
+    const klass = classes.find((c) => c.id === classId);
+    return {
+      invoiceNumber: "PREVIEW",
+      issueDate: new Date().toISOString().slice(0, 10),
+      dueDate,
+      periodLabel,
+      school: {
+        name: meta.school?.name ?? "School",
+        address: meta.school?.address ?? null,
+        phone: meta.school?.phone ?? null,
+        email: meta.school?.email ?? null,
+        website: meta.school?.website ?? null,
+        logoUrl: meta.school?.logo_url ?? null,
+        motto: meta.school?.motto ?? null,
+      },
+      student: {
+        name: `${st.first_name} ${st.last_name ?? ""}`.trim(),
+        rollNumber: st.roll_number,
+        studentCode: st.student_code,
+        className: klass?.name ?? null,
+        sectionName: sec?.name ?? null,
+        parentName: st.parent_name,
+        parentPhone: st.parent_phone,
+      },
+      items: items.map((it) => ({ label: it.label, amount: Number(it.amount) })),
+      subtotal: subtotalCalc,
+      baseDiscount: 0,
+      meritDiscount: merit,
+      meritReason: reasonParts.join(" | ") || null,
+      siblingDiscount: 0,
+      total,
+      currency: plan?.currency || "PKR",
+      accentHsl: meta.branding,
+      notes: notes || null,
+    };
+  }
+
+  // Live PDF preview – debounced
+  useEffect(() => {
+    if (!open || !schoolId || !feePlanId) {
+      setPreviewUrl((u) => { if (u) URL.revokeObjectURL(u); return null; });
+      return;
+    }
+    const previewStudent =
+      mode === "individual"
+        ? students.find((s) => s.id === studentId)
+        : targetStudents[0];
+    if (!previewStudent) {
+      setPreviewUrl((u) => { if (u) URL.revokeObjectURL(u); return null; });
+      return;
+    }
+    const seq = ++previewSeqRef.current;
+    setPreviewLoading(true);
+    const t = setTimeout(async () => {
+      try {
+        const meta = await fetchSchoolMeta();
+        const items = planItems.data ?? [];
+        const plan = feePlans.find((p) => p.id === feePlanId);
+        const avgMap = tiers.length > 0 ? await getStudentAvgGrade([previewStudent.id]) : {};
+        const data = buildPreviewData({
+          student: previewStudent,
+          meta,
+          items,
+          plan,
+          avgGrade: avgMap[previewStudent.id] ?? 0,
+        });
+        const doc = generateVoucherPdf(data);
+        const blob = doc.output("blob");
+        const url = URL.createObjectURL(blob);
+        if (seq !== previewSeqRef.current) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        setPreviewUrl((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return url;
+        });
+      } catch (e) {
+        console.error("preview failed", e);
+      } finally {
+        if (seq === previewSeqRef.current) setPreviewLoading(false);
+      }
+    }, 400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    open, schoolId, feePlanId, mode, studentId,
+    JSON.stringify(targetStudents.map((s) => s.id)),
+    JSON.stringify(planItems.data ?? []),
+    JSON.stringify(tiers), discountPct, discountAmount, discountReason,
+    periodLabel, dueDate, notes, classId, sectionId,
+  ]);
+
+  useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
+
   async function handleGenerate() {
     if (!schoolId || !feePlanId) {
       toast.error("Pick a fee plan first");
@@ -484,6 +599,9 @@ function GenerateVoucherDialog({
     }
 
     setSubmitting(true);
+    setResults([]);
+    setDoneCount(0);
+    setFailCount(0);
     setProgress("Loading school branding…");
     try {
       const meta = await fetchSchoolMeta();
@@ -491,7 +609,6 @@ function GenerateVoucherDialog({
       const items = planItems.data ?? [];
       const gradeMap = tiers.length > 0 ? await getStudentAvgGrade(targetStudents.map((s) => s.id)) : {};
 
-      // Create batch row
       const { data: batch, error: batchErr } = await (supabase as any)
         .from("fee_voucher_batches")
         .insert({
@@ -518,9 +635,9 @@ function GenerateVoucherDialog({
 
       for (let i = 0; i < targetStudents.length; i++) {
         const st = targetStudents[i];
-        setProgress(`Generating ${i + 1} / ${targetStudents.length}…`);
+        const studentName = `${st.first_name} ${st.last_name ?? ""}`.trim();
+        setProgress(`Generating ${i + 1} / ${targetStudents.length} – ${studentName}…`);
 
-        // Compute extra discount: manual + grade tier
         const baseExtraPct = Number(discountPct) || 0;
         const baseExtraAmt = Number(discountAmount) || 0;
         const avg = gradeMap[st.id] ?? 0;
@@ -531,83 +648,84 @@ function GenerateVoucherDialog({
         if (tier) reasonParts.push(`Merit ≥${tier.minGrade}% → ${tier.discountPct}%`);
         const reason = reasonParts.join(" | ") || null;
 
-        const { data: invId, error: rpcErr } = await (supabase as any).rpc("generate_fee_voucher", {
-          _school_id: schoolId,
-          _student_id: st.id,
-          _fee_plan_id: feePlanId,
-          _period_label: periodLabel,
-          _due_date: dueDate,
-          _extra_discount_pct: totalExtraPct,
-          _extra_discount_amount: baseExtraAmt,
-          _extra_discount_reason: reason,
-          _notes: notes || null,
-          _batch_id: batch.id,
-        });
-        if (rpcErr) {
-          console.error("voucher rpc failed", st.id, rpcErr);
-          toast.error(`Failed for ${st.first_name}: ${rpcErr.message}`);
-          continue;
+        try {
+          const { data: invId, error: rpcErr } = await (supabase as any).rpc("generate_fee_voucher", {
+            _school_id: schoolId,
+            _student_id: st.id,
+            _fee_plan_id: feePlanId,
+            _period_label: periodLabel,
+            _due_date: dueDate,
+            _extra_discount_pct: totalExtraPct,
+            _extra_discount_amount: baseExtraAmt,
+            _extra_discount_reason: reason,
+            _notes: notes || null,
+            _batch_id: batch.id,
+          });
+          if (rpcErr) throw rpcErr;
+
+          const { data: inv, error: invErr } = await supabase
+            .from("fee_invoices")
+            .select("*")
+            .eq("id", invId as string)
+            .maybeSingle();
+          if (invErr) throw invErr;
+          if (!inv) throw new Error("Invoice not found after creation");
+
+          const sec = sections.find((s) => s.id === sectionId) || sections[0];
+          const klass = classes.find((c) => c.id === classId);
+
+          const pdfData: VoucherCopyData = {
+            invoiceNumber: (inv as any).invoice_number,
+            issueDate: new Date().toISOString().slice(0, 10),
+            dueDate,
+            periodLabel,
+            school: {
+              name: meta.school?.name ?? "School",
+              address: meta.school?.address ?? null,
+              phone: meta.school?.phone ?? null,
+              email: meta.school?.email ?? null,
+              website: meta.school?.website ?? null,
+              logoUrl: meta.school?.logo_url ?? null,
+              motto: meta.school?.motto ?? null,
+            },
+            student: {
+              name: studentName,
+              rollNumber: st.roll_number,
+              studentCode: st.student_code,
+              className: klass?.name ?? null,
+              sectionName: sec?.name ?? null,
+              parentName: st.parent_name,
+              parentPhone: st.parent_phone,
+            },
+            items: items.map((it) => ({ label: it.label, amount: Number(it.amount) })),
+            subtotal: Number((inv as any).subtotal),
+            baseDiscount: Number((inv as any).discount_amount),
+            meritDiscount: Number((inv as any).merit_discount_amount ?? 0),
+            meritReason: (inv as any).merit_discount_reason ?? reason,
+            siblingDiscount: Number((inv as any).sibling_discount_amount ?? 0),
+            total: Number((inv as any).total_amount),
+            currency: plan?.currency || "PKR",
+            accentHsl: meta.branding,
+            notes: notes || null,
+          };
+
+          pdfs.push({ student: st, data: pdfData });
+          totalAmount += Number((inv as any).total_amount);
+          successCount += 1;
+          setDoneCount((c) => c + 1);
+          setResults((r) => [...r, { studentId: st.id, name: studentName, status: "success", invoiceId: invId as string }]);
+        } catch (err: any) {
+          console.error("voucher failed for", st.id, err);
+          setFailCount((c) => c + 1);
+          setResults((r) => [...r, { studentId: st.id, name: studentName, status: "error", error: err?.message ?? String(err) }]);
         }
-
-        // Load full invoice row for PDF
-        const { data: inv } = await supabase
-          .from("fee_invoices")
-          .select("*")
-          .eq("id", invId as string)
-          .maybeSingle();
-        if (!inv) continue;
-
-        // Get class/section name
-        const sec = sections.find((s) => s.id === sectionId) || sections.find((s) => true);
-        const klass = classes.find((c) => c.id === classId);
-
-        const pdfData: VoucherCopyData = {
-          invoiceNumber: (inv as any).invoice_number,
-          issueDate: new Date().toISOString().slice(0, 10),
-          dueDate,
-          periodLabel,
-          school: {
-            name: meta.school?.name ?? "School",
-            address: meta.school?.address ?? null,
-            phone: meta.school?.phone ?? null,
-            email: meta.school?.email ?? null,
-            website: meta.school?.website ?? null,
-            logoUrl: meta.school?.logo_url ?? null,
-            motto: meta.school?.motto ?? null,
-          },
-          student: {
-            name: `${st.first_name} ${st.last_name ?? ""}`.trim(),
-            rollNumber: st.roll_number,
-            studentCode: st.student_code,
-            className: klass?.name ?? null,
-            sectionName: sec?.name ?? null,
-            parentName: st.parent_name,
-            parentPhone: st.parent_phone,
-          },
-          items: items.map((it) => ({ label: it.label, amount: Number(it.amount) })),
-          subtotal: Number((inv as any).subtotal),
-          baseDiscount: Number((inv as any).discount_amount),
-          meritDiscount: Number((inv as any).merit_discount_amount ?? 0),
-          meritReason: (inv as any).merit_discount_reason ?? reason,
-          siblingDiscount: Number((inv as any).sibling_discount_amount ?? 0),
-          total: Number((inv as any).total_amount),
-          currency: plan?.currency || "PKR",
-          accentHsl: meta.branding,
-          notes: notes || null,
-        };
-
-        pdfs.push({ student: st, data: pdfData });
-        totalAmount += Number((inv as any).total_amount);
-        successCount += 1;
       }
 
-      // Update batch totals
       await (supabase as any)
         .from("fee_voucher_batches")
         .update({ total_students: successCount, total_amount: totalAmount })
         .eq("id", batch.id);
 
-      // Generate the PDFs
       setProgress("Building PDF file…");
       if (pdfs.length === 1) {
         const doc = generateVoucherPdf(pdfs[0].data);
@@ -621,16 +739,23 @@ function GenerateVoucherDialog({
         combined.save(`vouchers-batch-${batch.id}.pdf`);
       }
 
-      toast.success(`Generated ${successCount} voucher(s); parents notified.`);
-      onOpenChange(false);
+      if (successCount > 0) {
+        toast.success(`Generated ${successCount} voucher(s); parents notified.`);
+      }
+      if (failCount > 0 || successCount === 0) {
+        // keep dialog open so the user can review errors
+        setProgress(`Finished with ${successCount} success / ${targetStudents.length - successCount} failed`);
+      } else {
+        onOpenChange(false);
+      }
     } catch (e: any) {
       console.error(e);
       toast.error(e.message ?? "Failed to generate vouchers");
     } finally {
       setSubmitting(false);
-      setProgress("");
     }
   }
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
