@@ -416,7 +416,7 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
     const basePayload: any = {
       school_id: schoolId, student_id: studentId,
       total_marks: totals.total, max_total: totals.max, percentage: totals.pct,
-      gpa: totals.gpa, overall_grade: totals.grade,
+      gpa: null, overall_grade: totals.grade,
       teacher_remarks: card.teacher_remarks, principal_remarks: card.principal_remarks,
       attendance_percentage: card.attendance_percentage,
       is_published: card.is_published, // preserve current state, do NOT auto-publish on save
