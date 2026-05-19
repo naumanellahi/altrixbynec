@@ -274,4 +274,28 @@ All colors MUST be HSL.
   display: none !important;
 }
 
+/* PDF export: enforce centered, uniform table layout */
+#report-card-print.exporting-pdf table {
+  table-layout: fixed !important;
+  width: 100% !important;
+  border-collapse: collapse !important;
+}
+#report-card-print.exporting-pdf table colgroup col {
+  width: 20% !important;
+}
+#report-card-print.exporting-pdf table th,
+#report-card-print.exporting-pdf table td {
+  text-align: center !important;
+  vertical-align: middle !important;
+  padding: 6px 4px !important;
+}
+#report-card-print.exporting-pdf table td > div {
+  justify-content: center !important;
+}
+#report-card-print.exporting-pdf input,
+#report-card-print.exporting-pdf table td > div > span {
+  text-align: center !important;
+  margin: 0 auto !important;
+}
+
 
