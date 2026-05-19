@@ -1085,17 +1085,128 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
                 : `Ready to save ${periodType} report card — ${currentPeriodLabel}`}
             </p>
             <p className="text-xs text-muted-foreground">
-              Drafts are private. Publishing makes the card visible to the student & parents.
+              {card.is_published
+                ? "Published — visible on student & parent dashboards."
+                : "Save first. Publish separately when ready to release to parents."}
             </p>
           </div>
-          <Button variant="outline" disabled={periodType === "exam" && !examId} onClick={() => save(false)}>
-            Save Draft
+          <Button variant="outline" disabled={periodType === "exam" && !examId} onClick={() => save()}>
+            Save
           </Button>
-          <Button disabled={periodType === "exam" && !examId} onClick={() => save(true)}>
-            Save &amp; Publish
+          {card.is_published ? (
+            <Button variant="secondary" onClick={() => publishIndividual(false)}>
+              Unpublish
+            </Button>
+          ) : (
+            <Button disabled={periodType === "exam" && !examId} onClick={() => publishIndividual(true)}>
+              <Send className="mr-1.5 h-4 w-4" /> Publish to parent
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            disabled={periodType === "exam" && !examId}
+            onClick={() => {
+              const enr = enrollments.find((e) => e.student_id === studentId);
+              setPublishSectionId(enr?.class_section_id || "");
+              setPublishDialogOpen(true);
+            }}
+          >
+            <Users className="mr-1.5 h-4 w-4" /> Publish whole class
           </Button>
         </div>
       )}
+
+      {/* Add quiz/test/assignment dialog */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add marks entry</DialogTitle>
+            <DialogDescription>
+              Quickly log a quiz, test or assignment for this student. It will be reflected in the report card.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Type</Label>
+                <Select value={addType} onValueChange={setAddType}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="quiz">Quiz</SelectItem>
+                    <SelectItem value="test">Test</SelectItem>
+                    <SelectItem value="assignment">Assignment</SelectItem>
+                    <SelectItem value="project">Project</SelectItem>
+                    <SelectItem value="classwork">Classwork</SelectItem>
+                    <SelectItem value="homework">Homework</SelectItem>
+                    <SelectItem value="practical">Practical</SelectItem>
+                    <SelectItem value="oral">Oral</SelectItem>
+                    <SelectItem value="presentation">Presentation</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Date</Label>
+                <Input type="date" value={addDate} onChange={(e) => setAddDate(e.target.value)} />
+              </div>
+            </div>
+            <div>
+              <Label>Title</Label>
+              <Input value={addTitle} onChange={(e) => setAddTitle(e.target.value)} placeholder="e.g. Chapter 3 quiz" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Marks obtained</Label>
+                <Input type="number" value={addMarks} onChange={(e) => setAddMarks(Number(e.target.value))} />
+              </div>
+              <div>
+                <Label>Out of</Label>
+                <Input type="number" value={addMax} onChange={(e) => setAddMax(Number(e.target.value))} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
+            <Button onClick={submitAddAssessment}>Add</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Publish whole class dialog */}
+      <Dialog open={publishDialogOpen} onOpenChange={setPublishDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Publish whole class</DialogTitle>
+            <DialogDescription>
+              Publish or unpublish saved report cards for every student in a section.
+              Only cards that have already been saved will be affected.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <div>
+              <Label>Section</Label>
+              <Select value={publishSectionId} onValueChange={setPublishSectionId}>
+                <SelectTrigger><SelectValue placeholder="Select a section" /></SelectTrigger>
+                <SelectContent>
+                  {sections.map((s) => {
+                    const cls = classes.find((c) => c.id === s.class_id);
+                    return <SelectItem key={s.id} value={s.id}>{cls?.name ? `${cls.name} • ` : ""}{s.name}</SelectItem>;
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Scope: <strong>{periodType === "exam" ? (exams.find((e) => e.id === examId)?.name || "Exam") : currentPeriodLabel}</strong>
+            </p>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" disabled={publishBusy} onClick={() => publishWholeClass(false)}>Unpublish all</Button>
+            <Button disabled={publishBusy} onClick={() => publishWholeClass(true)}>
+              <Send className="mr-1.5 h-4 w-4" /> Publish all
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
