@@ -193,7 +193,7 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
       const students = (enrolls || []) as any[];
       if (students.length === 0) { toast.error("No enrolled students found"); return; }
 
-      let success = 0; let failed = 0;
+      let success = 0; let failed = 0; let firstErr = "";
       for (const en of students) {
         const studentRows = rows.filter((r) => r.class_section_id === en.class_section_id);
         if (studentRows.length === 0) continue;
@@ -212,11 +212,12 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
             upsert: true, contentType: "application/pdf",
           });
           if (upErr) throw upErr;
-          await (supabase as any).from("exam_datesheet_distributions").upsert({
+          const { error: distErr } = await (supabase as any).from("exam_datesheet_distributions").upsert({
             school_id: schoolId, exam_id: examId, student_id: en.student_id,
             class_section_id: en.class_section_id, file_path: path, generated_by: user?.id ?? null,
             generated_at: new Date().toISOString(),
           }, { onConflict: "exam_id,student_id" } as any);
+          if (distErr) throw distErr;
 
           const { data: guards } = await (supabase as any)
             .from("student_guardians").select("user_id").eq("student_id", en.student_id).not("user_id", "is", null);
@@ -231,10 +232,12 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
           success++;
         } catch (err: any) {
           console.error("send fail", en.student_id, err);
+          if (!firstErr) firstErr = err?.message || String(err);
           failed++;
         }
       }
-      toast.success(`Sent to ${success} student${success !== 1 ? "s" : ""}${failed ? ` (${failed} failed)` : ""}`);
+      if (success > 0) toast.success(`Sent to ${success} student${success !== 1 ? "s" : ""}${failed ? ` (${failed} failed)` : ""}`);
+      if (success === 0 && failed > 0) toast.error(`All ${failed} failed${firstErr ? `: ${firstErr}` : ""}`);
     } catch (e: any) {
       toast.error(e.message || "Send failed");
     } finally { setSending(false); }
