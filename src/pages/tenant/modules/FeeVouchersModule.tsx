@@ -539,6 +539,8 @@ function GenerateVoucherDialog({
       currency: plan?.currency || "PKR",
       accentHsl: meta.branding,
       notes: notes || null,
+      bank: meta.bank,
+      footerNote: meta.footerNote,
     };
   }
 
