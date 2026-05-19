@@ -2527,6 +2527,80 @@ export type Database = {
           },
         ]
       }
+      fee_payment_proofs: {
+        Row: {
+          amount: number
+          created_at: string
+          file_name: string | null
+          file_path: string
+          id: string
+          invoice_id: string
+          method: string | null
+          mime_type: string | null
+          note: string | null
+          paid_at: string | null
+          payment_id: string | null
+          rejection_reason: string | null
+          school_id: string
+          status: string
+          student_id: string
+          updated_at: string
+          uploaded_by: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          file_name?: string | null
+          file_path: string
+          id?: string
+          invoice_id: string
+          method?: string | null
+          mime_type?: string | null
+          note?: string | null
+          paid_at?: string | null
+          payment_id?: string | null
+          rejection_reason?: string | null
+          school_id: string
+          status?: string
+          student_id: string
+          updated_at?: string
+          uploaded_by: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          file_name?: string | null
+          file_path?: string
+          id?: string
+          invoice_id?: string
+          method?: string | null
+          mime_type?: string | null
+          note?: string | null
+          paid_at?: string | null
+          payment_id?: string | null
+          rejection_reason?: string | null
+          school_id?: string
+          status?: string
+          student_id?: string
+          updated_at?: string
+          uploaded_by?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fee_payment_proofs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "fee_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fee_payments: {
         Row: {
           amount: number
@@ -6017,6 +6091,15 @@ export type Database = {
       student_sibling_rank: {
         Args: { _school_id: string; _student_id: string }
         Returns: number
+      }
+      verify_fee_payment_proof: {
+        Args: {
+          _amount?: number
+          _approve: boolean
+          _proof_id: string
+          _reason?: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
