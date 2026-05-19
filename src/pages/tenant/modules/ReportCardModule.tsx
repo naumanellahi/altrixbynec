@@ -901,7 +901,21 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
                 const pct = obtained != null && max > 0 ? Math.round((Number(obtained) / Number(max)) * 100) : null;
                 return (
                   <tr key={s.id}>
-                    <td className="border border-gray-300 p-2">{s.name}</td>
+                    <td className="border border-gray-300 p-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span>{s.name}</span>
+                        {canManage && (
+                          <button
+                            type="button"
+                            onClick={() => openAddFor(s.id)}
+                            className="grid h-6 w-6 place-items-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 print:hidden"
+                            title="Add quiz / test / assignment"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
                     <td className="border border-gray-300 p-2 text-center">
                       {canManage ? (
                         <Input type="number" className="h-8 w-20 text-black" value={r?.marks_obtained ?? ""} onChange={(e) => updateMark(s.id, Number(e.target.value), max)} />
