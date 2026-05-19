@@ -452,7 +452,11 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
                 {filteredInvoices.map(inv => {
                   const due = Math.max(Number(inv.total_amount) - Number(inv.paid_amount), 0);
                   return (
-                    <TableRow key={inv.id}>
+                    <TableRow
+                      key={inv.id}
+                      ref={highlightInvoice === inv.id ? highlightRef : undefined}
+                      className={highlightInvoice === inv.id ? "bg-primary/10 transition-colors" : ""}
+                    >
                       <TableCell className="font-medium">{inv.invoice_number}</TableCell>
                       <TableCell>{inv.period_label || "—"}</TableCell>
                       <TableCell>{format(new Date(inv.due_date), "MMM d, yyyy")}</TableCell>
@@ -461,6 +465,10 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
                       <TableCell><Badge variant={statusVariant(inv.status)}>{inv.status}</Badge></TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-1 flex-wrap">
+                          <Button size="sm" variant="outline" onClick={() => downloadVoucher(inv)} disabled={downloadingVoucher === inv.id}>
+                            {downloadingVoucher === inv.id ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <FileText className="h-3 w-3 mr-1" />}
+                            Voucher
+                          </Button>
                           {due > 0 && jcEnabled && (
                             <Button size="sm" onClick={() => payNow(inv.id, "jazzcash")} disabled={paying === `jazzcash:${inv.id}`}>
                               {paying === `jazzcash:${inv.id}` ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <CreditCard className="h-3 w-3 mr-1" />}
