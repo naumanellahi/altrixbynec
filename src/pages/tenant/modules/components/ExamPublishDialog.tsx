@@ -95,7 +95,18 @@ export default function ExamPublishDialog({
       { onConflict: "exam_id", ignoreDuplicates: false } as any
     );
 
-    toast.success(publish ? "Results published" : "Results unpublished");
+    const { data: notified } = await (supabase as any).rpc("notify_exam_result_publish", {
+      _exam_id: examId,
+      _scope: "exam",
+      _is_published: publish,
+      _section_id: null,
+      _student_id: null,
+      _message: examNotes || null,
+    });
+
+    toast.success(
+      `${publish ? "Results published" : "Results unpublished"} — ${notified ?? 0} recipients notified`
+    );
     setExamNotes("");
     onUpdated();
     load();
@@ -115,7 +126,11 @@ export default function ExamPublishDialog({
       { onConflict: "exam_id,class_section_id" } as any
     );
     if (error) return toast.error(error.message);
-    toast.success("Section publish rule saved");
+    const { data: notified } = await (supabase as any).rpc("notify_exam_result_publish", {
+      _exam_id: examId, _scope: "section", _is_published: secPublished,
+      _section_id: secId, _student_id: null, _message: secNotes || null,
+    });
+    toast.success(`Section rule saved — ${notified ?? 0} notified`);
     setSecId(""); setSecAt(""); setSecNotes(""); setSecPublished(true);
     load();
   };
@@ -134,10 +149,15 @@ export default function ExamPublishDialog({
       { onConflict: "exam_id,student_id" } as any
     );
     if (error) return toast.error(error.message);
-    toast.success("Student publish rule saved");
+    const { data: notified } = await (supabase as any).rpc("notify_exam_result_publish", {
+      _exam_id: examId, _scope: "student", _is_published: studPublished,
+      _section_id: null, _student_id: studId, _message: studNotes || null,
+    });
+    toast.success(`Student rule saved — ${notified ?? 0} notified`);
     setStudId(""); setStudAt(""); setStudNotes(""); setStudPublished(true);
     load();
   };
+
 
   const removePub = async (id: string) => {
     const { error } = await (supabase as any).from("exam_result_publications").delete().eq("id", id);
