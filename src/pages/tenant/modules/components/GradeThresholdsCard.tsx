@@ -158,7 +158,7 @@ export function GradeThresholdsCard({ schoolId }: { schoolId: string }) {
                 <TableHead>Grade</TableHead>
                 <TableHead>Min %</TableHead>
                 <TableHead>Max %</TableHead>
-                <TableHead>GPA Points</TableHead>
+                
                 <TableHead>Order</TableHead>
                 <TableHead></TableHead>
               </TableRow>
