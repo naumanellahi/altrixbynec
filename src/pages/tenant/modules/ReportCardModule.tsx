@@ -1213,11 +1213,11 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
           <div className="relative mt-4 text-sm">
             <p>
               <strong>Attendance:</strong>{" "}
-              {canManage ? (
-                <Input type="number" className="inline-block h-8 w-24 text-black" value={card.attendance_percentage ?? ""} onChange={(e) => setCard({ ...card, attendance_percentage: Number(e.target.value) })} />
-              ) : (card.attendance_percentage ?? "—")}%
+              <span>{card.attendance_percentage != null ? `${card.attendance_percentage}%` : "—"}</span>
+              <span className="ml-2 text-xs text-gray-500 print:hidden">(auto from attendance records)</span>
             </p>
           </div>
+
 
           <div className="relative mt-12 grid grid-cols-3 gap-4 text-center text-xs text-gray-600">
             <div><div className="border-t border-gray-500 px-4 pt-1">Class Teacher</div></div>
