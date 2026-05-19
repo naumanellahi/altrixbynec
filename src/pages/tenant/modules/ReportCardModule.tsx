@@ -312,8 +312,8 @@ export default function ReportCardModule({ schoolId, canManage: canManageProp = 
       });
 
       setResults(map);
-      if (loadedCard) setCard(loadedCard);
-      else setCard({ total_marks: 0, max_total: 0, percentage: 0, gpa: 0, overall_grade: "", teacher_remarks: "", principal_remarks: "", attendance_percentage: null, is_published: false });
+      if (loadedCard) setCard((prev) => ({ ...loadedCard, attendance_percentage: prev.attendance_percentage ?? loadedCard.attendance_percentage }));
+      else setCard((prev) => ({ total_marks: 0, max_total: 0, percentage: 0, gpa: 0, overall_grade: "", teacher_remarks: "", principal_remarks: "", attendance_percentage: prev.attendance_percentage ?? null, is_published: false }));
       setStudentInfo(info.data);
 
       // If we opened a saved card, sync the period selector for display
