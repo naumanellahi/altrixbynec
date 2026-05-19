@@ -65,6 +65,7 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
   const [reasonDialog, setReasonDialog] = useState<{
     entryId: string;
     label: string;
+    reasonType: "late" | "left";
     onSubmit: (reason: string | null) => Promise<void> | void;
   } | null>(null);
   const [reasonText, setReasonText] = useState("");
@@ -293,6 +294,7 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
                           setReasonDialog({
                             entryId: entry.id,
                             label: `${entry.subjectName} • ${entry.periodLabel}`,
+                            reasonType: status === "in_class" ? "late" : "left",
                             onSubmit: (reason) => handleSet(status, reason),
                           });
                         };
@@ -400,7 +402,9 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
       >
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Reason (optional)</DialogTitle>
+            <DialogTitle>
+              {reasonDialog?.reasonType === "late" ? "Late-Reason" : "Left-Reason"} (optional)
+            </DialogTitle>
             <DialogDescription>
               {reasonDialog?.label}
             </DialogDescription>
