@@ -57,12 +57,12 @@ type PeriodType = "exam" | "monthly" | "annual";
 interface Props { schoolId: string | null; canManage?: boolean; studentIdLocked?: string | null; }
 
 const calcGrade = (pct: number) => {
-  if (pct >= 90) return { grade: "A+", gpa: 4.0 };
-  if (pct >= 80) return { grade: "A", gpa: 3.7 };
-  if (pct >= 70) return { grade: "B", gpa: 3.0 };
-  if (pct >= 60) return { grade: "C", gpa: 2.5 };
-  if (pct >= 50) return { grade: "D", gpa: 2.0 };
-  return { grade: "F", gpa: 0 };
+  if (pct >= 90) return { grade: "A+" };
+  if (pct >= 80) return { grade: "A" };
+  if (pct >= 70) return { grade: "B" };
+  if (pct >= 60) return { grade: "C" };
+  if (pct >= 50) return { grade: "D" };
+  return { grade: "F" };
 };
 
 const MONTHS = [
@@ -284,7 +284,7 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
     Object.values(results).forEach((r) => { if (r.marks_obtained != null) { total += Number(r.marks_obtained); max += Number(r.max_marks || 100); } });
     const pct = max > 0 ? (total / max) * 100 : 0;
     const g = calcGrade(pct);
-    return { total, max, pct: Math.round(pct * 100) / 100, grade: g.grade, gpa: g.gpa };
+    return { total, max, pct: Math.round(pct * 100) / 100, grade: g.grade };
   }, [results]);
 
   // Per-assessment appendix for the loaded card
@@ -416,7 +416,7 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
     const basePayload: any = {
       school_id: schoolId, student_id: studentId,
       total_marks: totals.total, max_total: totals.max, percentage: totals.pct,
-      gpa: totals.gpa, overall_grade: totals.grade,
+      gpa: null, overall_grade: totals.grade,
       teacher_remarks: card.teacher_remarks, principal_remarks: card.principal_remarks,
       attendance_percentage: card.attendance_percentage,
       is_published: card.is_published, // preserve current state, do NOT auto-publish on save
@@ -954,8 +954,8 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
               <p className="font-display text-3xl font-bold text-primary">{totals.pct}%</p>
             </div>
             <div className="rounded-2xl bg-gradient-to-br from-amber-100 to-amber-50 p-4 ring-1 ring-amber-200">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">GPA</p>
-              <p className="font-display text-3xl font-bold text-amber-700">{totals.gpa}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Marks</p>
+              <p className="font-display text-3xl font-bold text-amber-700">{totals.total}<span className="text-base font-medium text-gray-500"> / {totals.max}</span></p>
             </div>
             <div className="rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-50 p-4 ring-1 ring-emerald-200">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Overall Grade</p>
