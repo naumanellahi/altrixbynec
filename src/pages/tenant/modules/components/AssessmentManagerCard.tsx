@@ -153,7 +153,7 @@ export function AssessmentManagerCard({
     try {
       let q = supabase
         .from("academic_assessments")
-        .select("id,title,assessment_date,max_marks,term_label,subject_id,class_section_id,is_published")
+        .select("id,title,assessment_date,max_marks,term_label,subject_id,class_section_id,is_published,assessment_type,weightage_percent,passing_marks")
         .eq("school_id", schoolId)
         .order("assessment_date", { ascending: false })
         .limit(200);
@@ -163,6 +163,7 @@ export function AssessmentManagerCard({
       if (filterTerm.trim()) q = q.eq("term_label", filterTerm.trim());
       if (filterFrom) q = q.gte("assessment_date", filterFrom);
       if (filterTo) q = q.lte("assessment_date", filterTo);
+      if (filterType) q = q.eq("assessment_type", filterType);
 
       const { data, error } = await q;
       if (error) return toast.error(error.message);
