@@ -318,6 +318,52 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
       .sort((x, y) => (x.date || "").localeCompare(y.date || ""));
   }, [allAssessments, allMarks, subjects, card, periodType, examId, monthIdx, monthYear, currentPeriodRange.start, currentPeriodRange.end]);
 
+  // ───── Per-subject × per-category breakdown (quiz/test/assignment/project/exam/etc.)
+  const CATEGORY_ORDER: { key: string; label: string }[] = [
+    { key: "quiz", label: "Quizzes" },
+    { key: "test", label: "Tests" },
+    { key: "assignment", label: "Assignments" },
+    { key: "project", label: "Projects" },
+    { key: "classwork", label: "Classwork" },
+    { key: "homework", label: "Homework" },
+    { key: "practical", label: "Practical" },
+    { key: "oral", label: "Oral" },
+    { key: "presentation", label: "Presentation" },
+    { key: "lab", label: "Lab" },
+    { key: "midterm", label: "Mid-term" },
+    { key: "exam", label: "Exam" },
+    { key: "final", label: "Final" },
+  ];
+
+  const categoryBreakdown = useMemo(() => {
+    // Filter assessments by current period scope
+    const inScope = appendix.map((a) => a.id);
+    const inScopeSet = new Set(inScope);
+    const markByA = new Map(allMarks.map((m) => [m.assessment_id, m]));
+
+    // matrix: subjectId -> categoryKey -> { obtained, max }
+    const matrix: Record<string, Record<string, { obtained: number; max: number }>> = {};
+    const usedCategories = new Set<string>();
+
+    allAssessments.forEach((a) => {
+      if (!inScopeSet.has(a.id)) return;
+      if (!a.subject_id) return;
+      const cat = (a.assessment_type || "test").toLowerCase();
+      const m = markByA.get(a.id);
+      if (m?.marks == null) return;
+      usedCategories.add(cat);
+      const max = Number(a.max_marks || 100);
+      if (!matrix[a.subject_id]) matrix[a.subject_id] = {};
+      if (!matrix[a.subject_id][cat]) matrix[a.subject_id][cat] = { obtained: 0, max: 0 };
+      matrix[a.subject_id][cat].obtained += Number(m.marks);
+      matrix[a.subject_id][cat].max += max;
+    });
+
+    const visibleCategories = CATEGORY_ORDER.filter((c) => usedCategories.has(c.key));
+    return { matrix, visibleCategories };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allAssessments, allMarks, appendix]);
+
   const enriched = useMemo(() => {
     return students.map((s) => {
       const enr = enrollments.find((e) => e.student_id === s.id);
