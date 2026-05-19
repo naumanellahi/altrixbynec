@@ -1,5 +1,14 @@
 import jsPDF from "jspdf";
 
+export type VoucherBankDetails = {
+  bankName?: string | null;
+  accountTitle?: string | null;
+  accountNumber?: string | null;
+  iban?: string | null;
+  branch?: string | null;
+  swift?: string | null;
+};
+
 export type VoucherCopyData = {
   invoiceNumber: string;
   issueDate: string;
@@ -33,6 +42,8 @@ export type VoucherCopyData = {
   currency: string;
   accentHsl?: { h: number; s: number; l: number } | null;
   notes?: string | null;
+  bank?: VoucherBankDetails | null;
+  footerNote?: string | null;
 };
 
 function fmt(n: number) {
@@ -48,6 +59,10 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
   return [Math.round(f(0) * 255), Math.round(f(8) * 255), Math.round(f(4) * 255)];
 }
 
+function mix(a: [number, number, number], b: [number, number, number], t: number): [number, number, number] {
+  return [Math.round(a[0] + (b[0] - a[0]) * t), Math.round(a[1] + (b[1] - a[1]) * t), Math.round(a[2] + (b[2] - a[2]) * t)];
+}
+
 function drawCopy(
   doc: jsPDF,
   data: VoucherCopyData,
@@ -56,130 +71,235 @@ function drawCopy(
   copyWidth: number,
   accent: [number, number, number],
 ) {
-  const margin = 8;
-  let y = 12;
+  const accentDark = mix(accent, [0, 0, 0], 0.35);
+  const accentSoft = mix(accent, [255, 255, 255], 0.88);
+  const ink: [number, number, number] = [22, 22, 28];
+  const muted: [number, number, number] = [110, 110, 120];
+  const hairline: [number, number, number] = [220, 220, 228];
+
+  const margin = 7;
   const left = xOffset + margin;
   const right = xOffset + copyWidth - margin;
   const innerW = copyWidth - margin * 2;
 
-  // Header band
-  doc.setFillColor(accent[0], accent[1], accent[2]);
-  doc.rect(xOffset, 0, copyWidth, 22, "F");
+  // Outer card border
+  doc.setDrawColor(hairline[0], hairline[1], hairline[2]);
+  doc.setLineWidth(0.2);
+  doc.roundedRect(xOffset + 2, 3, copyWidth - 4, 204, 2, 2, "S");
+
+  // Gradient header (simulated with 14 horizontal slices)
+  const headerH = 26;
+  const slices = 18;
+  for (let i = 0; i < slices; i++) {
+    const t = i / (slices - 1);
+    const c = mix(accentDark, accent, t);
+    doc.setFillColor(c[0], c[1], c[2]);
+    doc.rect(xOffset + 2, 3 + (headerH * i) / slices, copyWidth - 4, headerH / slices + 0.2, "F");
+  }
+
+  // Copy label pill (top right)
+  doc.setFillColor(255, 255, 255);
+  doc.roundedRect(right - 34, 6, 32, 5.5, 1.5, 1.5, "F");
+  doc.setTextColor(accentDark[0], accentDark[1], accentDark[2]);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7);
+  doc.text(copyLabel.toUpperCase(), right - 18, 9.8, { align: "center" });
+
+  // School identity
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.text(data.school.name, left, 10, { maxWidth: innerW });
+  doc.setFontSize(12);
+  doc.text(data.school.name, left, 12, { maxWidth: innerW - 38 });
+  if (data.school.motto) {
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(6.5);
+    doc.text(data.school.motto, left, 16, { maxWidth: innerW - 38 });
+  }
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
-  const meta = [data.school.address, data.school.phone, data.school.email].filter(Boolean).join(" • ");
-  if (meta) doc.text(meta, left, 15, { maxWidth: innerW });
-  doc.setFontSize(8);
+  doc.setFontSize(6.5);
+  const contact = [data.school.address, data.school.phone, data.school.email, data.school.website]
+    .filter(Boolean)
+    .join("  •  ");
+  if (contact) doc.text(contact, left, 21, { maxWidth: innerW });
   doc.setFont("helvetica", "bold");
-  doc.text(copyLabel.toUpperCase(), right, 19, { align: "right" });
+  doc.setFontSize(7.5);
+  doc.text("OFFICIAL FEE VOUCHER", left, 26);
 
-  // Voucher number / dates
-  y = 28;
-  doc.setTextColor(20, 20, 20);
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "bold");
-  doc.text("FEE VOUCHER", left, y);
+  // Voucher meta strip
+  let y = 32;
+  doc.setFillColor(accentSoft[0], accentSoft[1], accentSoft[2]);
+  doc.roundedRect(left, y, innerW, 11, 1.2, 1.2, "F");
+  doc.setTextColor(muted[0], muted[1], muted[2]);
+  doc.setFontSize(6);
   doc.setFont("helvetica", "normal");
-  doc.text(`# ${data.invoiceNumber}`, right, y, { align: "right" });
-
-  y += 4;
-  doc.setDrawColor(accent[0], accent[1], accent[2]);
-  doc.setLineWidth(0.4);
-  doc.line(left, y, right, y);
+  const colW = innerW / 3;
+  const metaCol = (idx: number, label: string, val: string) => {
+    const cx = left + colW * idx + 2;
+    doc.setTextColor(muted[0], muted[1], muted[2]);
+    doc.setFontSize(5.8);
+    doc.setFont("helvetica", "bold");
+    doc.text(label.toUpperCase(), cx, y + 3.6);
+    doc.setTextColor(ink[0], ink[1], ink[2]);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.text(val, cx, y + 8.4, { maxWidth: colW - 4 });
+  };
+  metaCol(0, "Voucher #", data.invoiceNumber);
+  metaCol(1, "Issue Date", data.issueDate);
+  metaCol(2, "Due Date", data.dueDate);
+  y += 13;
 
   // Student block
-  y += 5;
-  doc.setFontSize(7);
-  const rows: [string, string][] = [
-    ["Student", data.student.name],
-    ["Roll / ID", `${data.student.rollNumber ?? "-"} / ${data.student.studentCode ?? "-"}`],
-    ["Class", `${data.student.className ?? "-"} ${data.student.sectionName ?? ""}`.trim()],
-    ["Parent", `${data.student.parentName ?? "-"}${data.student.parentPhone ? " (" + data.student.parentPhone + ")" : ""}`],
-    ["Period", data.periodLabel ?? "-"],
-    ["Issue Date", data.issueDate],
-    ["Due Date", data.dueDate],
-  ];
-  rows.forEach(([k, v]) => {
-    doc.setFont("helvetica", "bold");
-    doc.text(`${k}:`, left, y);
-    doc.setFont("helvetica", "normal");
-    doc.text(String(v), left + 20, y, { maxWidth: innerW - 22 });
-    y += 4;
-  });
-
-  // Items table
-  y += 2;
+  doc.setDrawColor(hairline[0], hairline[1], hairline[2]);
+  doc.setLineWidth(0.2);
+  doc.roundedRect(left, y, innerW, 22, 1.2, 1.2, "S");
   doc.setFillColor(accent[0], accent[1], accent[2]);
-  doc.rect(left, y, innerW, 5, "F");
+  doc.rect(left, y, 1.2, 22, "F");
+  doc.setTextColor(muted[0], muted[1], muted[2]);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(5.8);
+  doc.text("STUDENT", left + 3, y + 3.5);
+  doc.setTextColor(ink[0], ink[1], ink[2]);
+  doc.setFontSize(9);
+  doc.text(data.student.name, left + 3, y + 7.5, { maxWidth: innerW - 6 });
+
+  const sRows: [string, string][] = [
+    ["Class", `${data.student.className ?? "-"} ${data.student.sectionName ?? ""}`.trim()],
+    ["Roll / ID", `${data.student.rollNumber ?? "-"} / ${data.student.studentCode ?? "-"}`],
+    ["Parent", `${data.student.parentName ?? "-"}${data.student.parentPhone ? " · " + data.student.parentPhone : ""}`],
+    ["Period", data.periodLabel ?? "-"],
+  ];
+  doc.setFontSize(6.5);
+  let ry = y + 11;
+  sRows.forEach(([k, v]) => {
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(muted[0], muted[1], muted[2]);
+    doc.text(k, left + 3, ry);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(ink[0], ink[1], ink[2]);
+    doc.text(String(v), left + 18, ry, { maxWidth: innerW - 21 });
+    ry += 2.7;
+  });
+  y += 24;
+
+  // Items table header
+  doc.setFillColor(accent[0], accent[1], accent[2]);
+  doc.rect(left, y, innerW, 5.4, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(7);
-  doc.text("Description", left + 2, y + 3.5);
-  doc.text(`Amount (${data.currency})`, right - 2, y + 3.5, { align: "right" });
-  y += 5;
+  doc.setFontSize(6.5);
+  doc.text("DESCRIPTION", left + 2, y + 3.8);
+  doc.text(`AMOUNT (${data.currency})`, right - 2, y + 3.8, { align: "right" });
+  y += 5.4;
 
-  doc.setTextColor(20, 20, 20);
+  // Items rows
+  doc.setTextColor(ink[0], ink[1], ink[2]);
   doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.8);
   data.items.forEach((it, i) => {
     if (i % 2 === 1) {
-      doc.setFillColor(245, 245, 250);
-      doc.rect(left, y, innerW, 4.5, "F");
+      doc.setFillColor(248, 248, 252);
+      doc.rect(left, y, innerW, 4.6, "F");
     }
-    doc.text(it.label, left + 2, y + 3.2, { maxWidth: innerW - 30 });
+    doc.text(it.label, left + 2, y + 3.2, { maxWidth: innerW - 32 });
     doc.text(fmt(it.amount), right - 2, y + 3.2, { align: "right" });
-    y += 4.5;
+    y += 4.6;
   });
 
-  // Totals
+  // Subtotal/discount lines
   y += 1;
-  doc.setDrawColor(200, 200, 210);
+  doc.setDrawColor(hairline[0], hairline[1], hairline[2]);
   doc.line(left, y, right, y);
-  y += 4;
-  const totalRow = (label: string, val: number, bold = false) => {
-    doc.setFont("helvetica", bold ? "bold" : "normal");
+  y += 3.4;
+  const sumRow = (label: string, val: number) => {
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(muted[0], muted[1], muted[2]);
+    doc.setFontSize(6.5);
     doc.text(label, left + 2, y);
+    doc.setTextColor(ink[0], ink[1], ink[2]);
     doc.text(fmt(val), right - 2, y, { align: "right" });
-    y += 4;
+    y += 3.4;
   };
-  totalRow("Subtotal", data.subtotal);
-  if (data.baseDiscount > 0) totalRow("Base Discount", -data.baseDiscount);
+  sumRow("Subtotal", data.subtotal);
+  if (data.baseDiscount > 0) sumRow("Base Discount", -data.baseDiscount);
   if (data.meritDiscount > 0)
-    totalRow(`Merit Discount${data.meritReason ? " (" + data.meritReason + ")" : ""}`, -data.meritDiscount);
-  if (data.siblingDiscount > 0) totalRow("Sibling Discount", -data.siblingDiscount);
+    sumRow(`Merit Discount${data.meritReason ? " (" + data.meritReason + ")" : ""}`, -data.meritDiscount);
+  if (data.siblingDiscount > 0) sumRow("Sibling Discount", -data.siblingDiscount);
 
   // Total band
   y += 1;
-  doc.setFillColor(accent[0], accent[1], accent[2]);
-  doc.rect(left, y, innerW, 6, "F");
+  for (let i = 0; i < 10; i++) {
+    const t = i / 9;
+    const c = mix(accent, accentDark, t);
+    doc.setFillColor(c[0], c[1], c[2]);
+    doc.rect(left, y + (8 * i) / 10, innerW, 0.95, "F");
+  }
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.text("TOTAL PAYABLE", left + 2, y + 4.2);
-  doc.text(`${data.currency} ${fmt(data.total)}`, right - 2, y + 4.2, { align: "right" });
-  y += 8;
+  doc.setFontSize(8.5);
+  doc.text("TOTAL PAYABLE", left + 2, y + 5.4);
+  doc.text(`${data.currency}  ${fmt(data.total)}`, right - 2, y + 5.4, { align: "right" });
+  y += 10;
+
+  // Bank details (if any)
+  const bk = data.bank;
+  if (bk && (bk.bankName || bk.accountNumber || bk.iban)) {
+    doc.setFillColor(accentSoft[0], accentSoft[1], accentSoft[2]);
+    doc.roundedRect(left, y, innerW, 16, 1, 1, "F");
+    doc.setTextColor(accentDark[0], accentDark[1], accentDark[2]);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(6);
+    doc.text("PAY AT BANK", left + 2, y + 3);
+    const bankLines: [string, string][] = [];
+    if (bk.bankName) bankLines.push(["Bank", bk.bankName + (bk.branch ? " — " + bk.branch : "")]);
+    if (bk.accountTitle) bankLines.push(["Title", bk.accountTitle]);
+    if (bk.accountNumber) bankLines.push(["A/C #", bk.accountNumber]);
+    if (bk.iban) bankLines.push(["IBAN", bk.iban]);
+    if (bk.swift) bankLines.push(["SWIFT", bk.swift]);
+    doc.setFontSize(6.2);
+    let by = y + 6;
+    bankLines.slice(0, 4).forEach(([k, v]) => {
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(muted[0], muted[1], muted[2]);
+      doc.text(k, left + 2, by);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(ink[0], ink[1], ink[2]);
+      doc.text(v, left + 14, by, { maxWidth: innerW - 16 });
+      by += 2.5;
+    });
+    y += 17;
+  }
+
+  // Notes
+  if (data.notes) {
+    doc.setTextColor(muted[0], muted[1], muted[2]);
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(5.8);
+    doc.text(`Note: ${data.notes}`, left, y, { maxWidth: innerW });
+    y += 4;
+  }
+
+  // Signature lines near bottom
+  const sigY = 192;
+  doc.setDrawColor(180, 180, 188);
+  doc.setLineWidth(0.2);
+  doc.line(left, sigY, left + innerW / 2 - 4, sigY);
+  doc.line(left + innerW / 2 + 4, sigY, right, sigY);
+  doc.setTextColor(muted[0], muted[1], muted[2]);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(5.8);
+  doc.text("Authorised Signature", left, sigY + 3);
+  doc.text("Received By (Cashier / Bank Stamp)", left + innerW / 2 + 4, sigY + 3);
 
   // Footer
-  doc.setTextColor(80, 80, 80);
+  doc.setTextColor(muted[0], muted[1], muted[2]);
+  doc.setFontSize(5.5);
   doc.setFont("helvetica", "italic");
-  doc.setFontSize(6);
-  doc.text(
-    "Pay before due date. A late fee may apply for overdue payments.",
-    left,
-    y,
-    { maxWidth: innerW },
-  );
-  y += 3;
-  if (data.notes) {
-    doc.text(`Note: ${data.notes}`, left, y, { maxWidth: innerW });
-    y += 3;
-  }
+  const foot = data.footerNote || "Please pay before due date. A late fee may apply for overdue payments.";
+  doc.text(foot, left, 200, { maxWidth: innerW });
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(6);
-  doc.text("Powered by Altrix", left, 205, { maxWidth: innerW });
+  doc.setFontSize(5);
+  doc.text("Powered by Altrix", right, 204, { align: "right" });
 }
 
 function drawVoucherOnDoc(doc: jsPDF, data: VoucherCopyData) {
@@ -190,9 +310,9 @@ function drawVoucherOnDoc(doc: jsPDF, data: VoucherCopyData) {
   ["Student Copy", "Bank Copy", "Office Copy"].forEach((label, i) => {
     drawCopy(doc, data, label, copyW * i, copyW, accent);
     if (i < 2) {
-      doc.setDrawColor(150, 150, 160);
-      doc.setLineDashPattern([1, 1], 0);
-      doc.line(copyW * (i + 1), 0, copyW * (i + 1), 210);
+      doc.setDrawColor(170, 170, 180);
+      doc.setLineDashPattern([1.2, 1.2], 0);
+      doc.line(copyW * (i + 1), 4, copyW * (i + 1), 206);
       doc.setLineDashPattern([], 0);
     }
   });
