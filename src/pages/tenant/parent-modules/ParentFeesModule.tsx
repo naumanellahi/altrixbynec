@@ -464,6 +464,8 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
               <TableBody>
                 {filteredInvoices.map(inv => {
                   const due = Math.max(Number(inv.total_amount) - Number(inv.paid_amount), 0);
+                  const myProofs = proofs.filter(p => p.invoice_id === inv.id);
+                  const pendingProof = myProofs.find(p => p.status === "pending");
                   return (
                     <TableRow
                       key={inv.id}
@@ -475,7 +477,13 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
                       <TableCell>{format(new Date(inv.due_date), "MMM d, yyyy")}</TableCell>
                       <TableCell className="text-right">PKR {Number(inv.total_amount).toLocaleString()}</TableCell>
                       <TableCell className="text-right">PKR {due.toLocaleString()}</TableCell>
-                      <TableCell><Badge variant={statusVariant(inv.status)}>{inv.status}</Badge></TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1 items-start">
+                          <Badge variant={statusVariant(inv.status)}>{inv.status}</Badge>
+                          {pendingProof && <Badge variant="secondary" className="text-[10px]">Proof pending</Badge>}
+                          {myProofs.some(p => p.status === "rejected") && <Badge variant="destructive" className="text-[10px]">Proof rejected</Badge>}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-1 flex-wrap">
                           <Button size="sm" variant="outline" onClick={() => downloadVoucher(inv)} disabled={downloadingVoucher === inv.id}>
@@ -494,8 +502,20 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
                               Easypaisa
                             </Button>
                           )}
-                          {due > 0 && !jcEnabled && !epEnabled && (
-                            <span className="text-xs text-muted-foreground">Online payment unavailable</span>
+                          {due > 0 && (
+                            <Button size="sm" variant="outline" onClick={() => setUploadFor(inv)} disabled={!!pendingProof}>
+                              <Upload className="h-3 w-3 mr-1" /> {pendingProof ? "Awaiting verify" : "Upload proof"}
+                            </Button>
+                          )}
+                          {myProofs.length > 0 && (
+                            <Button size="sm" variant="ghost" onClick={async () => {
+                              const p = myProofs[0];
+                              const { data, error } = await supabase.storage.from("fee-payment-proofs").createSignedUrl(p.file_path, 300);
+                              if (error || !data) { toast.error("Could not open file"); return; }
+                              setViewProof({ url: data.signedUrl, name: p.file_name || "proof" });
+                            }}>
+                              <Eye className="h-3 w-3 mr-1" /> View proof
+                            </Button>
                           )}
                           {due > 0 && (
                             <Button size="sm" variant="outline" onClick={() => printChallan(inv)}>
