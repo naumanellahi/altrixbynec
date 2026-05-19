@@ -1118,6 +1118,7 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
                     <th className="border border-gray-300 p-1.5">Date</th>
                     <th className="border border-gray-300 p-1.5 text-center">Marks</th>
                     <th className="border border-gray-300 p-1.5 text-center">Grade</th>
+                    {canManage && <th className="border border-gray-300 p-1.5 text-center print:hidden">Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -1128,6 +1129,18 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
                       <td className="border border-gray-300 p-1.5">{a.date ? format(new Date(a.date), "MMM d, yyyy") : "—"}</td>
                       <td className="border border-gray-300 p-1.5 text-center">{a.marks != null ? `${a.marks} / ${a.max}` : "—"}</td>
                       <td className="border border-gray-300 p-1.5 text-center">{a.grade ?? "—"}</td>
+                      {canManage && (
+                        <td className="border border-gray-300 p-1.5 text-center print:hidden">
+                          <div className="flex items-center justify-center gap-1">
+                            <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditAssessment(a.id)} title="Edit">
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => deleteAssessment(a.id)} title="Delete">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
