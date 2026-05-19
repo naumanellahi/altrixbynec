@@ -289,6 +289,13 @@ function GenerateVoucherDialog({
   const [tiers, setTiers] = useState<GradeTier[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [progress, setProgress] = useState<string>("");
+  const [doneCount, setDoneCount] = useState(0);
+  const [failCount, setFailCount] = useState(0);
+  const [results, setResults] = useState<Array<{ studentId: string; name: string; status: "success" | "error"; error?: string; invoiceId?: string }>>([]);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const previewSeqRef = useRef(0);
+
 
   // Data queries
   const { data: feePlans = [] } = useQuery({
