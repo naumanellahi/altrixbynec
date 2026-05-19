@@ -98,6 +98,49 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
     setRows((r) => [...r, data]);
   };
 
+  // Add-by-section dialog state
+  const [addOpen, setAddOpen] = useState(false);
+  const [addSection, setAddSection] = useState<string>("");
+  const [generating, setGenerating] = useState(false);
+
+  const generateForSection = async () => {
+    if (!addSection) return toast.error("Pick a class/section");
+    setGenerating(true);
+    try {
+      // Resolve subjects linked to this section (try section_subjects then class_section_subjects)
+      let subjIds: string[] = [];
+      const ss = await (supabase as any).from("section_subjects").select("subject_id").eq("class_section_id", addSection);
+      if (!ss.error && ss.data?.length) subjIds = ss.data.map((x: any) => x.subject_id);
+      if (subjIds.length === 0) {
+        const css = await (supabase as any).from("class_section_subjects").select("subject_id").eq("class_section_id", addSection);
+        if (!css.error && css.data?.length) subjIds = css.data.map((x: any) => x.subject_id);
+      }
+      if (subjIds.length === 0) {
+        toast.error("No subjects assigned to this section. Add subjects first or use 'Add blank paper'.");
+        return;
+      }
+      // Skip subjects already added for this section in this exam
+      const existing = new Set(
+        rows.filter((r) => r.class_section_id === addSection && r.subject_id).map((r) => r.subject_id as string)
+      );
+      const toInsert = subjIds
+        .filter((id) => !existing.has(id))
+        .map((subject_id) => ({
+          school_id: schoolId, exam_id: examId, class_section_id: addSection,
+          subject_id, max_marks: 100, passing_marks: 40, duration_minutes: 60,
+        }));
+      if (toInsert.length === 0) { toast.info("All subjects for this section are already on the datesheet."); setAddOpen(false); return; }
+      const { data, error } = await (supabase as any).from("exam_subjects").insert(toInsert).select();
+      if (error) throw error;
+      setRows((r) => [...r, ...(data || [])]);
+      toast.success(`Added ${data?.length || 0} paper${(data?.length || 0) !== 1 ? "s" : ""}`);
+      setAddOpen(false); setAddSection("");
+      loadConflicts();
+    } catch (e: any) {
+      toast.error(e.message || "Failed");
+    } finally { setGenerating(false); }
+  };
+
   const updateRow = async (id: string, patch: Partial<Row>) => {
     setRows((r) => r.map((x) => (x.id === id ? { ...x, ...patch } : x)));
     const { error } = await (supabase as any).from("exam_subjects").update(patch).eq("id", id);
