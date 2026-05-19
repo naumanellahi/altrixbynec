@@ -53,6 +53,7 @@ export function AccountantShell({ title, subtitle, schoolSlug, children }: Props
     { to: `${basePath}/messages`, icon: MessageSquare, label: "Messages", badge: unreadCount },
     { to: `${basePath}/timetable`, icon: CalendarDays, label: "Timetable Builder", badge: 0 },
     { to: `${basePath}/fees-pro`, icon: DollarSign, label: "Fees (Advanced)", badge: 0 },
+    { to: `${basePath}/fee-vouchers`, icon: FileText, label: "Fee Vouchers", badge: 0 },
     { to: `${basePath}/admissions`, icon: FileText, label: "Admissions", badge: 0 },
   ];
 
