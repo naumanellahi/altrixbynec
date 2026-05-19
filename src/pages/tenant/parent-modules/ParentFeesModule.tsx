@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { ChildInfo } from "@/hooks/useMyChildren";
 import { format } from "date-fns";
-import { CheckCircle2, CreditCard, Loader2, XCircle, Clock, RefreshCw, Download, Receipt, Printer, Wallet, AlertCircle, History, Search, X, FileText, Upload, Eye, Inbox } from "lucide-react";
+import { CheckCircle2, CreditCard, Loader2, XCircle, Clock, RefreshCw, Download, Receipt, Printer, Wallet, AlertCircle, History, Search, X, FileText, Upload, Eye, Inbox, Pencil, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -105,6 +105,9 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
   const [invFromDate, setInvFromDate] = useState("");
   const [invToDate, setInvToDate] = useState("");
   const [uploadFor, setUploadFor] = useState<InvoiceRecord | null>(null);
+  const [editProof, setEditProof] = useState<any | null>(null);
+  const [deleteProof, setDeleteProof] = useState<any | null>(null);
+  const [deletingProof, setDeletingProof] = useState(false);
   const [proofs, setProofs] = useState<any[]>([]);
   const [viewProof, setViewProof] = useState<{ url: string; name: string } | null>(null);
   const location = useLocation();
@@ -552,10 +555,23 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
                               Easypaisa
                             </Button>
                           )}
-                          {due > 0 && (
-                            <Button size="sm" variant="outline" onClick={() => setUploadFor(inv)} disabled={!!pendingProof}>
-                              <Upload className="h-3 w-3 mr-1" /> {pendingProof ? "Awaiting verify" : "Upload proof"}
+                          {due > 0 && !pendingProof && (
+                            <Button size="sm" variant="outline" onClick={() => setUploadFor(inv)}>
+                              <Upload className="h-3 w-3 mr-1" /> Upload proof
                             </Button>
+                          )}
+                          {pendingProof && (
+                            <>
+                              <Button size="sm" variant="outline" disabled>
+                                <Clock className="h-3 w-3 mr-1" /> Awaiting verify
+                              </Button>
+                              <Button size="sm" variant="ghost" title="Edit proof" onClick={() => setEditProof(pendingProof)}>
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              <Button size="sm" variant="ghost" title="Delete proof" onClick={() => setDeleteProof(pendingProof)} className="text-destructive hover:text-destructive">
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </>
                           )}
                           {myProofs.length > 0 && (
                             <Button size="sm" variant="ghost" onClick={async () => {
@@ -691,6 +707,58 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
           amountDue={Math.max(Number(uploadFor.total_amount) - Number(uploadFor.paid_amount), 0)}
         />
       )}
+
+      {editProof && schoolId && child && (() => {
+        const inv = invoices.find(i => i.id === editProof.invoice_id);
+        return (
+          <ManualProofUploadDialog
+            open={!!editProof}
+            onOpenChange={(v) => !v && setEditProof(null)}
+            schoolId={schoolId}
+            studentId={child.student_id}
+            invoiceId={editProof.invoice_id}
+            invoiceNumber={inv?.invoice_number || ""}
+            amountDue={inv ? Math.max(Number(inv.total_amount) - Number(inv.paid_amount), 0) : Number(editProof.amount)}
+            existingProof={editProof}
+          />
+        );
+      })()}
+
+      <Dialog open={!!deleteProof} onOpenChange={(o) => !o && !deletingProof && setDeleteProof(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete this proof?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This will remove your uploaded receipt. You can upload a new one afterwards. This action cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteProof(null)} disabled={deletingProof}>Cancel</Button>
+            <Button variant="destructive" disabled={deletingProof} onClick={async () => {
+              if (!deleteProof) return;
+              setDeletingProof(true);
+              try {
+                if (deleteProof.file_path) {
+                  await supabase.storage.from("fee-payment-proofs").remove([deleteProof.file_path]);
+                }
+                const { error } = await (supabase as any).from("fee_payment_proofs").delete().eq("id", deleteProof.id);
+                if (error) throw error;
+                toast.success("Proof deleted");
+                setProofs(prev => prev.filter(p => p.id !== deleteProof.id));
+                setDeleteProof(null);
+              } catch (e: any) {
+                toast.error(e?.message || "Failed to delete");
+              } finally {
+                setDeletingProof(false);
+              }
+            }}>
+              {deletingProof ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Trash2 className="h-4 w-4 mr-1" />}
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       <Dialog open={!!viewProof} onOpenChange={(o) => !o && setViewProof(null)}>
         <DialogContent className="max-w-3xl">

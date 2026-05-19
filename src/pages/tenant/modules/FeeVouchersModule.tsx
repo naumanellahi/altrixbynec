@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Receipt, Download, Loader2, Trash2, Users, User, Eye, CheckCircle2, XCircle, AlertCircle, Mail, Upload, Search, X } from "lucide-react";
+import { Plus, Receipt, Download, Loader2, Trash2, Users, User, Eye, CheckCircle2, XCircle, AlertCircle, Mail, Upload, Search, X, FileDown } from "lucide-react";
+import { exportToCSV } from "@/lib/csv";
 import { toast } from "sonner";
 
 
@@ -174,17 +175,43 @@ type ProofRow = {
 
 function PaymentProofsCard({ schoolId }: { schoolId: string | null }) {
   const qc = useQueryClient();
-  const [statusFilter, setStatusFilter] = useState<string>("pending");
-  const [methodFilter, setMethodFilter] = useState<string>("__all");
-  const [fromDate, setFromDate] = useState<string>("");
-  const [toDate, setToDate] = useState<string>("");
-  const [minAmount, setMinAmount] = useState<string>("");
-  const [maxAmount, setMaxAmount] = useState<string>("");
-  const [search, setSearch] = useState<string>("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const sp = (k: string, d = "") => searchParams.get(k) ?? d;
+  const [statusFilter, setStatusFilter] = useState<string>(sp("pp_status", "pending"));
+  const [methodFilter, setMethodFilter] = useState<string>(sp("pp_method", "__all"));
+  const [fromDate, setFromDate] = useState<string>(sp("pp_from"));
+  const [toDate, setToDate] = useState<string>(sp("pp_to"));
+  const [minAmount, setMinAmount] = useState<string>(sp("pp_min"));
+  const [maxAmount, setMaxAmount] = useState<string>(sp("pp_max"));
+  const [search, setSearch] = useState<string>(sp("pp_q"));
+  const [debouncedSearch, setDebouncedSearch] = useState<string>(search);
   const [viewing, setViewing] = useState<{ url: string; name: string; pdf: boolean } | null>(null);
   const [rejectFor, setRejectFor] = useState<ProofRow | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+
+  // Debounce search input (300ms)
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Persist filters to URL (uses debounced search to avoid history spam)
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    const setOrDel = (k: string, v: string, dflt = "") => {
+      if (v && v !== dflt) next.set(k, v); else next.delete(k);
+    };
+    setOrDel("pp_q", debouncedSearch);
+    setOrDel("pp_status", statusFilter, "pending");
+    setOrDel("pp_method", methodFilter, "__all");
+    setOrDel("pp_from", fromDate);
+    setOrDel("pp_to", toDate);
+    setOrDel("pp_min", minAmount);
+    setOrDel("pp_max", maxAmount);
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, statusFilter, methodFilter, fromDate, toDate, minAmount, maxAmount]);
 
   const { data: proofs = [] } = useQuery({
     queryKey: ["fee_payment_proofs", schoolId, statusFilter],
@@ -228,7 +255,7 @@ function PaymentProofsCard({ schoolId }: { schoolId: string | null }) {
   }, [proofs]);
 
   const filteredProofs = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = debouncedSearch.trim().toLowerCase();
     const min = minAmount ? Number(minAmount) : null;
     const max = maxAmount ? Number(maxAmount) : null;
     return proofs.filter(p => {
@@ -246,11 +273,32 @@ function PaymentProofsCard({ schoolId }: { schoolId: string | null }) {
       }
       return true;
     });
-  }, [proofs, search, methodFilter, fromDate, toDate, minAmount, maxAmount, studentMap, invoiceMap]);
+  }, [proofs, debouncedSearch, methodFilter, fromDate, toDate, minAmount, maxAmount, studentMap, invoiceMap]);
 
   const hasActiveFilters = search || methodFilter !== "__all" || fromDate || toDate || minAmount || maxAmount;
   const clearFilters = () => {
     setSearch(""); setMethodFilter("__all"); setFromDate(""); setToDate(""); setMinAmount(""); setMaxAmount("");
+  };
+
+  const exportCsv = () => {
+    if (filteredProofs.length === 0) { toast.info("Nothing to export"); return; }
+    const rows = filteredProofs.map(p => {
+      const s = studentMap.get(p.student_id);
+      const inv = invoiceMap.get(p.invoice_id);
+      return {
+        uploaded_at: new Date(p.created_at).toLocaleString(),
+        student: s ? `${s.first_name} ${s.last_name || ""}`.trim() : "",
+        roll_number: s?.roll_number || "",
+        invoice_number: inv?.invoice_number || "",
+        method: p.method || "",
+        paid_at: p.paid_at || "",
+        amount: Number(p.amount),
+        status: p.status,
+        rejection_reason: p.rejection_reason || "",
+        note: p.note || "",
+      };
+    });
+    exportToCSV(rows, `payment-proofs-${new Date().toISOString().slice(0, 10)}`);
   };
 
   const openProof = async (p: ProofRow) => {
@@ -288,9 +336,15 @@ function PaymentProofsCard({ schoolId }: { schoolId: string | null }) {
             </CardTitle>
             <p className="text-sm text-muted-foreground">Parents' uploaded bank/cash receipts awaiting verification.</p>
           </div>
-          <div className="text-xs text-muted-foreground">
-            Showing <span className="font-medium text-foreground">{filteredProofs.length}</span> of {proofs.length}
+          <div className="flex items-center gap-3">
+            <div className="text-xs text-muted-foreground">
+              Showing <span className="font-medium text-foreground">{filteredProofs.length}</span> of {proofs.length}
+            </div>
+            <Button size="sm" variant="outline" onClick={exportCsv} disabled={filteredProofs.length === 0}>
+              <FileDown className="h-3 w-3 mr-1" /> Export CSV
+            </Button>
           </div>
+
         </div>
 
         <div className="mt-4 grid grid-cols-1 md:grid-cols-12 gap-2">
