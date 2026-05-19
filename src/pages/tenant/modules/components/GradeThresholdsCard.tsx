@@ -192,15 +192,6 @@ export function GradeThresholdsCard({ schoolId }: { schoolId: string }) {
                   <TableCell>
                     <Input
                       type="number"
-                      step="0.1"
-                      value={t.grade_points}
-                      onChange={(e) => updateThreshold(t.id, "grade_points", parseFloat(e.target.value) || 0)}
-                      className="w-20"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
                       value={t.sort_order}
                       onChange={(e) => updateThreshold(t.id, "sort_order", parseInt(e.target.value) || 0)}
                       className="w-16"
