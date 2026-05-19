@@ -660,51 +660,73 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
       {studentId && studentInfo && (
         <div
           id="report-card-print"
-          className="relative mx-auto rounded-2xl border-4 border-double border-primary/40 bg-white p-8 text-black shadow-2xl print:border-2 print:border-black print:shadow-none print:p-6"
-          style={{ maxWidth: 820 }}
+          className="relative mx-auto overflow-hidden rounded-3xl bg-white text-black shadow-[0_30px_80px_-30px_rgba(0,0,0,0.35)] ring-1 ring-black/5 print:rounded-none print:shadow-none print:ring-0"
+          style={{ maxWidth: 860 }}
         >
-          {school?.logo_url && (
-            <img src={school.logo_url} alt="" aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.04]" />
-          )}
-
-          <div className="relative flex items-center justify-between gap-4 border-b-2 border-gray-800 pb-4">
-            <div className="flex items-center gap-4">
-              {school?.logo_url ? (
-                <img src={school.logo_url} alt="School logo" className="h-20 w-20 rounded-lg object-contain ring-1 ring-gray-200" />
-              ) : (
-                <div className="grid h-20 w-20 place-items-center rounded-lg bg-gray-100 ring-1 ring-gray-200">
-                  <FileText className="h-10 w-10 text-gray-500" />
+          {/* Decorative top band */}
+          <div className="relative h-32 overflow-hidden bg-gradient-to-br from-primary via-primary to-primary/70 text-primary-foreground">
+            <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle at 20% 20%, rgba(255,255,255,0.55) 0, transparent 40%), radial-gradient(circle at 80% 60%, rgba(255,255,255,0.35) 0, transparent 45%)" }} />
+            <div className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
+            <div className="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-white/10 blur-xl" />
+            <div className="relative flex h-full items-center justify-between px-8">
+              <div className="flex items-center gap-4">
+                {school?.logo_url ? (
+                  <img src={school.logo_url} alt="School logo" className="h-16 w-16 rounded-xl bg-white/95 object-contain p-1.5 shadow-lg" />
+                ) : (
+                  <div className="grid h-16 w-16 place-items-center rounded-xl bg-white/95 shadow-lg">
+                    <FileText className="h-8 w-8 text-primary" />
+                  </div>
+                )}
+                <div>
+                  <p className="font-display text-2xl font-bold leading-tight tracking-tight">{school?.name || "School"}</p>
+                  {school?.motto && <p className="text-[11px] italic opacity-90">"{school.motto}"</p>}
+                  <p className="text-[11px] opacity-90">{[school?.address, school?.phone, school?.email].filter(Boolean).join(" • ")}</p>
                 </div>
-              )}
-              <div>
-                <p className="font-display text-3xl font-bold tracking-tight">{school?.name || "School"}</p>
-                {school?.motto && <p className="text-xs italic text-gray-600">"{school.motto}"</p>}
-                {school?.address && <p className="text-xs text-gray-600">{school.address}</p>}
-                <p className="text-xs text-gray-600">
-                  {[school?.phone, school?.email, school?.website].filter(Boolean).join(" • ")}
+              </div>
+              <div className="text-right">
+                <p className="rounded-full bg-white/20 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] backdrop-blur">
+                  {(card.period_type || periodType) === "annual" ? "Annual Report" : (card.period_type || periodType) === "monthly" ? "Monthly Report" : "Official Report"}
                 </p>
+                {card.is_published && <p className="mt-2 text-[10px] font-bold text-emerald-200">● PUBLISHED</p>}
               </div>
             </div>
-            <div className="text-right">
-              <p className="rounded-md bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
-                {(card.period_type || periodType) === "annual" ? "Annual Report Card" : (card.period_type || periodType) === "monthly" ? "Monthly Report Card" : "Official Report Card"}
-              </p>
-              <p className="mt-2 text-sm font-semibold">{periodTitle}</p>
-              <p className="text-xs text-gray-600">Issued: {today}</p>
-              {card.is_published && <p className="mt-1 text-[10px] font-bold text-green-700">PUBLISHED</p>}
-            </div>
           </div>
 
-          <div className="relative mt-4 grid grid-cols-2 gap-x-6 gap-y-1 rounded-lg bg-gray-50 p-3 text-sm md:grid-cols-3">
-            <p><span className="text-gray-500">Name:</span> <strong>{studentInfo.first_name} {studentInfo.last_name}</strong></p>
-            <p><span className="text-gray-500">Roll No:</span> <strong>{studentInfo.student_code || "—"}</strong></p>
-            <p><span className="text-gray-500">Class:</span> <strong>{(() => { const e = enrollments.find(x => x.student_id === studentId); const sec = sections.find(s => s.id === e?.class_section_id); const cls = classes.find(c => c.id === sec?.class_id); return cls?.name || "—"; })()}</strong></p>
-            <p><span className="text-gray-500">Section:</span> <strong>{(() => { const e = enrollments.find(x => x.student_id === studentId); const sec = sections.find(s => s.id === e?.class_section_id); return sec?.name || "—"; })()}</strong></p>
-            <p><span className="text-gray-500">DOB:</span> <strong>{studentInfo.date_of_birth ? format(new Date(studentInfo.date_of_birth), "MMM d, yyyy") : "—"}</strong></p>
-            <p><span className="text-gray-500">Parent:</span> <strong>{studentInfo.parent_name || "—"}</strong></p>
-            <p><span className="text-gray-500">Phone:</span> <strong>{studentInfo.phone || studentInfo.parent_phone || "—"}</strong></p>
-            <p className="md:col-span-2"><span className="text-gray-500">Address:</span> <strong>{studentInfo.address || "—"}</strong></p>
-          </div>
+          {/* Watermark */}
+          {school?.logo_url && (
+            <img src={school.logo_url} alt="" aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 h-80 w-80 -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.035]" />
+          )}
+
+          <div className="relative px-8 pb-8 pt-6">
+            {/* Title + meta */}
+            <div className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-dashed border-gray-300 pb-4">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">Academic Report Card</p>
+                <p className="font-display text-2xl font-bold tracking-tight">{periodTitle}</p>
+              </div>
+              <p className="text-xs text-gray-500">Issued <strong className="text-gray-700">{today}</strong></p>
+            </div>
+
+            {/* Student profile card */}
+            <div className="relative mb-5 grid grid-cols-1 gap-4 rounded-2xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-5 md:grid-cols-[auto_1fr]">
+              {studentInfo.profile_image_url ? (
+                <img src={studentInfo.profile_image_url} alt="" className="h-24 w-24 rounded-2xl object-cover ring-2 ring-primary/20" />
+              ) : (
+                <div className="grid h-24 w-24 place-items-center rounded-2xl bg-primary/10 ring-2 ring-primary/20">
+                  <User className="h-10 w-10 text-primary" />
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm md:grid-cols-3">
+                <p><span className="text-gray-500">Name:</span> <strong>{studentInfo.first_name} {studentInfo.last_name}</strong></p>
+                <p><span className="text-gray-500">Roll No:</span> <strong>{studentInfo.student_code || "—"}</strong></p>
+                <p><span className="text-gray-500">Class:</span> <strong>{(() => { const e = enrollments.find(x => x.student_id === studentId); const sec = sections.find(s => s.id === e?.class_section_id); const cls = classes.find(c => c.id === sec?.class_id); return cls?.name || "—"; })()}</strong></p>
+                <p><span className="text-gray-500">Section:</span> <strong>{(() => { const e = enrollments.find(x => x.student_id === studentId); const sec = sections.find(s => s.id === e?.class_section_id); return sec?.name || "—"; })()}</strong></p>
+                <p><span className="text-gray-500">DOB:</span> <strong>{studentInfo.date_of_birth ? format(new Date(studentInfo.date_of_birth), "MMM d, yyyy") : "—"}</strong></p>
+                <p><span className="text-gray-500">Parent:</span> <strong>{studentInfo.parent_name || "—"}</strong></p>
+                <p><span className="text-gray-500">Phone:</span> <strong>{studentInfo.phone || studentInfo.parent_phone || "—"}</strong></p>
+                <p className="md:col-span-2"><span className="text-gray-500">Address:</span> <strong>{studentInfo.address || "—"}</strong></p>
+              </div>
+            </div>
 
           <table className="relative mt-5 w-full border-collapse text-sm">
             <thead>
