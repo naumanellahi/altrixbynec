@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { toast } from "sonner";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Bell, Check, CheckCheck, MessageSquare, AlertTriangle, Info, Calendar, GraduationCap, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -128,7 +129,12 @@ export function NotificationsBell({ schoolId, schoolSlug, role }: NotificationsB
 
       if (isFeeNotif) {
         // Hard-guard: never build a malformed URL that could bounce to /auth
-        if (!schoolSlug || !role) return;
+        if (!schoolSlug || !role) {
+          toast.warning("Unable to open notification", {
+            description: `Missing ${!schoolSlug ? "school" : "role"} information. Please refresh and try again.`,
+          });
+          return;
+        }
         const rolePathMap: Record<string, string> = {
           parent: "parent", student: "student",
           hr_manager: "hr", accountant: "accountant", marketing_staff: "marketing",
@@ -137,7 +143,12 @@ export function NotificationsBell({ schoolId, schoolSlug, role }: NotificationsB
           school_owner: "school_owner", super_admin: "super_admin", teacher: "teacher",
         };
         const rolePath = rolePathMap[role];
-        if (!rolePath) return;
+        if (!rolePath) {
+          toast.warning("Unable to open notification", {
+            description: `Unknown role "${role}". Please contact support.`,
+          });
+          return;
+        }
         const feesPath = role === "parent" || role === "student"
           ? `/${schoolSlug}/${rolePath}/fees`
           : `/${schoolSlug}/${rolePath}/fee-vouchers`;
