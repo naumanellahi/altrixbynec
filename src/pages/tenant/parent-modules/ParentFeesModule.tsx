@@ -555,10 +555,23 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
                               Easypaisa
                             </Button>
                           )}
-                          {due > 0 && (
-                            <Button size="sm" variant="outline" onClick={() => setUploadFor(inv)} disabled={!!pendingProof}>
-                              <Upload className="h-3 w-3 mr-1" /> {pendingProof ? "Awaiting verify" : "Upload proof"}
+                          {due > 0 && !pendingProof && (
+                            <Button size="sm" variant="outline" onClick={() => setUploadFor(inv)}>
+                              <Upload className="h-3 w-3 mr-1" /> Upload proof
                             </Button>
+                          )}
+                          {pendingProof && (
+                            <>
+                              <Button size="sm" variant="outline" disabled>
+                                <Clock className="h-3 w-3 mr-1" /> Awaiting verify
+                              </Button>
+                              <Button size="sm" variant="ghost" title="Edit proof" onClick={() => setEditProof(pendingProof)}>
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              <Button size="sm" variant="ghost" title="Delete proof" onClick={() => setDeleteProof(pendingProof)} className="text-destructive hover:text-destructive">
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </>
                           )}
                           {myProofs.length > 0 && (
                             <Button size="sm" variant="ghost" onClick={async () => {
