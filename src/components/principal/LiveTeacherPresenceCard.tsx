@@ -208,7 +208,7 @@ export function LiveTeacherPresenceCard({ schoolId }: Props) {
             </Button>
             {schoolSlug && (
               <Button size="sm" variant="ghost" asChild className="gap-1">
-                <Link to={`/${schoolSlug}/presence-debug`} title="Realtime event log">
+                <Link to={`/${schoolSlug}/principal/presence-debug`} title="Realtime event log">
                   <Activity className="h-3.5 w-3.5" />
                 </Link>
               </Button>
