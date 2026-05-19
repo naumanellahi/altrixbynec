@@ -847,6 +847,7 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
           <div className="relative mt-4 border-t border-dashed border-gray-300 pt-2 text-center text-[10px] text-gray-500">
             This is a computer-generated document by AltRix • {school?.name || "School"} • {today}
           </div>
+          </div>
         </div>
       )}
 
