@@ -294,6 +294,7 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
                           setReasonDialog({
                             entryId: entry.id,
                             label: `${entry.subjectName} • ${entry.periodLabel}`,
+                            reasonType: status === "in_class" ? "late" : "left",
                             onSubmit: (reason) => handleSet(status, reason),
                           });
                         };
