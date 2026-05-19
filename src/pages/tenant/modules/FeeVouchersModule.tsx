@@ -67,6 +67,7 @@ export default function FeeVouchersModule() {
   const schoolId = tenant.status === "ready" ? tenant.schoolId : null;
   const qc = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [deliveriesBatch, setDeliveriesBatch] = useState<Batch | null>(null);
 
   const { data: batches = [] } = useQuery({
     queryKey: ["fee_voucher_batches", schoolId],
@@ -120,20 +121,24 @@ export default function FeeVouchersModule() {
                   <TableHead>Due</TableHead>
                   <TableHead className="text-right">Students</TableHead>
                   <TableHead className="text-right">Total</TableHead>
+                  <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {batches.map((b) => (
                   <TableRow key={b.id}>
                     <TableCell>{new Date(b.created_at).toLocaleString()}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{b.scope}</Badge>
-                    </TableCell>
+                    <TableCell><Badge variant="secondary">{b.scope}</Badge></TableCell>
                     <TableCell>{b.period_label ?? "—"}</TableCell>
                     <TableCell>{b.due_date}</TableCell>
                     <TableCell className="text-right">{b.total_students}</TableCell>
                     <TableCell className="text-right font-medium">
                       {b.total_amount.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="ghost" onClick={() => setDeliveriesBatch(b)}>
+                        <Mail className="mr-1 h-3 w-3" /> Deliveries
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -151,7 +156,109 @@ export default function FeeVouchersModule() {
         }}
         schoolId={schoolId}
       />
+
+      <DeliveriesDialog batch={deliveriesBatch} onClose={() => setDeliveriesBatch(null)} />
     </div>
+  );
+}
+
+type Delivery = {
+  id: string;
+  invoice_id: string;
+  student_id: string;
+  guardian_name: string | null;
+  guardian_email: string | null;
+  guardian_phone: string | null;
+  guardian_user_id: string | null;
+  channel: string;
+  status: string;
+  error: string | null;
+  delivered_at: string;
+};
+
+function DeliveriesDialog({ batch, onClose }: { batch: Batch | null; onClose: () => void }) {
+  const open = !!batch;
+  const { data: deliveries = [], isLoading } = useQuery({
+    queryKey: ["fee_voucher_deliveries", batch?.id],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("fee_voucher_deliveries")
+        .select("id,invoice_id,student_id,guardian_name,guardian_email,guardian_phone,guardian_user_id,channel,status,error,delivered_at")
+        .eq("batch_id", batch!.id)
+        .order("delivered_at", { ascending: true });
+      if (error) throw error;
+      return data as Delivery[];
+    },
+    enabled: open,
+  });
+
+  const sent = deliveries.filter((d) => d.status === "sent").length;
+  const noAcct = deliveries.filter((d) => d.status === "no_account").length;
+  const failed = deliveries.filter((d) => !["sent", "no_account"].includes(d.status)).length;
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle>Delivery status</DialogTitle>
+          <DialogDescription>
+            {sent} delivered · {noAcct} no parent account · {failed} failed
+          </DialogDescription>
+        </DialogHeader>
+        <ScrollArea className="flex-1 pr-3">
+          {isLoading ? (
+            <div className="py-8 flex justify-center"><Loader2 className="h-5 w-5 animate-spin" /></div>
+          ) : deliveries.length === 0 ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">No delivery records.</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Parent</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Channel</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>When</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {deliveries.map((d) => (
+                  <TableRow key={d.id}>
+                    <TableCell className="font-medium">{d.guardian_name ?? "—"}</TableCell>
+                    <TableCell className="text-xs">
+                      {d.guardian_email ?? ""}{d.guardian_phone ? ` · ${d.guardian_phone}` : ""}
+                    </TableCell>
+                    <TableCell><Badge variant="outline">{d.channel}</Badge></TableCell>
+                    <TableCell>
+                      {d.status === "sent" ? (
+                        <Badge className="bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 border border-emerald-600/30">
+                          <CheckCircle2 className="mr-1 h-3 w-3" /> Sent
+                        </Badge>
+                      ) : d.status === "no_account" ? (
+                        <Badge variant="outline" className="text-amber-700 dark:text-amber-400 border-amber-500/40">
+                          <AlertCircle className="mr-1 h-3 w-3" /> No app account
+                        </Badge>
+                      ) : (
+                        <Badge variant="destructive">
+                          <XCircle className="mr-1 h-3 w-3" /> {d.status}
+                        </Badge>
+                      )}
+                      {d.error && <div className="text-[10px] text-destructive mt-1">{d.error}</div>}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {new Date(d.delivered_at).toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </ScrollArea>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
