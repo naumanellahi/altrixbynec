@@ -191,7 +191,7 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
           : Promise.resolve({ data: [] }),
         rcQuery,
         (supabase as any).from("students").select("*").eq("id", studentId).maybeSingle(),
-        (supabase as any).from("academic_assessments").select("id,subject_id,max_marks,is_published,title,assessment_date,assessment_type,weightage_percent").eq("school_id", schoolId),
+        (supabase as any).from("academic_assessments").select("id,subject_id,max_marks,is_published,title,assessment_date,assessment_type,weightage_percent,class_section_id").eq("school_id", schoolId),
         (supabase as any).from("student_marks").select("assessment_id,marks,computed_grade").eq("school_id", schoolId).eq("student_id", studentId),
       ]);
 
