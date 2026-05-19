@@ -956,14 +956,19 @@ export default function ReportCardModule({ schoolId, canManage: canManageProp = 
                   <SelectTrigger><SelectValue placeholder="Class" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All classes</SelectItem>
-                    {classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    {classes
+                      .filter((c) => teacherSectionIds === null || sections.some((s) => s.class_id === c.id && teacherSectionIds.includes(s.id)))
+                      .map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <Select value={sectionFilter} onValueChange={setSectionFilter}>
                   <SelectTrigger><SelectValue placeholder="Section" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All sections</SelectItem>
-                    {sections.filter((s) => classFilter === "all" || s.class_id === classFilter).map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                    {sections
+                      .filter((s) => classFilter === "all" || s.class_id === classFilter)
+                      .filter((s) => teacherSectionIds === null || teacherSectionIds.includes(s.id))
+                      .map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
