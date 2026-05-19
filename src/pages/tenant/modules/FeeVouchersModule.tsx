@@ -757,9 +757,13 @@ function GenerateVoucherDialog({
   }
 
 
+  const progressPct = targetStudents.length > 0
+    ? Math.round(((doneCount + failCount) / targetStudents.length) * 100)
+    : 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-6xl max-h-[92vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Generate Fee Voucher</DialogTitle>
           <DialogDescription>
@@ -767,154 +771,228 @@ function GenerateVoucherDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
-          <Tabs value={mode} onValueChange={(v) => setMode(v as any)} className="mt-2">
-            <TabsList className="grid grid-cols-2 w-full">
-              <TabsTrigger value="individual">
-                <User className="mr-2 h-4 w-4" /> Individual Student
-              </TabsTrigger>
-              <TabsTrigger value="class">
-                <Users className="mr-2 h-4 w-4" /> Whole Class / Section
-              </TabsTrigger>
-            </TabsList>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-4 flex-1 overflow-hidden">
+          {/* Left – form */}
+          <ScrollArea className="pr-3">
+            <Tabs value={mode} onValueChange={(v) => setMode(v as any)} className="mt-2">
+              <TabsList className="grid grid-cols-2 w-full">
+                <TabsTrigger value="individual">
+                  <User className="mr-2 h-4 w-4" /> Individual Student
+                </TabsTrigger>
+                <TabsTrigger value="class">
+                  <Users className="mr-2 h-4 w-4" /> Whole Class / Section
+                </TabsTrigger>
+              </TabsList>
 
-            <div className="grid gap-3 mt-4 sm:grid-cols-2">
-              <div className="space-y-1">
-                <Label>Fee plan</Label>
-                <Select value={feePlanId} onValueChange={setFeePlanId}>
-                  <SelectTrigger><SelectValue placeholder="Select fee plan" /></SelectTrigger>
-                  <SelectContent>
-                    {feePlans.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {feePlanId && (
-                  <p className="text-xs text-muted-foreground">
-                    Subtotal per student: {subtotal.toLocaleString()}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <Label>Period label</Label>
-                <Input value={periodLabel} onChange={(e) => setPeriodLabel(e.target.value)} />
-              </div>
-
-              <div className="space-y-1">
-                <Label>Class</Label>
-                <Select value={classId} onValueChange={(v) => { setClassId(v); setSectionId(SENTINEL); setStudentId(""); }}>
-                  <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
-                  <SelectContent>
-                    {classes.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1">
-                <Label>Section</Label>
-                <Select value={sectionId} onValueChange={(v) => { setSectionId(v); setStudentId(""); }}>
-                  <SelectTrigger><SelectValue placeholder="All sections" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={SENTINEL}>All sections</SelectItem>
-                    {sections.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {mode === "individual" && (
-                <div className="space-y-1 sm:col-span-2">
-                  <Label>Student</Label>
-                  <Select value={studentId} onValueChange={setStudentId}>
-                    <SelectTrigger><SelectValue placeholder="Pick a student" /></SelectTrigger>
+              <div className="grid gap-3 mt-4 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label>Fee plan</Label>
+                  <Select value={feePlanId} onValueChange={setFeePlanId}>
+                    <SelectTrigger><SelectValue placeholder="Select fee plan" /></SelectTrigger>
                     <SelectContent>
-                      {students.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.first_name} {s.last_name ?? ""} {s.roll_number ? `(${s.roll_number})` : ""}
-                        </SelectItem>
+                      {feePlans.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {feePlanId && (
+                    <p className="text-xs text-muted-foreground">
+                      Subtotal per student: {subtotal.toLocaleString()}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <Label>Period label</Label>
+                  <Input value={periodLabel} onChange={(e) => setPeriodLabel(e.target.value)} />
+                </div>
+
+                <div className="space-y-1">
+                  <Label>Class</Label>
+                  <Select value={classId} onValueChange={(v) => { setClassId(v); setSectionId(SENTINEL); setStudentId(""); }}>
+                    <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
+                    <SelectContent>
+                      {classes.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-              )}
 
-              <div className="space-y-1">
-                <Label>Due date</Label>
-                <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                <div className="space-y-1">
+                  <Label>Section</Label>
+                  <Select value={sectionId} onValueChange={(v) => { setSectionId(v); setStudentId(""); }}>
+                    <SelectTrigger><SelectValue placeholder="All sections" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={SENTINEL}>All sections</SelectItem>
+                      {sections.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {mode === "individual" && (
+                  <div className="space-y-1 sm:col-span-2">
+                    <Label>Student</Label>
+                    <Select value={studentId} onValueChange={setStudentId}>
+                      <SelectTrigger><SelectValue placeholder="Pick a student" /></SelectTrigger>
+                      <SelectContent>
+                        {students.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.first_name} {s.last_name ?? ""} {s.roll_number ? `(${s.roll_number})` : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <Label>Due date</Label>
+                  <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                </div>
+
+                <div className="space-y-1">
+                  <Label>Discount %</Label>
+                  <Input type="number" value={discountPct} onChange={(e) => setDiscountPct(e.target.value)} />
+                </div>
+
+                <div className="space-y-1">
+                  <Label>Discount (fixed amount)</Label>
+                  <Input type="number" value={discountAmount} onChange={(e) => setDiscountAmount(e.target.value)} />
+                </div>
+
+                <div className="space-y-1">
+                  <Label>Discount reason</Label>
+                  <Input value={discountReason} onChange={(e) => setDiscountReason(e.target.value)} placeholder="e.g. Term promotion" />
+                </div>
+
+                <div className="space-y-1 sm:col-span-2">
+                  <Label>Notes</Label>
+                  <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+                </div>
               </div>
 
-              <div className="space-y-1">
-                <Label>Discount %</Label>
-                <Input type="number" value={discountPct} onChange={(e) => setDiscountPct(e.target.value)} />
-              </div>
+              <TabsContent value="class" className="mt-4 space-y-3">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Grade-based merit discount</CardTitle>
+                    <p className="text-xs text-muted-foreground">
+                      Students whose average grade meets a tier get extra % discount. Highest matching tier applies.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {tiers.map((t) => (
+                      <div key={t.id} className="flex items-center gap-2">
+                        <span className="text-xs">If avg ≥</span>
+                        <Input type="number" className="w-20" value={t.minGrade}
+                          onChange={(e) => setTiers((arr) => arr.map((x) => x.id === t.id ? { ...x, minGrade: Number(e.target.value) } : x))}
+                        />
+                        <span className="text-xs">% → discount</span>
+                        <Input type="number" className="w-20" value={t.discountPct}
+                          onChange={(e) => setTiers((arr) => arr.map((x) => x.id === t.id ? { ...x, discountPct: Number(e.target.value) } : x))}
+                        />
+                        <span className="text-xs">%</span>
+                        <Button size="icon" variant="ghost" onClick={() => removeTier(t.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button variant="outline" size="sm" onClick={addTier}>
+                      <Plus className="mr-1 h-3 w-3" /> Add tier
+                    </Button>
+                  </CardContent>
+                </Card>
 
-              <div className="space-y-1">
-                <Label>Discount (fixed amount)</Label>
-                <Input type="number" value={discountAmount} onChange={(e) => setDiscountAmount(e.target.value)} />
-              </div>
+                <div className="text-sm text-muted-foreground">
+                  {students.length} student(s) will receive a voucher.
+                </div>
+              </TabsContent>
+            </Tabs>
+          </ScrollArea>
 
-              <div className="space-y-1">
-                <Label>Discount reason</Label>
-                <Input value={discountReason} onChange={(e) => setDiscountReason(e.target.value)} placeholder="e.g. Term promotion" />
+          {/* Right – preview + progress */}
+          <div className="flex flex-col border rounded-md bg-muted/30 overflow-hidden min-h-[400px]">
+            <div className="flex items-center justify-between px-3 py-2 border-b bg-background/50">
+              <div className="flex items-center gap-2 text-xs font-medium">
+                <Eye className="h-3.5 w-3.5" /> Live preview
+                {previewLoading && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
               </div>
-
-              <div className="space-y-1 sm:col-span-2">
-                <Label>Notes</Label>
-                <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
-              </div>
+              <span className="text-[10px] text-muted-foreground">
+                {mode === "class" && targetStudents.length > 1
+                  ? `Showing ${targetStudents[0]?.first_name ?? "first student"} — others use same layout`
+                  : "Sample render"}
+              </span>
             </div>
 
-            <TabsContent value="class" className="mt-4 space-y-3">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Grade-based merit discount</CardTitle>
-                  <p className="text-xs text-muted-foreground">
-                    Students whose average grade meets a tier get extra % discount. Highest matching tier applies.
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {tiers.map((t) => (
-                    <div key={t.id} className="flex items-center gap-2">
-                      <span className="text-xs">If avg ≥</span>
-                      <Input
-                        type="number"
-                        className="w-20"
-                        value={t.minGrade}
-                        onChange={(e) => setTiers((arr) => arr.map((x) => x.id === t.id ? { ...x, minGrade: Number(e.target.value) } : x))}
-                      />
-                      <span className="text-xs">% → discount</span>
-                      <Input
-                        type="number"
-                        className="w-20"
-                        value={t.discountPct}
-                        onChange={(e) => setTiers((arr) => arr.map((x) => x.id === t.id ? { ...x, discountPct: Number(e.target.value) } : x))}
-                      />
-                      <span className="text-xs">%</span>
-                      <Button size="icon" variant="ghost" onClick={() => removeTier(t.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+            {/* Progress / results section */}
+            {(submitting || results.length > 0) && (
+              <div className="border-b p-3 space-y-2 bg-background/40 max-h-[40%] overflow-hidden flex flex-col">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium">
+                    {submitting ? "Generating…" : "Last run results"}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {doneCount + failCount}/{targetStudents.length} · {doneCount} ok · {failCount} failed
+                  </span>
+                </div>
+                <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                  <div className="h-full bg-primary transition-all" style={{ width: `${progressPct}%` }} />
+                </div>
+                {progress && (
+                  <div className="text-[10px] text-muted-foreground truncate">{progress}</div>
+                )}
+                {results.length > 0 && (
+                  <ScrollArea className="flex-1 max-h-[160px] pr-2">
+                    <div className="space-y-1">
+                      {results.map((r, idx) => (
+                        <div
+                          key={`${r.studentId}-${idx}`}
+                          className={`flex items-start gap-2 text-[11px] rounded px-2 py-1 ${
+                            r.status === "success" ? "bg-emerald-500/10" : "bg-destructive/10"
+                          }`}
+                        >
+                          {r.status === "success"
+                            ? <CheckCircle2 className="h-3 w-3 mt-0.5 text-emerald-600 shrink-0" />
+                            : <XCircle className="h-3 w-3 mt-0.5 text-destructive shrink-0" />}
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium truncate">{r.name}</div>
+                            {r.error && <div className="text-destructive break-words">{r.error}</div>}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                  <Button variant="outline" size="sm" onClick={addTier}>
-                    <Plus className="mr-1 h-3 w-3" /> Add tier
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <div className="text-sm text-muted-foreground">
-                {students.length} student(s) will receive a voucher.
+                  </ScrollArea>
+                )}
               </div>
-            </TabsContent>
-          </Tabs>
-        </ScrollArea>
+            )}
+
+            <div className="flex-1 bg-background overflow-hidden">
+              {previewUrl ? (
+                <iframe
+                  title="Voucher preview"
+                  src={previewUrl}
+                  className="w-full h-full border-0 min-h-[300px]"
+                />
+              ) : (
+                <div className="h-full min-h-[300px] flex items-center justify-center text-xs text-muted-foreground p-6 text-center">
+                  {feePlanId
+                    ? "Pick a class & student (or section) to see the live PDF preview."
+                    : "Pick a fee plan to see a live PDF preview."}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
 
         <DialogFooter className="mt-2">
-          {progress && <span className="text-xs text-muted-foreground self-center mr-auto">{progress}</span>}
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>Cancel</Button>
+          {submitting && progress && (
+            <span className="text-xs text-muted-foreground self-center mr-auto">{progress}</span>
+          )}
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
+            {results.length > 0 && !submitting ? "Close" : "Cancel"}
+          </Button>
           <Button variant="hero" onClick={handleGenerate} disabled={submitting || !feePlanId}>
             {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
             Generate {mode === "individual" ? "Voucher" : `${students.length} Vouchers`}
@@ -922,5 +1000,6 @@ function GenerateVoucherDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
   );
 }
