@@ -227,7 +227,7 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
                   </TableCell></TableRow>
                 )}
                 {rows.map((r) => (
-                  <TableRow key={r.id}>
+                  <TableRow key={r.id} className={conflictIds.has(r.id) ? "bg-destructive/5" : undefined}>
                     <TableCell className="min-w-[160px]">
                       <Select disabled={!canManage} value={r.subject_id ?? ""} onValueChange={(v) => updateRow(r.id, { subject_id: v })}>
                         <SelectTrigger className="h-8"><SelectValue placeholder="Select" /></SelectTrigger>
