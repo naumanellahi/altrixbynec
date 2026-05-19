@@ -212,8 +212,12 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
       savedResults.forEach((r: any) => { map[r.subject_id] = r; });
 
       // Determine which assessments are in scope for the period
+      const studentSectionId = enrollments.find((e) => e.student_id === studentId)?.class_section_id ?? null;
       const inScope = (assessments.data || []).filter((a: any) => {
         if (a.is_published === false) return false;
+        // Strictly scope to the student's class section so quizzes/tests added for one class
+        // do not leak into other classes' report cards.
+        if (studentSectionId && a.class_section_id && a.class_section_id !== studentSectionId) return false;
         if (loadedCard?.exam_id || examIdForResults) return true; // exam mode: include all (existing fallback behavior)
         if (periodType === "monthly") {
           const d = a.assessment_date ? new Date(a.assessment_date) : null;
