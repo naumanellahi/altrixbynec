@@ -98,6 +98,49 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
     setRows((r) => [...r, data]);
   };
 
+  // Add-by-section dialog state
+  const [addOpen, setAddOpen] = useState(false);
+  const [addSection, setAddSection] = useState<string>("");
+  const [generating, setGenerating] = useState(false);
+
+  const generateForSection = async () => {
+    if (!addSection) return toast.error("Pick a class/section");
+    setGenerating(true);
+    try {
+      // Resolve subjects linked to this section (try section_subjects then class_section_subjects)
+      let subjIds: string[] = [];
+      const ss = await (supabase as any).from("section_subjects").select("subject_id").eq("class_section_id", addSection);
+      if (!ss.error && ss.data?.length) subjIds = ss.data.map((x: any) => x.subject_id);
+      if (subjIds.length === 0) {
+        const css = await (supabase as any).from("class_section_subjects").select("subject_id").eq("class_section_id", addSection);
+        if (!css.error && css.data?.length) subjIds = css.data.map((x: any) => x.subject_id);
+      }
+      if (subjIds.length === 0) {
+        toast.error("No subjects assigned to this section. Add subjects first or use 'Add blank paper'.");
+        return;
+      }
+      // Skip subjects already added for this section in this exam
+      const existing = new Set(
+        rows.filter((r) => r.class_section_id === addSection && r.subject_id).map((r) => r.subject_id as string)
+      );
+      const toInsert = subjIds
+        .filter((id) => !existing.has(id))
+        .map((subject_id) => ({
+          school_id: schoolId, exam_id: examId, class_section_id: addSection,
+          subject_id, max_marks: 100, passing_marks: 40, duration_minutes: 60,
+        }));
+      if (toInsert.length === 0) { toast.info("All subjects for this section are already on the datesheet."); setAddOpen(false); return; }
+      const { data, error } = await (supabase as any).from("exam_subjects").insert(toInsert).select();
+      if (error) throw error;
+      setRows((r) => [...r, ...(data || [])]);
+      toast.success(`Added ${data?.length || 0} paper${(data?.length || 0) !== 1 ? "s" : ""}`);
+      setAddOpen(false); setAddSection("");
+      loadConflicts();
+    } catch (e: any) {
+      toast.error(e.message || "Failed");
+    } finally { setGenerating(false); }
+  };
+
   const updateRow = async (id: string, patch: Partial<Row>) => {
     setRows((r) => r.map((x) => (x.id === id ? { ...x, ...patch } : x)));
     const { error } = await (supabase as any).from("exam_subjects").update(patch).eq("id", id);
@@ -119,14 +162,19 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
     staff: new Map(staff.map((s) => [s.user_id, s.display_name])),
   }), [subjects, sections, staff]);
 
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportScope, setExportScope] = useState<"all" | "section">("all");
+
   const exportPdf = async () => {
-    const filtered = exportSection === SECTION_ALL ? rows : rows.filter((r) => r.class_section_id === exportSection);
-    if (filtered.length === 0) return toast.error("No papers to export");
+    const useSection = exportScope === "section" && exportSection !== SECTION_ALL ? exportSection : null;
+    const filtered = useSection ? rows.filter((r) => r.class_section_id === useSection) : rows;
+    if (filtered.length === 0) return toast.error("No papers to export for this scope");
     if (fields.length === 0) return toast.error("Pick at least one column");
-    const sectionLabel = exportSection === SECTION_ALL ? undefined : lookups.sections.get(exportSection);
+    const sectionLabel = useSection ? lookups.sections.get(useSection) : undefined;
     const doc = await buildDatesheetPDF(filtered, { schoolName, examName, sectionLabel }, { fields, includePaperQR: paperQR }, lookups);
-    doc.save(`datesheet-${examName.replace(/\s+/g, "_")}${sectionLabel ? "-" + sectionLabel.replace(/\s+/g, "_") : ""}.pdf`);
+    doc.save(`datesheet-${examName.replace(/\s+/g, "_")}${sectionLabel ? "-" + sectionLabel.replace(/\s+/g, "_") : "-all"}.pdf`);
     toast.success("Datesheet exported");
+    setExportOpen(false);
   };
 
   const sendToParents = async () => {
@@ -145,7 +193,7 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
       const students = (enrolls || []) as any[];
       if (students.length === 0) { toast.error("No enrolled students found"); return; }
 
-      let success = 0; let failed = 0;
+      let success = 0; let failed = 0; let firstErr = "";
       for (const en of students) {
         const studentRows = rows.filter((r) => r.class_section_id === en.class_section_id);
         if (studentRows.length === 0) continue;
@@ -164,11 +212,12 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
             upsert: true, contentType: "application/pdf",
           });
           if (upErr) throw upErr;
-          await (supabase as any).from("exam_datesheet_distributions").upsert({
+          const { error: distErr } = await (supabase as any).from("exam_datesheet_distributions").upsert({
             school_id: schoolId, exam_id: examId, student_id: en.student_id,
             class_section_id: en.class_section_id, file_path: path, generated_by: user?.id ?? null,
             generated_at: new Date().toISOString(),
           }, { onConflict: "exam_id,student_id" } as any);
+          if (distErr) throw distErr;
 
           const { data: guards } = await (supabase as any)
             .from("student_guardians").select("user_id").eq("student_id", en.student_id).not("user_id", "is", null);
@@ -183,10 +232,12 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
           success++;
         } catch (err: any) {
           console.error("send fail", en.student_id, err);
+          if (!firstErr) firstErr = err?.message || String(err);
           failed++;
         }
       }
-      toast.success(`Sent to ${success} student${success !== 1 ? "s" : ""}${failed ? ` (${failed} failed)` : ""}`);
+      if (success > 0) toast.success(`Sent to ${success} student${success !== 1 ? "s" : ""}${failed ? ` (${failed} failed)` : ""}`);
+      if (success === 0 && failed > 0) toast.error(`All ${failed} failed${firstErr ? `: ${firstErr}` : ""}`);
     } catch (e: any) {
       toast.error(e.message || "Send failed");
     } finally { setSending(false); }
@@ -210,17 +261,6 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 min-h-0">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
-              <Select value={exportSection} onValueChange={setExportSection}>
-                <SelectTrigger className="h-8 w-[220px]"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={SECTION_ALL}>All classes/sections</SelectItem>
-                  {sections.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.class_name ? `${s.class_name} — ` : ""}{s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button size="sm" variant="outline"><Settings2 className="mr-1 h-4 w-4" />PDF options</Button>
@@ -246,7 +286,7 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
                   </div>
                 </PopoverContent>
               </Popover>
-              <Button size="sm" variant="outline" onClick={exportPdf}>
+              <Button size="sm" variant="outline" onClick={() => { setExportScope("all"); setExportSection(SECTION_ALL); setExportOpen(true); }}>
                 <FileDown className="mr-1 h-4 w-4" />Export PDF
               </Button>
               {canManage && (
@@ -256,9 +296,76 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
               )}
             </div>
             {canManage && (
-              <Button size="sm" onClick={addRow}><Plus className="mr-1 h-4 w-4" />Add paper</Button>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={addRow}><Plus className="mr-1 h-4 w-4" />Add blank paper</Button>
+                <Button size="sm" onClick={() => { setAddSection(""); setAddOpen(true); }}>
+                  <Plus className="mr-1 h-4 w-4" />Generate for class
+                </Button>
+              </div>
             )}
           </div>
+
+          <Dialog open={exportOpen} onOpenChange={setExportOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader><DialogTitle>Export datesheet PDF</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">Choose what to include in the PDF.</p>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="radio" checked={exportScope === "all"} onChange={() => setExportScope("all")} />
+                    Whole school (all classes & sections)
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="radio" checked={exportScope === "section"} onChange={() => setExportScope("section")} />
+                    Specific class / section
+                  </label>
+                </div>
+                {exportScope === "section" && (
+                  <Select value={exportSection} onValueChange={setExportSection}>
+                    <SelectTrigger><SelectValue placeholder="Choose class / section" /></SelectTrigger>
+                    <SelectContent>
+                      {sections.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.class_name ? `${s.class_name} — ` : ""}{s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setExportOpen(false)}>Cancel</Button>
+                <Button onClick={exportPdf} disabled={exportScope === "section" && (exportSection === SECTION_ALL || !exportSection)}>
+                  <FileDown className="mr-1 h-4 w-4" />Download
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={addOpen} onOpenChange={setAddOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader><DialogTitle>Generate datesheet for a class</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">Pick a class/section. We'll add one paper per subject assigned to it — you can then set dates, times and rooms.</p>
+                <Select value={addSection} onValueChange={setAddSection}>
+                  <SelectTrigger><SelectValue placeholder="Choose class / section" /></SelectTrigger>
+                  <SelectContent>
+                    {sections.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.class_name ? `${s.class_name} — ` : ""}{s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setAddOpen(false)}>Cancel</Button>
+                <Button onClick={generateForSection} disabled={generating || !addSection}>
+                  {generating ? "Generating…" : "Generate papers"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
 
           {conflicts.length > 0 && (
