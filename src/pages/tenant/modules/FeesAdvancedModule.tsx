@@ -27,7 +27,7 @@ type FeePlanItem = { id: string; fee_plan_id: string; label: string; category: s
 type StudentAssignment = { id: string; student_id: string; fee_plan_id: string; discount_pct: number; scholarship_amount: number };
 type FeeInvoice = { id: string; invoice_number: string; student_id: string; fee_plan_id: string | null; period_label: string | null; due_date: string; total_amount: number; paid_amount: number; status: string; created_at: string };
 type FeePayment = { id: string; invoice_id: string; student_id: string; amount: number; method: string; transaction_ref: string | null; paid_at: string; status: string };
-type FeeSettings = { id?: string; sibling_discount_2nd_pct: number; sibling_discount_3rd_plus_pct: number; late_fee_enabled: boolean; late_fee_amount: number; late_fee_grace_days: number; invoice_prefix: string; currency: string };
+type FeeSettings = { id?: string; sibling_discount_2nd_pct: number; sibling_discount_3rd_plus_pct: number; late_fee_enabled: boolean; late_fee_amount: number; late_fee_grace_days: number; invoice_prefix: string; currency: string; bank_name?: string | null; bank_account_title?: string | null; bank_account_number?: string | null; bank_iban?: string | null; bank_branch?: string | null; bank_swift?: string | null; voucher_footer_note?: string | null };
 
 const CATEGORIES = ["tuition", "admission", "transport", "exam", "uniform", "books", "lab", "sports", "library", "other"];
 
@@ -691,6 +691,16 @@ export default function FeesAdvancedModule() {
               <div className="flex items-center gap-3"><Switch checked={settings.late_fee_enabled} onCheckedChange={v => setSettings({ ...settings, late_fee_enabled: v })} /><Label>Enable late fees</Label></div>
               <div><Label>Late fee amount</Label><Input type="number" value={settings.late_fee_amount} onChange={e => setSettings({ ...settings, late_fee_amount: Number(e.target.value) })} /></div>
               <div><Label>Grace days</Label><Input type="number" value={settings.late_fee_grace_days} onChange={e => setSettings({ ...settings, late_fee_grace_days: Number(e.target.value) })} /></div>
+              <div className="md:col-span-2 pt-2 border-t mt-2">
+                <h4 className="font-semibold text-sm mb-2">Bank Details (printed on every fee voucher)</h4>
+              </div>
+              <div><Label>Bank name</Label><Input value={settings.bank_name ?? ""} onChange={e => setSettings({ ...settings, bank_name: e.target.value })} /></div>
+              <div><Label>Branch</Label><Input value={settings.bank_branch ?? ""} onChange={e => setSettings({ ...settings, bank_branch: e.target.value })} /></div>
+              <div><Label>Account title</Label><Input value={settings.bank_account_title ?? ""} onChange={e => setSettings({ ...settings, bank_account_title: e.target.value })} /></div>
+              <div><Label>Account number</Label><Input value={settings.bank_account_number ?? ""} onChange={e => setSettings({ ...settings, bank_account_number: e.target.value })} /></div>
+              <div><Label>IBAN</Label><Input value={settings.bank_iban ?? ""} onChange={e => setSettings({ ...settings, bank_iban: e.target.value })} /></div>
+              <div><Label>SWIFT</Label><Input value={settings.bank_swift ?? ""} onChange={e => setSettings({ ...settings, bank_swift: e.target.value })} /></div>
+              <div className="md:col-span-2"><Label>Voucher footer note</Label><Input value={settings.voucher_footer_note ?? ""} onChange={e => setSettings({ ...settings, voucher_footer_note: e.target.value })} placeholder="e.g. Pay before due date. Late fee applies after grace period." /></div>
               <div className="md:col-span-2"><Button onClick={saveSettings}>Save settings</Button></div>
             </CardContent>
           </Card>
