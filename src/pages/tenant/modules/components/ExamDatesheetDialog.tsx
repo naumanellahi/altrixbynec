@@ -177,7 +177,8 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
     setExportOpen(false);
   };
 
-  const sendToParents = async () => {
+  // scheduleAt: if provided (ISO), notifications are deferred and processed by cron at that time
+  const sendToParents = async (scheduleAt?: string | null) => {
     if (fields.length === 0) return toast.error("Pick at least one column");
     setSending(true);
     try {
@@ -216,18 +217,22 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
             school_id: schoolId, exam_id: examId, student_id: en.student_id,
             class_section_id: en.class_section_id, file_path: path, generated_by: user?.id ?? null,
             generated_at: new Date().toISOString(),
+            notify_at: scheduleAt ? new Date(scheduleAt).toISOString() : new Date().toISOString(),
+            notified_at: scheduleAt ? null : new Date().toISOString(),
           }, { onConflict: "exam_id,student_id" } as any);
           if (distErr) throw distErr;
 
-          const { data: guards } = await (supabase as any)
-            .from("student_guardians").select("user_id").eq("student_id", en.student_id).not("user_id", "is", null);
-          for (const g of (guards || []) as any[]) {
-            await (supabase as any).from("app_notifications").insert({
-              school_id: schoolId, user_id: g.user_id, type: "exam_datesheet",
-              title: `Datesheet ready: ${examName}`,
-              body: `Download ${studentLabel}'s exam datesheet from the Datesheets section.`,
-              entity_type: "exam", entity_id: examId,
-            });
+          if (!scheduleAt) {
+            const { data: guards } = await (supabase as any)
+              .from("student_guardians").select("user_id").eq("student_id", en.student_id).not("user_id", "is", null);
+            for (const g of (guards || []) as any[]) {
+              await (supabase as any).from("app_notifications").insert({
+                school_id: schoolId, user_id: g.user_id, type: "exam_datesheet",
+                title: `Datesheet ready: ${examName}`,
+                body: `Download ${studentLabel}'s exam datesheet from the Datesheets section.`,
+                entity_type: "exam", entity_id: examId,
+              });
+            }
           }
           success++;
         } catch (err: any) {
@@ -236,12 +241,44 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
           failed++;
         }
       }
-      if (success > 0) toast.success(`Sent to ${success} student${success !== 1 ? "s" : ""}${failed ? ` (${failed} failed)` : ""}`);
+      if (success > 0) {
+        if (scheduleAt) toast.success(`Scheduled ${success} datesheet${success !== 1 ? "s" : ""} for ${format(new Date(scheduleAt), "PPp")}${failed ? ` (${failed} failed)` : ""}`);
+        else toast.success(`Sent to ${success} student${success !== 1 ? "s" : ""}${failed ? ` (${failed} failed)` : ""}`);
+      }
       if (success === 0 && failed > 0) toast.error(`All ${failed} failed${firstErr ? `: ${firstErr}` : ""}`);
+      loadSchedules();
     } catch (e: any) {
       toast.error(e.message || "Send failed");
     } finally { setSending(false); }
   };
+
+  // Scheduled distributions list
+  const [schedules, setSchedules] = useState<any[]>([]);
+  const loadSchedules = async () => {
+    const { data } = await (supabase as any)
+      .from("exam_datesheet_distributions")
+      .select("id,student_id,notify_at,notified_at,class_section_id")
+      .eq("exam_id", examId)
+      .order("notify_at", { ascending: true });
+    setSchedules(data || []);
+  };
+  useEffect(() => { if (open) loadSchedules(); /* eslint-disable-next-line */ }, [open, examId]);
+  const updateSchedule = async (id: string, notify_at: string | null) => {
+    const { error } = await (supabase as any).from("exam_datesheet_distributions")
+      .update({ notify_at: notify_at ? new Date(notify_at).toISOString() : null, notified_at: null }).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Schedule updated"); loadSchedules();
+  };
+  const cancelSchedule = async (id: string) => {
+    const { error } = await (supabase as any).from("exam_datesheet_distributions")
+      .update({ notify_at: null }).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Schedule cancelled"); loadSchedules();
+  };
+
+  // Schedule dialog
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduleAt, setScheduleAt] = useState<string>("");
 
   const toggleField = (k: DatesheetField) =>
     setFields((f) => (f.includes(k) ? f.filter((x) => x !== k) : [...f, k]));
@@ -290,9 +327,14 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
                 <FileDown className="mr-1 h-4 w-4" />Export PDF
               </Button>
               {canManage && (
-                <Button size="sm" variant="default" disabled={sending} onClick={sendToParents}>
-                  <Send className="mr-1 h-4 w-4" />{sending ? "Sending…" : "Send to parents"}
-                </Button>
+                <>
+                  <Button size="sm" variant="default" disabled={sending} onClick={() => sendToParents()}>
+                    <Send className="mr-1 h-4 w-4" />{sending ? "Sending…" : "Send now"}
+                  </Button>
+                  <Button size="sm" variant="outline" disabled={sending} onClick={() => { setScheduleAt(""); setScheduleOpen(true); }}>
+                    <CalendarDays className="mr-1 h-4 w-4" />Schedule send
+                  </Button>
+                </>
               )}
             </div>
             {canManage && (
@@ -366,6 +408,65 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader><DialogTitle>Schedule send to parents</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">PDFs are generated now and stored. Parents will be notified at the date/time you choose. You can change or cancel the schedule afterwards in the list below.</p>
+                <div>
+                  <label className="text-sm font-medium">Notify parents at</label>
+                  <Input type="datetime-local" value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)} />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setScheduleOpen(false)}>Cancel</Button>
+                <Button disabled={!scheduleAt || sending} onClick={async () => { await sendToParents(scheduleAt); setScheduleOpen(false); }}>
+                  <CalendarDays className="mr-1 h-4 w-4" />{sending ? "Saving…" : "Schedule"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {schedules.length > 0 && (
+            <div className="rounded-md border">
+              <div className="px-3 py-2 border-b bg-muted/30 text-xs font-semibold uppercase text-muted-foreground">
+                Scheduled / sent datesheets ({schedules.length})
+              </div>
+              <div className="max-h-44 overflow-y-auto">
+                <Table>
+                  <TableBody>
+                    {schedules.map((s) => {
+                      const pending = s.notify_at && !s.notified_at;
+                      const sent = !!s.notified_at;
+                      return (
+                        <TableRow key={s.id}>
+                          <TableCell className="text-xs">{lookups.sections.get(s.class_section_id) || "—"}</TableCell>
+                          <TableCell className="text-xs">
+                            {sent ? `Sent ${format(new Date(s.notified_at), "PPp")}`
+                              : pending ? `Scheduled ${format(new Date(s.notify_at), "PPp")}`
+                              : "Not scheduled"}
+                          </TableCell>
+                          <TableCell className="w-[200px]">
+                            {canManage && !sent && (
+                              <Input type="datetime-local" className="h-7 text-xs"
+                                defaultValue={s.notify_at ? new Date(s.notify_at).toISOString().slice(0,16) : ""}
+                                onBlur={(e) => e.target.value && e.target.value !== (s.notify_at ? new Date(s.notify_at).toISOString().slice(0,16) : "") && updateSchedule(s.id, e.target.value)} />
+                            )}
+                          </TableCell>
+                          <TableCell className="w-[80px]">
+                            {canManage && pending && (
+                              <Button size="sm" variant="ghost" onClick={() => cancelSchedule(s.id)}>Cancel</Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
 
 
           {conflicts.length > 0 && (

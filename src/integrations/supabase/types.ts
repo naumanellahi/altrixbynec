@@ -2227,6 +2227,9 @@ export type Database = {
           generated_at: string
           generated_by: string | null
           id: string
+          notes: string | null
+          notified_at: string | null
+          notify_at: string | null
           school_id: string
           student_id: string
         }
@@ -2237,6 +2240,9 @@ export type Database = {
           generated_at?: string
           generated_by?: string | null
           id?: string
+          notes?: string | null
+          notified_at?: string | null
+          notify_at?: string | null
           school_id: string
           student_id: string
         }
@@ -2247,6 +2253,9 @@ export type Database = {
           generated_at?: string
           generated_by?: string | null
           id?: string
+          notes?: string | null
+          notified_at?: string | null
+          notify_at?: string | null
           school_id?: string
           student_id?: string
         }
@@ -2290,6 +2299,7 @@ export type Database = {
           id: string
           is_published: boolean
           notes: string | null
+          processed_at: string | null
           publish_at: string | null
           school_id: string
           scope: string
@@ -2304,6 +2314,7 @@ export type Database = {
           id?: string
           is_published?: boolean
           notes?: string | null
+          processed_at?: string | null
           publish_at?: string | null
           school_id: string
           scope: string
@@ -2318,6 +2329,7 @@ export type Database = {
           id?: string
           is_published?: boolean
           notes?: string | null
+          processed_at?: string | null
           publish_at?: string | null
           school_id?: string
           scope?: string
@@ -6340,6 +6352,11 @@ export type Database = {
           slug: string
         }[]
       }
+      process_scheduled_datesheet_notifications: {
+        Args: never
+        Returns: number
+      }
+      process_scheduled_exam_publications: { Args: never; Returns: number }
       recalc_invoice_totals: {
         Args: { _invoice_id: string }
         Returns: undefined

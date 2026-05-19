@@ -43,7 +43,7 @@ export default function ExamPublishDialog({
   const { user } = useSession();
   const [pubs, setPubs] = useState<Pub[]>([]);
   const [sections, setSections] = useState<{ id: string; name: string; class_name?: string }[]>([]);
-  const [students, setStudents] = useState<{ id: string; first_name: string; last_name: string }[]>([]);
+  const [students, setStudents] = useState<{ id: string; first_name: string; last_name: string; class_section_id?: string | null }[]>([]);
 
   // exam-wide
   const [examPublishAt, setExamPublishAt] = useState<string>("");
@@ -56,6 +56,7 @@ export default function ExamPublishDialog({
   const [secPublished, setSecPublished] = useState(true);
 
   // student
+  const [studClassId, setStudClassId] = useState<string>("");
   const [studId, setStudId] = useState<string>("");
   const [studAt, setStudAt] = useState<string>("");
   const [studNotes, setStudNotes] = useState<string>("");
@@ -66,47 +67,55 @@ export default function ExamPublishDialog({
     const [p, s, st] = await Promise.all([
       (supabase as any).from("exam_result_publications").select("*").eq("exam_id", examId).order("created_at", { ascending: false }),
       (supabase as any).from("class_sections").select("id,name,academic_classes(name)").eq("school_id", schoolId),
-      (supabase as any).from("students").select("id,first_name,last_name").eq("school_id", schoolId).order("first_name").limit(500),
+      (supabase as any).from("student_enrollments")
+        .select("class_section_id,students!inner(id,first_name,last_name,school_id)")
+        .eq("school_id", schoolId).is("end_date", null).limit(2000),
     ]);
     setPubs(p.data || []);
     setSections((s.data || []).map((x: any) => ({ id: x.id, name: x.name, class_name: x.academic_classes?.name })));
-    setStudents(st.data || []);
+    setStudents((st.data || []).map((e: any) => ({
+      id: e.students.id, first_name: e.students.first_name, last_name: e.students.last_name,
+      class_section_id: e.class_section_id,
+    })));
     setExamPublishAt(resultPublishedAt ? resultPublishedAt.slice(0, 16) : "");
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [open, examId]);
 
+  const studentsInClass = students.filter((s) => !studClassId || s.class_section_id === studClassId);
+
+  const isFuture = (iso: string | null) => !!iso && new Date(iso).getTime() > Date.now() + 30_000;
+
   const publishExam = async (publish: boolean) => {
+    const publishAtIso = publish ? (examPublishAt ? new Date(examPublishAt).toISOString() : new Date().toISOString()) : null;
+    const scheduled = publish && isFuture(publishAtIso);
     const patch: any = {
-      result_published: publish,
-      result_published_at: publish ? (examPublishAt ? new Date(examPublishAt).toISOString() : new Date().toISOString()) : null,
+      result_published: scheduled ? false : publish,
+      result_published_at: scheduled ? null : publishAtIso,
     };
     const { error } = await (supabase as any).from("exams").update(patch).eq("id", examId);
     if (error) return toast.error(error.message);
 
-    // upsert exam-scope publication record for history
     await (supabase as any).from("exam_result_publications").upsert(
       {
         school_id: schoolId, exam_id: examId, scope: "exam",
         is_published: publish,
-        publish_at: patch.result_published_at,
+        publish_at: publishAtIso,
         notes: examNotes || null,
         created_by: user?.id ?? null,
+        processed_at: scheduled ? null : new Date().toISOString(),
       },
       { onConflict: "exam_id", ignoreDuplicates: false } as any
     );
 
-    const { data: notified } = await (supabase as any).rpc("notify_exam_result_publish", {
-      _exam_id: examId,
-      _scope: "exam",
-      _is_published: publish,
-      _section_id: null,
-      _student_id: null,
-      _message: examNotes || null,
-    });
-
-    toast.success(
-      `${publish ? "Results published" : "Results unpublished"} — ${notified ?? 0} recipients notified`
-    );
+    if (!scheduled) {
+      const { data: notified } = await (supabase as any).rpc("notify_exam_result_publish", {
+        _exam_id: examId, _scope: "exam", _is_published: publish,
+        _section_id: null, _student_id: null, _message: examNotes || null,
+      });
+      toast.success(`${publish ? "Results published" : "Results unpublished"} — ${notified ?? 0} recipients notified`);
+    } else {
+      toast.success(`Scheduled for ${format(new Date(publishAtIso!), "PPp")}`);
+    }
     setExamNotes("");
     onUpdated();
     load();
@@ -114,47 +123,61 @@ export default function ExamPublishDialog({
 
   const addSection = async () => {
     if (!secId) return toast.error("Pick a section");
+    const publishAtIso = secAt ? new Date(secAt).toISOString() : null;
+    const scheduled = isFuture(publishAtIso);
     const { error } = await (supabase as any).from("exam_result_publications").upsert(
       {
         school_id: schoolId, exam_id: examId, scope: "section",
         class_section_id: secId,
         is_published: secPublished,
-        publish_at: secAt ? new Date(secAt).toISOString() : null,
+        publish_at: publishAtIso,
         notes: secNotes || null,
         created_by: user?.id ?? null,
+        processed_at: scheduled ? null : new Date().toISOString(),
       },
       { onConflict: "exam_id,class_section_id" } as any
     );
     if (error) return toast.error(error.message);
-    const { data: notified } = await (supabase as any).rpc("notify_exam_result_publish", {
-      _exam_id: examId, _scope: "section", _is_published: secPublished,
-      _section_id: secId, _student_id: null, _message: secNotes || null,
-    });
-    toast.success(`Section rule saved — ${notified ?? 0} notified`);
+    if (!scheduled) {
+      const { data: notified } = await (supabase as any).rpc("notify_exam_result_publish", {
+        _exam_id: examId, _scope: "section", _is_published: secPublished,
+        _section_id: secId, _student_id: null, _message: secNotes || null,
+      });
+      toast.success(`Section rule saved — ${notified ?? 0} notified`);
+    } else {
+      toast.success(`Section scheduled for ${format(new Date(publishAtIso!), "PPp")}`);
+    }
     setSecId(""); setSecAt(""); setSecNotes(""); setSecPublished(true);
     load();
   };
 
   const addStudent = async () => {
     if (!studId) return toast.error("Pick a student");
+    const publishAtIso = studAt ? new Date(studAt).toISOString() : null;
+    const scheduled = isFuture(publishAtIso);
     const { error } = await (supabase as any).from("exam_result_publications").upsert(
       {
         school_id: schoolId, exam_id: examId, scope: "student",
         student_id: studId,
         is_published: studPublished,
-        publish_at: studAt ? new Date(studAt).toISOString() : null,
+        publish_at: publishAtIso,
         notes: studNotes || null,
         created_by: user?.id ?? null,
+        processed_at: scheduled ? null : new Date().toISOString(),
       },
       { onConflict: "exam_id,student_id" } as any
     );
     if (error) return toast.error(error.message);
-    const { data: notified } = await (supabase as any).rpc("notify_exam_result_publish", {
-      _exam_id: examId, _scope: "student", _is_published: studPublished,
-      _section_id: null, _student_id: studId, _message: studNotes || null,
-    });
-    toast.success(`Student rule saved — ${notified ?? 0} notified`);
-    setStudId(""); setStudAt(""); setStudNotes(""); setStudPublished(true);
+    if (!scheduled) {
+      const { data: notified } = await (supabase as any).rpc("notify_exam_result_publish", {
+        _exam_id: examId, _scope: "student", _is_published: studPublished,
+        _section_id: null, _student_id: studId, _message: studNotes || null,
+      });
+      toast.success(`Student rule saved — ${notified ?? 0} notified`);
+    } else {
+      toast.success(`Student scheduled for ${format(new Date(publishAtIso!), "PPp")}`);
+    }
+    setStudClassId(""); setStudId(""); setStudAt(""); setStudNotes(""); setStudPublished(true);
     load();
   };
 
@@ -237,17 +260,30 @@ export default function ExamPublishDialog({
           </TabsContent>
 
           <TabsContent value="student" className="space-y-3 pt-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label>Class / Section</Label>
+                <Select value={studClassId} onValueChange={(v) => { setStudClassId(v); setStudId(""); }}>
+                  <SelectTrigger><SelectValue placeholder="Pick class" /></SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {sections.map((s) => <SelectItem key={s.id} value={s.id}>{s.class_name ? s.class_name + " — " : ""}{s.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <Label>Student</Label>
-                <Select value={studId} onValueChange={setStudId}>
-                  <SelectTrigger><SelectValue placeholder="Pick student" /></SelectTrigger>
-                  <SelectContent className="max-h-72">{students.map((s) => <SelectItem key={s.id} value={s.id}>{s.first_name} {s.last_name}</SelectItem>)}</SelectContent>
+                <Select value={studId} onValueChange={setStudId} disabled={!studClassId}>
+                  <SelectTrigger><SelectValue placeholder={studClassId ? "Pick student" : "Pick class first"} /></SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {studentsInClass.length === 0 && <div className="px-2 py-3 text-sm text-muted-foreground">No students in this class.</div>}
+                    {studentsInClass.map((s) => <SelectItem key={s.id} value={s.id}>{s.first_name} {s.last_name}</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </div>
               <div>
                 <Label>Publish date/time (optional)</Label>
                 <Input type="datetime-local" value={studAt} onChange={(e) => setStudAt(e.target.value)} />
+                <p className="mt-1 text-[10px] text-muted-foreground">Leave blank for immediate. Future time = scheduled.</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
