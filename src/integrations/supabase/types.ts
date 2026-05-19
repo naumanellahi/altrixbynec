@@ -6101,6 +6101,21 @@ export type Database = {
       can_publish_results: { Args: { _school_id: string }; Returns: boolean }
       can_view_fees: { Args: { _school_id: string }; Returns: boolean }
       can_work_crm: { Args: { _school_id: string }; Returns: boolean }
+      check_exam_subject_conflicts: {
+        Args: { _exam_id: string; _school_id: string }
+        Returns: {
+          a_end: string
+          a_id: string
+          a_start: string
+          b_end: string
+          b_id: string
+          b_start: string
+          conflict_type: string
+          exam_date: string
+          invigilator_user_id: string
+          room: string
+        }[]
+      }
       convert_admission_to_student: {
         Args: { _application_id: string }
         Returns: string
@@ -6221,6 +6236,17 @@ export type Database = {
         }[]
       }
       my_student_id: { Args: { _school_id: string }; Returns: string }
+      notify_exam_result_publish: {
+        Args: {
+          _exam_id: string
+          _is_published: boolean
+          _message?: string
+          _scope: string
+          _section_id?: string
+          _student_id?: string
+        }
+        Returns: number
+      }
       owner_campuses: {
         Args: { _school_id: string }
         Returns: {
