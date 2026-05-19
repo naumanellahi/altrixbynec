@@ -2219,6 +2219,68 @@ export type Database = {
           },
         ]
       }
+      exam_datesheet_distributions: {
+        Row: {
+          class_section_id: string | null
+          exam_id: string
+          file_path: string
+          generated_at: string
+          generated_by: string | null
+          id: string
+          school_id: string
+          student_id: string
+        }
+        Insert: {
+          class_section_id?: string | null
+          exam_id: string
+          file_path: string
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          school_id: string
+          student_id: string
+        }
+        Update: {
+          class_section_id?: string | null
+          exam_id?: string
+          file_path?: string
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          school_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_datesheet_distributions_class_section_id_fkey"
+            columns: ["class_section_id"]
+            isOneToOne: false
+            referencedRelation: "class_sections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_datesheet_distributions_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_datesheet_distributions_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_datesheet_distributions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exam_result_publications: {
         Row: {
           class_section_id: string | null
