@@ -298,7 +298,23 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
           else if (newRow.status === "failed") toast.error(`Payment failed: ${newRow.ep_response_message || "Unknown reason"}`);
         }
       })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "app_notifications", filter: `user_id=eq.${child.student_id ? child.student_id : "00000000-0000-0000-0000-000000000000"}` }, () => { /* placeholder, real subscription below */ })
       .subscribe();
+
+    // Separate channel for app_notifications keyed to current auth user (parent), to refresh on proof verify/reject
+    const userChan = supabase.channel(`pfees-notif-${child.student_id}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "app_notifications" }, (payload: any) => {
+        const n = payload.new;
+        if (!n) return;
+        if (["fee_proof_verified", "fee_proof_rejected", "fee_proof_submitted"].includes(n.type)) {
+          loadInvoices();
+          loadProofs();
+          if (n.type === "fee_proof_verified") toast.success(n.title);
+          else if (n.type === "fee_proof_rejected") toast.error(n.title);
+        }
+      })
+      .subscribe();
+
 
     return () => { cancelled = true; supabase.removeChannel(ch); };
   }, [child, schoolId]);
