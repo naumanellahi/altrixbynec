@@ -316,7 +316,7 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
       .subscribe();
 
 
-    return () => { cancelled = true; supabase.removeChannel(ch); };
+    return () => { cancelled = true; supabase.removeChannel(ch); supabase.removeChannel(userChan); };
   }, [child, schoolId]);
 
   const payNow = async (invoiceId: string, provider: "jazzcash" | "easypaisa" = "jazzcash") => {
