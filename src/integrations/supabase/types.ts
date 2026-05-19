@@ -6168,6 +6168,10 @@ export type Database = {
       }
       can_manage_admissions: { Args: { _school_id: string }; Returns: boolean }
       can_manage_easypaisa: { Args: { _school_id: string }; Returns: boolean }
+      can_manage_exam_datesheet: {
+        Args: { _class_section_id?: string; _school_id: string }
+        Returns: boolean
+      }
       can_manage_finance: { Args: { _school_id: string }; Returns: boolean }
       can_manage_jazzcash: { Args: { _school_id: string }; Returns: boolean }
       can_manage_staff: { Args: { _school_id: string }; Returns: boolean }
@@ -6260,6 +6264,10 @@ export type Database = {
             Args: { _role: string; _school_id: string; _user_id: string }
             Returns: boolean
           }
+      insert_exam_datesheet_notifications: {
+        Args: { _class_section_id?: string; _exam_id: string }
+        Returns: number
+      }
       is_campus_member: {
         Args: { _campus_id: string; _user_id: string }
         Returns: boolean
@@ -6310,6 +6318,10 @@ export type Database = {
         }[]
       }
       my_student_id: { Args: { _school_id: string }; Returns: string }
+      notify_exam_datesheet_ready: {
+        Args: { _class_section_id?: string; _exam_id: string }
+        Returns: number
+      }
       notify_exam_result_publish: {
         Args: {
           _exam_id: string
