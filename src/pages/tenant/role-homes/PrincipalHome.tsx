@@ -312,6 +312,10 @@ export function PrincipalHome() {
               <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
               <span className="text-[10px] sm:text-xs">Reports</span>
             </Button>
+            <Button variant="soft" onClick={() => navigate(`${basePath}/fee-vouchers`)} className="h-auto flex-col gap-1 px-2 py-3 sm:gap-2 sm:py-4">
+              <Coins className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="text-[10px] sm:text-xs">Vouchers</span>
+            </Button>
           </div>
         </CardContent>
       </Card>
