@@ -162,14 +162,19 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
     staff: new Map(staff.map((s) => [s.user_id, s.display_name])),
   }), [subjects, sections, staff]);
 
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportScope, setExportScope] = useState<"all" | "section">("all");
+
   const exportPdf = async () => {
-    const filtered = exportSection === SECTION_ALL ? rows : rows.filter((r) => r.class_section_id === exportSection);
-    if (filtered.length === 0) return toast.error("No papers to export");
+    const useSection = exportScope === "section" && exportSection !== SECTION_ALL ? exportSection : null;
+    const filtered = useSection ? rows.filter((r) => r.class_section_id === useSection) : rows;
+    if (filtered.length === 0) return toast.error("No papers to export for this scope");
     if (fields.length === 0) return toast.error("Pick at least one column");
-    const sectionLabel = exportSection === SECTION_ALL ? undefined : lookups.sections.get(exportSection);
+    const sectionLabel = useSection ? lookups.sections.get(useSection) : undefined;
     const doc = await buildDatesheetPDF(filtered, { schoolName, examName, sectionLabel }, { fields, includePaperQR: paperQR }, lookups);
-    doc.save(`datesheet-${examName.replace(/\s+/g, "_")}${sectionLabel ? "-" + sectionLabel.replace(/\s+/g, "_") : ""}.pdf`);
+    doc.save(`datesheet-${examName.replace(/\s+/g, "_")}${sectionLabel ? "-" + sectionLabel.replace(/\s+/g, "_") : "-all"}.pdf`);
     toast.success("Datesheet exported");
+    setExportOpen(false);
   };
 
   const sendToParents = async () => {
