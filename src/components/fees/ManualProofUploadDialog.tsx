@@ -1,12 +1,23 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2, Upload, Save } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+
+interface ExistingProof {
+  id: string;
+  file_path: string;
+  file_name?: string | null;
+  amount: number;
+  paid_at: string | null;
+  method: string | null;
+  note: string | null;
+  status: string;
+}
 
 interface Props {
   open: boolean;
@@ -16,24 +27,35 @@ interface Props {
   invoiceId: string;
   invoiceNumber: string;
   amountDue: number;
+  existingProof?: ExistingProof | null;
   onUploaded?: () => void;
 }
 
-export function ManualProofUploadDialog({ open, onOpenChange, schoolId, studentId, invoiceId, invoiceNumber, amountDue, onUploaded }: Props) {
+export function ManualProofUploadDialog({ open, onOpenChange, schoolId, studentId, invoiceId, invoiceNumber, amountDue, existingProof, onUploaded }: Props) {
+  const isEdit = !!existingProof;
   const [file, setFile] = useState<File | null>(null);
-  const [amount, setAmount] = useState(String(amountDue || ""));
-  const [paidAt, setPaidAt] = useState(new Date().toISOString().slice(0, 10));
-  const [method, setMethod] = useState("bank_transfer");
-  const [note, setNote] = useState("");
+  const [amount, setAmount] = useState(String(existingProof?.amount ?? amountDue ?? ""));
+  const [paidAt, setPaidAt] = useState(existingProof?.paid_at || new Date().toISOString().slice(0, 10));
+  const [method, setMethod] = useState(existingProof?.method || "bank_transfer");
+  const [note, setNote] = useState(existingProof?.note || "");
   const [submitting, setSubmitting] = useState(false);
 
-  const reset = () => { setFile(null); setNote(""); setAmount(String(amountDue || "")); };
+  // Re-sync state when switching between rows / edit modes
+  useEffect(() => {
+    if (open) {
+      setFile(null);
+      setAmount(String(existingProof?.amount ?? amountDue ?? ""));
+      setPaidAt(existingProof?.paid_at || new Date().toISOString().slice(0, 10));
+      setMethod(existingProof?.method || "bank_transfer");
+      setNote(existingProof?.note || "");
+    }
+  }, [open, existingProof, amountDue]);
 
   const submit = async () => {
-    if (!file) { toast.error("Please attach a receipt image or PDF"); return; }
-    if (file.size > 8 * 1024 * 1024) { toast.error("File too large (max 8MB)"); return; }
     const amt = Number(amount);
     if (!amt || amt <= 0) { toast.error("Enter a valid amount"); return; }
+    if (!isEdit && !file) { toast.error("Please attach a receipt image or PDF"); return; }
+    if (file && file.size > 8 * 1024 * 1024) { toast.error("File too large (max 8MB)"); return; }
 
     setSubmitting(true);
     try {
@@ -41,22 +63,45 @@ export function ManualProofUploadDialog({ open, onOpenChange, schoolId, studentI
       const uid = userData.user?.id;
       if (!uid) throw new Error("Not signed in");
 
-      const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
-      const filePath = `${schoolId}/${invoiceId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("fee-payment-proofs").upload(filePath, file, {
-        cacheControl: "3600", upsert: false, contentType: file.type || undefined,
-      });
-      if (upErr) throw upErr;
+      let filePath = existingProof?.file_path || "";
+      let fileName = existingProof?.file_name || null;
+      let mimeType: string | null = null;
 
-      const { error: insErr } = await (supabase as any).from("fee_payment_proofs").insert({
-        school_id: schoolId, invoice_id: invoiceId, student_id: studentId,
-        uploaded_by: uid, file_path: filePath, file_name: file.name, mime_type: file.type,
-        amount: amt, paid_at: paidAt, method, note,
-      });
-      if (insErr) throw insErr;
+      if (file) {
+        const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
+        filePath = `${schoolId}/${invoiceId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("fee-payment-proofs").upload(filePath, file, {
+          cacheControl: "3600", upsert: false, contentType: file.type || undefined,
+        });
+        if (upErr) throw upErr;
+        fileName = file.name;
+        mimeType = file.type;
 
-      toast.success("Proof uploaded — awaiting verification");
-      reset();
+        // remove previous file if replacing
+        if (isEdit && existingProof?.file_path && existingProof.file_path !== filePath) {
+          await supabase.storage.from("fee-payment-proofs").remove([existingProof.file_path]);
+        }
+      }
+
+      if (isEdit) {
+        const patch: Record<string, any> = {
+          amount: amt, paid_at: paidAt, method, note,
+        };
+        if (file) { patch.file_path = filePath; patch.file_name = fileName; patch.mime_type = mimeType; }
+        const { error: upErr } = await (supabase as any).from("fee_payment_proofs")
+          .update(patch).eq("id", existingProof!.id);
+        if (upErr) throw upErr;
+        toast.success("Proof updated");
+      } else {
+        const { error: insErr } = await (supabase as any).from("fee_payment_proofs").insert({
+          school_id: schoolId, invoice_id: invoiceId, student_id: studentId,
+          uploaded_by: uid, file_path: filePath, file_name: fileName, mime_type: mimeType,
+          amount: amt, paid_at: paidAt, method, note,
+        });
+        if (insErr) throw insErr;
+        toast.success("Proof uploaded — awaiting verification");
+      }
+
       onOpenChange(false);
       onUploaded?.();
     } catch (e: any) {
@@ -70,13 +115,18 @@ export function ManualProofUploadDialog({ open, onOpenChange, schoolId, studentI
     <Dialog open={open} onOpenChange={(v) => { if (!submitting) onOpenChange(v); }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Upload payment proof</DialogTitle>
-          <DialogDescription>Invoice {invoiceNumber} — for staff verification</DialogDescription>
+          <DialogTitle>{isEdit ? "Edit payment proof" : "Upload payment proof"}</DialogTitle>
+          <DialogDescription>
+            Invoice {invoiceNumber} — {isEdit ? "update details or replace the receipt" : "for staff verification"}
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Receipt (image or PDF)</Label>
+            <Label>Receipt (image or PDF){isEdit ? " — optional, leave empty to keep current" : ""}</Label>
             <Input type="file" accept="image/*,application/pdf" onChange={e => setFile(e.target.files?.[0] || null)} />
+            {isEdit && existingProof?.file_name && !file && (
+              <p className="text-xs text-muted-foreground mt-1">Current: {existingProof.file_name}</p>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -106,8 +156,8 @@ export function ManualProofUploadDialog({ open, onOpenChange, schoolId, studentI
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>Cancel</Button>
           <Button onClick={submit} disabled={submitting}>
-            {submitting ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Upload className="h-4 w-4 mr-1" />}
-            Submit proof
+            {submitting ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : (isEdit ? <Save className="h-4 w-4 mr-1" /> : <Upload className="h-4 w-4 mr-1" />)}
+            {isEdit ? "Save changes" : "Submit proof"}
           </Button>
         </DialogFooter>
       </DialogContent>
