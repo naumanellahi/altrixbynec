@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Receipt, Download, Loader2, Trash2, Users, User, Eye, CheckCircle2, XCircle, AlertCircle, Mail, Upload } from "lucide-react";
+import { Plus, Receipt, Download, Loader2, Trash2, Users, User, Eye, CheckCircle2, XCircle, AlertCircle, Mail, Upload, Search, X } from "lucide-react";
 import { toast } from "sonner";
 
 
@@ -175,6 +175,12 @@ type ProofRow = {
 function PaymentProofsCard({ schoolId }: { schoolId: string | null }) {
   const qc = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<string>("pending");
+  const [methodFilter, setMethodFilter] = useState<string>("__all");
+  const [fromDate, setFromDate] = useState<string>("");
+  const [toDate, setToDate] = useState<string>("");
+  const [minAmount, setMinAmount] = useState<string>("");
+  const [maxAmount, setMaxAmount] = useState<string>("");
+  const [search, setSearch] = useState<string>("");
   const [viewing, setViewing] = useState<{ url: string; name: string; pdf: boolean } | null>(null);
   const [rejectFor, setRejectFor] = useState<ProofRow | null>(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -185,7 +191,7 @@ function PaymentProofsCard({ schoolId }: { schoolId: string | null }) {
     queryFn: async () => {
       let q = (supabase as any).from("fee_payment_proofs")
         .select("id, school_id, invoice_id, student_id, file_path, file_name, mime_type, amount, paid_at, method, note, status, rejection_reason, verified_at, created_at")
-        .eq("school_id", schoolId!).order("created_at", { ascending: false }).limit(100);
+        .eq("school_id", schoolId!).order("created_at", { ascending: false }).limit(200);
       if (statusFilter !== "__all") q = q.eq("status", statusFilter);
       const { data, error } = await q;
       if (error) throw error;
@@ -215,6 +221,38 @@ function PaymentProofsCard({ schoolId }: { schoolId: string | null }) {
   const studentMap = new Map((students as any[]).map(s => [s.id, s]));
   const invoiceMap = new Map((invoices as any[]).map(i => [i.id, i]));
 
+  const methodOptions = useMemo(() => {
+    const set = new Set<string>();
+    proofs.forEach(p => { if (p.method) set.add(p.method); });
+    return Array.from(set).sort();
+  }, [proofs]);
+
+  const filteredProofs = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const min = minAmount ? Number(minAmount) : null;
+    const max = maxAmount ? Number(maxAmount) : null;
+    return proofs.filter(p => {
+      if (methodFilter !== "__all" && (p.method || "") !== methodFilter) return false;
+      const created = p.created_at?.slice(0, 10) || "";
+      if (fromDate && created < fromDate) return false;
+      if (toDate && created > toDate) return false;
+      if (min !== null && Number(p.amount) < min) return false;
+      if (max !== null && Number(p.amount) > max) return false;
+      if (q) {
+        const s = studentMap.get(p.student_id);
+        const inv = invoiceMap.get(p.invoice_id);
+        const hay = `${s?.first_name || ""} ${s?.last_name || ""} ${s?.roll_number || ""} ${inv?.invoice_number || ""} ${p.method || ""} ${p.note || ""} ${p.status || ""} ${p.rejection_reason || ""}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [proofs, search, methodFilter, fromDate, toDate, minAmount, maxAmount, studentMap, invoiceMap]);
+
+  const hasActiveFilters = search || methodFilter !== "__all" || fromDate || toDate || minAmount || maxAmount;
+  const clearFilters = () => {
+    setSearch(""); setMethodFilter("__all"); setFromDate(""); setToDate(""); setMinAmount(""); setMaxAmount("");
+  };
+
   const openProof = async (p: ProofRow) => {
     const { data, error } = await supabase.storage.from("fee-payment-proofs").createSignedUrl(p.file_path, 600);
     if (error || !data) { toast.error("Could not open file"); return; }
@@ -242,27 +280,70 @@ function PaymentProofsCard({ schoolId }: { schoolId: string | null }) {
 
   return (
     <Card className="shadow-elevated">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Upload className="h-4 w-4" /> Manual payment proofs
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">Parents' uploaded bank/cash receipts awaiting verification.</p>
+      <CardHeader>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Upload className="h-4 w-4" /> Manual payment proofs
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">Parents' uploaded bank/cash receipts awaiting verification.</p>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Showing <span className="font-medium text-foreground">{filteredProofs.length}</span> of {proofs.length}
+          </div>
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="verified">Verified</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
-            <SelectItem value="__all">All</SelectItem>
-          </SelectContent>
-        </Select>
+
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-12 gap-2">
+          <div className="relative md:col-span-4">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search student, invoice #, method, note…"
+              className="pl-8 pr-8"
+            />
+            {search && (
+              <button type="button" onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="md:col-span-2"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="verified">Verified</SelectItem>
+              <SelectItem value="rejected">Rejected</SelectItem>
+              <SelectItem value="__all">All statuses</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={methodFilter} onValueChange={setMethodFilter}>
+            <SelectTrigger className="md:col-span-2"><SelectValue placeholder="Method" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all">All methods</SelectItem>
+              {methodOptions.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="md:col-span-2" title="From date" />
+          <Input type="date" value={toDate} onChange={e => setToDate(e.target.value)} className="md:col-span-2" title="To date" />
+          <Input type="number" inputMode="decimal" placeholder="Min amount" value={minAmount} onChange={e => setMinAmount(e.target.value)} className="md:col-span-2" />
+          <Input type="number" inputMode="decimal" placeholder="Max amount" value={maxAmount} onChange={e => setMaxAmount(e.target.value)} className="md:col-span-2" />
+          {hasActiveFilters && (
+            <Button size="sm" variant="ghost" onClick={clearFilters} className="md:col-span-2">
+              <X className="h-3 w-3 mr-1" /> Clear filters
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
-        {proofs.length === 0 ? (
-          <div className="py-6 text-center text-sm text-muted-foreground">No {statusFilter !== "__all" ? statusFilter : ""} proofs.</div>
+        {filteredProofs.length === 0 ? (
+          <div className="py-8 text-center text-sm text-muted-foreground">
+            {proofs.length === 0
+              ? `No ${statusFilter !== "__all" ? statusFilter : ""} proofs yet.`
+              : "No proofs match the current filters."}
+          </div>
         ) : (
+
           <Table>
             <TableHeader><TableRow>
               <TableHead>Uploaded</TableHead>
@@ -274,7 +355,7 @@ function PaymentProofsCard({ schoolId }: { schoolId: string | null }) {
               <TableHead className="text-right">Actions</TableHead>
             </TableRow></TableHeader>
             <TableBody>
-              {proofs.map(p => {
+              {filteredProofs.map(p => {
                 const s = studentMap.get(p.student_id);
                 const inv = invoiceMap.get(p.invoice_id);
                 return (
