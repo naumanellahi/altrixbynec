@@ -41,6 +41,7 @@ interface Row {
 }
 
 export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, examId, examName, canManage }: Props) {
+  const { user } = useSession();
   const [rows, setRows] = useState<Row[]>([]);
   const [subjects, setSubjects] = useState<{ id: string; name: string }[]>([]);
   const [sections, setSections] = useState<{ id: string; name: string; class_name?: string }[]>([]);
@@ -49,6 +50,13 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
   const [conflicts, setConflicts] = useState<any[]>([]);
   const [exportSection, setExportSection] = useState<string>(SECTION_ALL);
   const [schoolName, setSchoolName] = useState<string>("");
+  const [sending, setSending] = useState(false);
+
+  // PDF options
+  const [fields, setFields] = useState<DatesheetField[]>(ALL_FIELDS.filter((f) => f.default).map((f) => f.key));
+  const [paperQR, setPaperQR] = useState(false);
+  const [hallTicketQR, setHallTicketQR] = useState(true);
+
 
   const loadConflicts = async () => {
     const { data } = await (supabase as any).rpc("check_exam_subject_conflicts", { _school_id: schoolId, _exam_id: examId });
