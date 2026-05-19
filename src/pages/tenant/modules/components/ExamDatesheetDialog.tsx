@@ -339,7 +339,7 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
             </p>
           )}
         </div>
-        <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button></DialogFooter>
+        <DialogFooter className="px-6 py-3 border-t shrink-0 bg-background"><Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
