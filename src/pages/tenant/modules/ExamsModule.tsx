@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import ExamDatesheetDialog from "./components/ExamDatesheetDialog";
 import ExamPublishDialog from "./components/ExamPublishDialog";
+import ParentDatesheetsCard from "@/components/parent/ParentDatesheetsCard";
 
 interface Exam {
   id: string; name: string; term_label: string | null;
@@ -65,6 +66,8 @@ export default function ExamsModule({ schoolId, canManage = false }: Props) {
 
   return (
     <div className="space-y-4">
+      {!canManage && schoolId && <ParentDatesheetsCard schoolId={schoolId} />}
+
       <div className="flex items-center justify-between">
         <div><h2 className="font-display text-2xl font-semibold">Exams</h2>
         <p className="text-sm text-muted-foreground">Exam schedules, datesheets and result publishing</p></div>
