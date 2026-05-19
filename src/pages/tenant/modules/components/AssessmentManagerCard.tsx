@@ -228,7 +228,7 @@ export function AssessmentManagerCard({
   useEffect(() => {
     void refreshAssessments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [schoolId, filterSectionId, filterSubjectId, filterTerm, filterFrom, filterTo]);
+  }, [schoolId, filterSectionId, filterSubjectId, filterTerm, filterFrom, filterTo, filterType]);
 
   useEffect(() => {
     void refreshAllowedSubjects(form.class_section_id);
