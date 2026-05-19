@@ -209,7 +209,7 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
         </DialogHeader>
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Select value={exportSection} onValueChange={setExportSection}>
                 <SelectTrigger className="h-8 w-[220px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -221,14 +221,45 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
                   ))}
                 </SelectContent>
               </Select>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button size="sm" variant="outline"><Settings2 className="mr-1 h-4 w-4" />PDF options</Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72" align="start">
+                  <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Columns</p>
+                  <div className="space-y-1.5">
+                    {ALL_FIELDS.map((f) => (
+                      <label key={f.key} className="flex items-center gap-2 text-sm">
+                        <Checkbox checked={fields.includes(f.key)} onCheckedChange={() => toggleField(f.key)} />
+                        {f.label}
+                      </label>
+                    ))}
+                  </div>
+                  <div className="mt-3 border-t pt-3 space-y-1.5">
+                    <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">QR codes</p>
+                    <label className="flex items-center gap-2 text-sm">
+                      <Checkbox checked={paperQR} onCheckedChange={(v) => setPaperQR(!!v)} /> Per-paper QR
+                    </label>
+                    <label className="flex items-center gap-2 text-sm">
+                      <Checkbox checked={hallTicketQR} onCheckedChange={(v) => setHallTicketQR(!!v)} /> Hall ticket link QR
+                    </label>
+                  </div>
+                </PopoverContent>
+              </Popover>
               <Button size="sm" variant="outline" onClick={exportPdf}>
                 <FileDown className="mr-1 h-4 w-4" />Export PDF
               </Button>
+              {canManage && (
+                <Button size="sm" variant="default" disabled={sending} onClick={sendToParents}>
+                  <Send className="mr-1 h-4 w-4" />{sending ? "Sending…" : "Send to parents"}
+                </Button>
+              )}
             </div>
             {canManage && (
               <Button size="sm" onClick={addRow}><Plus className="mr-1 h-4 w-4" />Add paper</Button>
             )}
           </div>
+
 
           {conflicts.length > 0 && (
             <Alert variant="destructive">
