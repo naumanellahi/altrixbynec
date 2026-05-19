@@ -43,23 +43,40 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
   const [sections, setSections] = useState<{ id: string; name: string; class_name?: string }[]>([]);
   const [staff, setStaff] = useState<{ user_id: string; display_name: string }[]>([]);
   const [loading, setLoading] = useState(false);
+  const [conflicts, setConflicts] = useState<any[]>([]);
+  const [exportSection, setExportSection] = useState<string>(SECTION_ALL);
+  const [schoolName, setSchoolName] = useState<string>("");
+
+  const loadConflicts = async () => {
+    const { data } = await (supabase as any).rpc("check_exam_subject_conflicts", { _school_id: schoolId, _exam_id: examId });
+    setConflicts(data || []);
+  };
 
   const load = async () => {
     if (!open) return;
     setLoading(true);
-    const [subs, secs, ds, dir] = await Promise.all([
+    const [subs, secs, ds, dir, sch] = await Promise.all([
       (supabase as any).from("subjects").select("id,name").eq("school_id", schoolId).order("name"),
       (supabase as any).from("class_sections").select("id,name,class_id,academic_classes(name)").eq("school_id", schoolId),
       (supabase as any).from("exam_subjects").select("*").eq("exam_id", examId).order("exam_date").order("start_time"),
       (supabase as any).rpc("get_school_user_directory", { _school_id: schoolId }),
+      (supabase as any).from("schools").select("name").eq("id", schoolId).maybeSingle(),
     ]);
     setSubjects(subs.data || []);
     setSections((secs.data || []).map((s: any) => ({ id: s.id, name: s.name, class_name: s.academic_classes?.name })));
     setRows(ds.data || []);
     setStaff((dir.data || []).map((d: any) => ({ user_id: d.user_id, display_name: d.display_name })));
+    setSchoolName(sch.data?.name || "");
     setLoading(false);
+    loadConflicts();
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [open, examId]);
+
+  const conflictIds = useMemo(() => {
+    const s = new Set<string>();
+    conflicts.forEach((c: any) => { s.add(c.a_id); s.add(c.b_id); });
+    return s;
+  }, [conflicts]);
 
   const addRow = async () => {
     const { data, error } = await (supabase as any)
@@ -74,6 +91,7 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
     setRows((r) => r.map((x) => (x.id === id ? { ...x, ...patch } : x)));
     const { error } = await (supabase as any).from("exam_subjects").update(patch).eq("id", id);
     if (error) toast.error(error.message);
+    else loadConflicts();
   };
 
   const remove = async (id: string) => {
@@ -81,7 +99,61 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
     if (error) return toast.error(error.message);
     setRows((r) => r.filter((x) => x.id !== id));
     toast.success("Paper removed");
+    loadConflicts();
   };
+
+  const exportPdf = () => {
+    const filtered = exportSection === SECTION_ALL
+      ? rows
+      : rows.filter((r) => r.class_section_id === exportSection);
+    if (filtered.length === 0) return toast.error("No papers to export");
+    const subjMap = new Map(subjects.map((s) => [s.id, s.name]));
+    const secMap = new Map(sections.map((s) => [s.id, `${s.class_name ? s.class_name + " — " : ""}${s.name}`]));
+    const staffMap = new Map(staff.map((s) => [s.user_id, s.display_name]));
+
+    const doc = new jsPDF({ orientation: "landscape" });
+    const pageW = doc.internal.pageSize.getWidth();
+    doc.setFontSize(16); doc.setFont("helvetica", "bold");
+    doc.text(schoolName || "Datesheet", pageW / 2, 14, { align: "center" });
+    doc.setFontSize(12); doc.setFont("helvetica", "normal");
+    doc.text(`Exam Datesheet — ${examName}`, pageW / 2, 21, { align: "center" });
+    if (exportSection !== SECTION_ALL) {
+      doc.setFontSize(10);
+      doc.text(`Class/Section: ${secMap.get(exportSection) || ""}`, pageW / 2, 27, { align: "center" });
+    }
+
+    const body = filtered
+      .slice()
+      .sort((a, b) => (a.exam_date || "").localeCompare(b.exam_date || "") || (a.start_time || "").localeCompare(b.start_time || ""))
+      .map((r) => [
+        r.exam_date ? format(new Date(r.exam_date), "EEE, MMM d, yyyy") : "—",
+        r.start_time ?? "—",
+        r.duration_minutes ? `${r.duration_minutes} min` : "—",
+        subjMap.get(r.subject_id || "") || "—",
+        secMap.get(r.class_section_id || "") || "—",
+        r.room || "—",
+        r.max_marks?.toString() || "—",
+        r.passing_marks?.toString() || "—",
+        staffMap.get(r.invigilator_user_id || "") || "—",
+      ]);
+
+    autoTable(doc, {
+      startY: exportSection !== SECTION_ALL ? 32 : 27,
+      head: [["Date", "Start", "Duration", "Subject", "Class/Section", "Room", "Max", "Pass", "Invigilator"]],
+      body,
+      styles: { fontSize: 9, cellPadding: 2.5 },
+      headStyles: { fillColor: [33, 90, 165], textColor: 255 },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+    });
+
+    const finalY = (doc as any).lastAutoTable?.finalY || 60;
+    doc.setFontSize(8); doc.setTextColor(120);
+    doc.text(`Generated ${format(new Date(), "PPp")}`, 14, finalY + 8);
+    doc.save(`datesheet-${examName.replace(/\s+/g, "_")}${exportSection !== SECTION_ALL ? "-" + (secMap.get(exportSection) || "section").replace(/\s+/g, "_") : ""}.pdf`);
+    toast.success("Datesheet exported");
+  };
+
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
