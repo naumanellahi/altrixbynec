@@ -402,7 +402,9 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
       >
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Reason (optional)</DialogTitle>
+            <DialogTitle>
+              {reasonDialog?.reasonType === "late" ? "Late-Reason" : "Left-Reason"} (optional)
+            </DialogTitle>
             <DialogDescription>
               {reasonDialog?.label}
             </DialogDescription>
