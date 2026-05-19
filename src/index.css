@@ -256,6 +256,11 @@ All colors MUST be HSL.
 #report-card-print.exporting-pdf {
   background: #ffffff !important;
   color: #000 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  outline: none !important;
 }
 #report-card-print.exporting-pdf input,
 #report-card-print.exporting-pdf textarea {
@@ -264,4 +269,9 @@ All colors MUST be HSL.
   box-shadow: none !important;
   padding: 0 !important;
 }
+/* Hide any element marked print:hidden during html2canvas export */
+#report-card-print.exporting-pdf .print\:hidden {
+  display: none !important;
+}
+
 
