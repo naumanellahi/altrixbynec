@@ -456,6 +456,7 @@ const TenantDashboard = () => {
             <Route path="attendance" element={<AttendanceModule />} />
             <Route path="finance" element={<FinanceModule />} />
             <Route path="fees-pro" element={<FeesAdvancedModule />} />
+            <Route path="fee-vouchers" element={<FeeVouchersModule />} />
             <Route path="admissions" element={<AdmissionsModule />} />
             <Route path="reports" element={<ReportsModule />} />
             <Route path="leaves" element={<HrLeavesModule />} />
