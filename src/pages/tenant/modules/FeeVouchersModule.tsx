@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Receipt, Download, Loader2, Trash2, Users, User } from "lucide-react";
+import { Plus, Receipt, Download, Loader2, Trash2, Users, User, Eye, CheckCircle2, XCircle, AlertCircle, Mail } from "lucide-react";
 import { toast } from "sonner";
+
 
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
@@ -66,6 +67,7 @@ export default function FeeVouchersModule() {
   const schoolId = tenant.status === "ready" ? tenant.schoolId : null;
   const qc = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [deliveriesBatch, setDeliveriesBatch] = useState<Batch | null>(null);
 
   const { data: batches = [] } = useQuery({
     queryKey: ["fee_voucher_batches", schoolId],
@@ -119,20 +121,24 @@ export default function FeeVouchersModule() {
                   <TableHead>Due</TableHead>
                   <TableHead className="text-right">Students</TableHead>
                   <TableHead className="text-right">Total</TableHead>
+                  <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {batches.map((b) => (
                   <TableRow key={b.id}>
                     <TableCell>{new Date(b.created_at).toLocaleString()}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{b.scope}</Badge>
-                    </TableCell>
+                    <TableCell><Badge variant="secondary">{b.scope}</Badge></TableCell>
                     <TableCell>{b.period_label ?? "—"}</TableCell>
                     <TableCell>{b.due_date}</TableCell>
                     <TableCell className="text-right">{b.total_students}</TableCell>
                     <TableCell className="text-right font-medium">
                       {b.total_amount.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="ghost" onClick={() => setDeliveriesBatch(b)}>
+                        <Mail className="mr-1 h-3 w-3" /> Deliveries
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -150,7 +156,109 @@ export default function FeeVouchersModule() {
         }}
         schoolId={schoolId}
       />
+
+      <DeliveriesDialog batch={deliveriesBatch} onClose={() => setDeliveriesBatch(null)} />
     </div>
+  );
+}
+
+type Delivery = {
+  id: string;
+  invoice_id: string;
+  student_id: string;
+  guardian_name: string | null;
+  guardian_email: string | null;
+  guardian_phone: string | null;
+  guardian_user_id: string | null;
+  channel: string;
+  status: string;
+  error: string | null;
+  delivered_at: string;
+};
+
+function DeliveriesDialog({ batch, onClose }: { batch: Batch | null; onClose: () => void }) {
+  const open = !!batch;
+  const { data: deliveries = [], isLoading } = useQuery({
+    queryKey: ["fee_voucher_deliveries", batch?.id],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("fee_voucher_deliveries")
+        .select("id,invoice_id,student_id,guardian_name,guardian_email,guardian_phone,guardian_user_id,channel,status,error,delivered_at")
+        .eq("batch_id", batch!.id)
+        .order("delivered_at", { ascending: true });
+      if (error) throw error;
+      return data as Delivery[];
+    },
+    enabled: open,
+  });
+
+  const sent = deliveries.filter((d) => d.status === "sent").length;
+  const noAcct = deliveries.filter((d) => d.status === "no_account").length;
+  const failed = deliveries.filter((d) => !["sent", "no_account"].includes(d.status)).length;
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle>Delivery status</DialogTitle>
+          <DialogDescription>
+            {sent} delivered · {noAcct} no parent account · {failed} failed
+          </DialogDescription>
+        </DialogHeader>
+        <ScrollArea className="flex-1 pr-3">
+          {isLoading ? (
+            <div className="py-8 flex justify-center"><Loader2 className="h-5 w-5 animate-spin" /></div>
+          ) : deliveries.length === 0 ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">No delivery records.</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Parent</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Channel</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>When</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {deliveries.map((d) => (
+                  <TableRow key={d.id}>
+                    <TableCell className="font-medium">{d.guardian_name ?? "—"}</TableCell>
+                    <TableCell className="text-xs">
+                      {d.guardian_email ?? ""}{d.guardian_phone ? ` · ${d.guardian_phone}` : ""}
+                    </TableCell>
+                    <TableCell><Badge variant="outline">{d.channel}</Badge></TableCell>
+                    <TableCell>
+                      {d.status === "sent" ? (
+                        <Badge className="bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 border border-emerald-600/30">
+                          <CheckCircle2 className="mr-1 h-3 w-3" /> Sent
+                        </Badge>
+                      ) : d.status === "no_account" ? (
+                        <Badge variant="outline" className="text-amber-700 dark:text-amber-400 border-amber-500/40">
+                          <AlertCircle className="mr-1 h-3 w-3" /> No app account
+                        </Badge>
+                      ) : (
+                        <Badge variant="destructive">
+                          <XCircle className="mr-1 h-3 w-3" /> {d.status}
+                        </Badge>
+                      )}
+                      {d.error && <div className="text-[10px] text-destructive mt-1">{d.error}</div>}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {new Date(d.delivered_at).toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </ScrollArea>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -181,6 +289,13 @@ function GenerateVoucherDialog({
   const [tiers, setTiers] = useState<GradeTier[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [progress, setProgress] = useState<string>("");
+  const [doneCount, setDoneCount] = useState(0);
+  const [failCount, setFailCount] = useState(0);
+  const [results, setResults] = useState<Array<{ studentId: string; name: string; status: "success" | "error"; error?: string; invoiceId?: string }>>([]);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const previewSeqRef = useRef(0);
+
 
   // Data queries
   const { data: feePlans = [] } = useQuery({
@@ -354,6 +469,121 @@ function GenerateVoucherDialog({
     return { pct: 0, tier: null };
   }
 
+  // Build voucher PDF data for a single student WITHOUT persisting (used for preview)
+  function buildPreviewData(args: {
+    student: Student;
+    meta: Awaited<ReturnType<typeof fetchSchoolMeta>>;
+    items: FeePlanItem[];
+    plan: FeePlan | undefined;
+    avgGrade: number;
+  }): VoucherCopyData {
+    const { student: st, meta, items, plan, avgGrade } = args;
+    const subtotalCalc = items.reduce((s, i) => s + Number(i.amount || 0), 0);
+    const baseExtraPct = Number(discountPct) || 0;
+    const baseExtraAmt = Number(discountAmount) || 0;
+    const { pct: gradePct, tier } = pickGradeTierPct(avgGrade);
+    const totalExtraPct = baseExtraPct + gradePct;
+    const merit = baseExtraAmt + Math.round(subtotalCalc * totalExtraPct) / 100;
+    const reasonParts: string[] = [];
+    if (discountReason) reasonParts.push(discountReason);
+    if (tier) reasonParts.push(`Merit ≥${tier.minGrade}% → ${tier.discountPct}%`);
+    const total = Math.max(subtotalCalc - merit, 0);
+    const sec = sections.find((s) => s.id === sectionId);
+    const klass = classes.find((c) => c.id === classId);
+    return {
+      invoiceNumber: "PREVIEW",
+      issueDate: new Date().toISOString().slice(0, 10),
+      dueDate,
+      periodLabel,
+      school: {
+        name: meta.school?.name ?? "School",
+        address: meta.school?.address ?? null,
+        phone: meta.school?.phone ?? null,
+        email: meta.school?.email ?? null,
+        website: meta.school?.website ?? null,
+        logoUrl: meta.school?.logo_url ?? null,
+        motto: meta.school?.motto ?? null,
+      },
+      student: {
+        name: `${st.first_name} ${st.last_name ?? ""}`.trim(),
+        rollNumber: st.roll_number,
+        studentCode: st.student_code,
+        className: klass?.name ?? null,
+        sectionName: sec?.name ?? null,
+        parentName: st.parent_name,
+        parentPhone: st.parent_phone,
+      },
+      items: items.map((it) => ({ label: it.label, amount: Number(it.amount) })),
+      subtotal: subtotalCalc,
+      baseDiscount: 0,
+      meritDiscount: merit,
+      meritReason: reasonParts.join(" | ") || null,
+      siblingDiscount: 0,
+      total,
+      currency: plan?.currency || "PKR",
+      accentHsl: meta.branding,
+      notes: notes || null,
+    };
+  }
+
+  // Live PDF preview – debounced
+  useEffect(() => {
+    if (!open || !schoolId || !feePlanId) {
+      setPreviewUrl((u) => { if (u) URL.revokeObjectURL(u); return null; });
+      return;
+    }
+    const previewStudent =
+      mode === "individual"
+        ? students.find((s) => s.id === studentId)
+        : targetStudents[0];
+    if (!previewStudent) {
+      setPreviewUrl((u) => { if (u) URL.revokeObjectURL(u); return null; });
+      return;
+    }
+    const seq = ++previewSeqRef.current;
+    setPreviewLoading(true);
+    const t = setTimeout(async () => {
+      try {
+        const meta = await fetchSchoolMeta();
+        const items = planItems.data ?? [];
+        const plan = feePlans.find((p) => p.id === feePlanId);
+        const avgMap = tiers.length > 0 ? await getStudentAvgGrade([previewStudent.id]) : {};
+        const data = buildPreviewData({
+          student: previewStudent,
+          meta,
+          items,
+          plan,
+          avgGrade: avgMap[previewStudent.id] ?? 0,
+        });
+        const doc = generateVoucherPdf(data);
+        const blob = doc.output("blob");
+        const url = URL.createObjectURL(blob);
+        if (seq !== previewSeqRef.current) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        setPreviewUrl((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return url;
+        });
+      } catch (e) {
+        console.error("preview failed", e);
+      } finally {
+        if (seq === previewSeqRef.current) setPreviewLoading(false);
+      }
+    }, 400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    open, schoolId, feePlanId, mode, studentId,
+    JSON.stringify(targetStudents.map((s) => s.id)),
+    JSON.stringify(planItems.data ?? []),
+    JSON.stringify(tiers), discountPct, discountAmount, discountReason,
+    periodLabel, dueDate, notes, classId, sectionId,
+  ]);
+
+  useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
+
   async function handleGenerate() {
     if (!schoolId || !feePlanId) {
       toast.error("Pick a fee plan first");
@@ -369,6 +599,9 @@ function GenerateVoucherDialog({
     }
 
     setSubmitting(true);
+    setResults([]);
+    setDoneCount(0);
+    setFailCount(0);
     setProgress("Loading school branding…");
     try {
       const meta = await fetchSchoolMeta();
@@ -376,7 +609,6 @@ function GenerateVoucherDialog({
       const items = planItems.data ?? [];
       const gradeMap = tiers.length > 0 ? await getStudentAvgGrade(targetStudents.map((s) => s.id)) : {};
 
-      // Create batch row
       const { data: batch, error: batchErr } = await (supabase as any)
         .from("fee_voucher_batches")
         .insert({
@@ -403,9 +635,9 @@ function GenerateVoucherDialog({
 
       for (let i = 0; i < targetStudents.length; i++) {
         const st = targetStudents[i];
-        setProgress(`Generating ${i + 1} / ${targetStudents.length}…`);
+        const studentName = `${st.first_name} ${st.last_name ?? ""}`.trim();
+        setProgress(`Generating ${i + 1} / ${targetStudents.length} – ${studentName}…`);
 
-        // Compute extra discount: manual + grade tier
         const baseExtraPct = Number(discountPct) || 0;
         const baseExtraAmt = Number(discountAmount) || 0;
         const avg = gradeMap[st.id] ?? 0;
@@ -416,83 +648,84 @@ function GenerateVoucherDialog({
         if (tier) reasonParts.push(`Merit ≥${tier.minGrade}% → ${tier.discountPct}%`);
         const reason = reasonParts.join(" | ") || null;
 
-        const { data: invId, error: rpcErr } = await (supabase as any).rpc("generate_fee_voucher", {
-          _school_id: schoolId,
-          _student_id: st.id,
-          _fee_plan_id: feePlanId,
-          _period_label: periodLabel,
-          _due_date: dueDate,
-          _extra_discount_pct: totalExtraPct,
-          _extra_discount_amount: baseExtraAmt,
-          _extra_discount_reason: reason,
-          _notes: notes || null,
-          _batch_id: batch.id,
-        });
-        if (rpcErr) {
-          console.error("voucher rpc failed", st.id, rpcErr);
-          toast.error(`Failed for ${st.first_name}: ${rpcErr.message}`);
-          continue;
+        try {
+          const { data: invId, error: rpcErr } = await (supabase as any).rpc("generate_fee_voucher", {
+            _school_id: schoolId,
+            _student_id: st.id,
+            _fee_plan_id: feePlanId,
+            _period_label: periodLabel,
+            _due_date: dueDate,
+            _extra_discount_pct: totalExtraPct,
+            _extra_discount_amount: baseExtraAmt,
+            _extra_discount_reason: reason,
+            _notes: notes || null,
+            _batch_id: batch.id,
+          });
+          if (rpcErr) throw rpcErr;
+
+          const { data: inv, error: invErr } = await supabase
+            .from("fee_invoices")
+            .select("*")
+            .eq("id", invId as string)
+            .maybeSingle();
+          if (invErr) throw invErr;
+          if (!inv) throw new Error("Invoice not found after creation");
+
+          const sec = sections.find((s) => s.id === sectionId) || sections[0];
+          const klass = classes.find((c) => c.id === classId);
+
+          const pdfData: VoucherCopyData = {
+            invoiceNumber: (inv as any).invoice_number,
+            issueDate: new Date().toISOString().slice(0, 10),
+            dueDate,
+            periodLabel,
+            school: {
+              name: meta.school?.name ?? "School",
+              address: meta.school?.address ?? null,
+              phone: meta.school?.phone ?? null,
+              email: meta.school?.email ?? null,
+              website: meta.school?.website ?? null,
+              logoUrl: meta.school?.logo_url ?? null,
+              motto: meta.school?.motto ?? null,
+            },
+            student: {
+              name: studentName,
+              rollNumber: st.roll_number,
+              studentCode: st.student_code,
+              className: klass?.name ?? null,
+              sectionName: sec?.name ?? null,
+              parentName: st.parent_name,
+              parentPhone: st.parent_phone,
+            },
+            items: items.map((it) => ({ label: it.label, amount: Number(it.amount) })),
+            subtotal: Number((inv as any).subtotal),
+            baseDiscount: Number((inv as any).discount_amount),
+            meritDiscount: Number((inv as any).merit_discount_amount ?? 0),
+            meritReason: (inv as any).merit_discount_reason ?? reason,
+            siblingDiscount: Number((inv as any).sibling_discount_amount ?? 0),
+            total: Number((inv as any).total_amount),
+            currency: plan?.currency || "PKR",
+            accentHsl: meta.branding,
+            notes: notes || null,
+          };
+
+          pdfs.push({ student: st, data: pdfData });
+          totalAmount += Number((inv as any).total_amount);
+          successCount += 1;
+          setDoneCount((c) => c + 1);
+          setResults((r) => [...r, { studentId: st.id, name: studentName, status: "success", invoiceId: invId as string }]);
+        } catch (err: any) {
+          console.error("voucher failed for", st.id, err);
+          setFailCount((c) => c + 1);
+          setResults((r) => [...r, { studentId: st.id, name: studentName, status: "error", error: err?.message ?? String(err) }]);
         }
-
-        // Load full invoice row for PDF
-        const { data: inv } = await supabase
-          .from("fee_invoices")
-          .select("*")
-          .eq("id", invId as string)
-          .maybeSingle();
-        if (!inv) continue;
-
-        // Get class/section name
-        const sec = sections.find((s) => s.id === sectionId) || sections.find((s) => true);
-        const klass = classes.find((c) => c.id === classId);
-
-        const pdfData: VoucherCopyData = {
-          invoiceNumber: (inv as any).invoice_number,
-          issueDate: new Date().toISOString().slice(0, 10),
-          dueDate,
-          periodLabel,
-          school: {
-            name: meta.school?.name ?? "School",
-            address: meta.school?.address ?? null,
-            phone: meta.school?.phone ?? null,
-            email: meta.school?.email ?? null,
-            website: meta.school?.website ?? null,
-            logoUrl: meta.school?.logo_url ?? null,
-            motto: meta.school?.motto ?? null,
-          },
-          student: {
-            name: `${st.first_name} ${st.last_name ?? ""}`.trim(),
-            rollNumber: st.roll_number,
-            studentCode: st.student_code,
-            className: klass?.name ?? null,
-            sectionName: sec?.name ?? null,
-            parentName: st.parent_name,
-            parentPhone: st.parent_phone,
-          },
-          items: items.map((it) => ({ label: it.label, amount: Number(it.amount) })),
-          subtotal: Number((inv as any).subtotal),
-          baseDiscount: Number((inv as any).discount_amount),
-          meritDiscount: Number((inv as any).merit_discount_amount ?? 0),
-          meritReason: (inv as any).merit_discount_reason ?? reason,
-          siblingDiscount: Number((inv as any).sibling_discount_amount ?? 0),
-          total: Number((inv as any).total_amount),
-          currency: plan?.currency || "PKR",
-          accentHsl: meta.branding,
-          notes: notes || null,
-        };
-
-        pdfs.push({ student: st, data: pdfData });
-        totalAmount += Number((inv as any).total_amount);
-        successCount += 1;
       }
 
-      // Update batch totals
       await (supabase as any)
         .from("fee_voucher_batches")
         .update({ total_students: successCount, total_amount: totalAmount })
         .eq("id", batch.id);
 
-      // Generate the PDFs
       setProgress("Building PDF file…");
       if (pdfs.length === 1) {
         const doc = generateVoucherPdf(pdfs[0].data);
@@ -506,20 +739,31 @@ function GenerateVoucherDialog({
         combined.save(`vouchers-batch-${batch.id}.pdf`);
       }
 
-      toast.success(`Generated ${successCount} voucher(s); parents notified.`);
-      onOpenChange(false);
+      if (successCount > 0) {
+        toast.success(`Generated ${successCount} voucher(s); parents notified.`);
+      }
+      if (failCount > 0 || successCount === 0) {
+        // keep dialog open so the user can review errors
+        setProgress(`Finished with ${successCount} success / ${targetStudents.length - successCount} failed`);
+      } else {
+        onOpenChange(false);
+      }
     } catch (e: any) {
       console.error(e);
       toast.error(e.message ?? "Failed to generate vouchers");
     } finally {
       setSubmitting(false);
-      setProgress("");
     }
   }
 
+
+  const progressPct = targetStudents.length > 0
+    ? Math.round(((doneCount + failCount) / targetStudents.length) * 100)
+    : 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-6xl max-h-[92vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Generate Fee Voucher</DialogTitle>
           <DialogDescription>
@@ -527,154 +771,228 @@ function GenerateVoucherDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
-          <Tabs value={mode} onValueChange={(v) => setMode(v as any)} className="mt-2">
-            <TabsList className="grid grid-cols-2 w-full">
-              <TabsTrigger value="individual">
-                <User className="mr-2 h-4 w-4" /> Individual Student
-              </TabsTrigger>
-              <TabsTrigger value="class">
-                <Users className="mr-2 h-4 w-4" /> Whole Class / Section
-              </TabsTrigger>
-            </TabsList>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-4 flex-1 overflow-hidden">
+          {/* Left – form */}
+          <ScrollArea className="pr-3">
+            <Tabs value={mode} onValueChange={(v) => setMode(v as any)} className="mt-2">
+              <TabsList className="grid grid-cols-2 w-full">
+                <TabsTrigger value="individual">
+                  <User className="mr-2 h-4 w-4" /> Individual Student
+                </TabsTrigger>
+                <TabsTrigger value="class">
+                  <Users className="mr-2 h-4 w-4" /> Whole Class / Section
+                </TabsTrigger>
+              </TabsList>
 
-            <div className="grid gap-3 mt-4 sm:grid-cols-2">
-              <div className="space-y-1">
-                <Label>Fee plan</Label>
-                <Select value={feePlanId} onValueChange={setFeePlanId}>
-                  <SelectTrigger><SelectValue placeholder="Select fee plan" /></SelectTrigger>
-                  <SelectContent>
-                    {feePlans.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {feePlanId && (
-                  <p className="text-xs text-muted-foreground">
-                    Subtotal per student: {subtotal.toLocaleString()}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <Label>Period label</Label>
-                <Input value={periodLabel} onChange={(e) => setPeriodLabel(e.target.value)} />
-              </div>
-
-              <div className="space-y-1">
-                <Label>Class</Label>
-                <Select value={classId} onValueChange={(v) => { setClassId(v); setSectionId(SENTINEL); setStudentId(""); }}>
-                  <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
-                  <SelectContent>
-                    {classes.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1">
-                <Label>Section</Label>
-                <Select value={sectionId} onValueChange={(v) => { setSectionId(v); setStudentId(""); }}>
-                  <SelectTrigger><SelectValue placeholder="All sections" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={SENTINEL}>All sections</SelectItem>
-                    {sections.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {mode === "individual" && (
-                <div className="space-y-1 sm:col-span-2">
-                  <Label>Student</Label>
-                  <Select value={studentId} onValueChange={setStudentId}>
-                    <SelectTrigger><SelectValue placeholder="Pick a student" /></SelectTrigger>
+              <div className="grid gap-3 mt-4 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label>Fee plan</Label>
+                  <Select value={feePlanId} onValueChange={setFeePlanId}>
+                    <SelectTrigger><SelectValue placeholder="Select fee plan" /></SelectTrigger>
                     <SelectContent>
-                      {students.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.first_name} {s.last_name ?? ""} {s.roll_number ? `(${s.roll_number})` : ""}
-                        </SelectItem>
+                      {feePlans.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {feePlanId && (
+                    <p className="text-xs text-muted-foreground">
+                      Subtotal per student: {subtotal.toLocaleString()}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <Label>Period label</Label>
+                  <Input value={periodLabel} onChange={(e) => setPeriodLabel(e.target.value)} />
+                </div>
+
+                <div className="space-y-1">
+                  <Label>Class</Label>
+                  <Select value={classId} onValueChange={(v) => { setClassId(v); setSectionId(SENTINEL); setStudentId(""); }}>
+                    <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
+                    <SelectContent>
+                      {classes.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-              )}
 
-              <div className="space-y-1">
-                <Label>Due date</Label>
-                <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                <div className="space-y-1">
+                  <Label>Section</Label>
+                  <Select value={sectionId} onValueChange={(v) => { setSectionId(v); setStudentId(""); }}>
+                    <SelectTrigger><SelectValue placeholder="All sections" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={SENTINEL}>All sections</SelectItem>
+                      {sections.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {mode === "individual" && (
+                  <div className="space-y-1 sm:col-span-2">
+                    <Label>Student</Label>
+                    <Select value={studentId} onValueChange={setStudentId}>
+                      <SelectTrigger><SelectValue placeholder="Pick a student" /></SelectTrigger>
+                      <SelectContent>
+                        {students.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.first_name} {s.last_name ?? ""} {s.roll_number ? `(${s.roll_number})` : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <Label>Due date</Label>
+                  <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                </div>
+
+                <div className="space-y-1">
+                  <Label>Discount %</Label>
+                  <Input type="number" value={discountPct} onChange={(e) => setDiscountPct(e.target.value)} />
+                </div>
+
+                <div className="space-y-1">
+                  <Label>Discount (fixed amount)</Label>
+                  <Input type="number" value={discountAmount} onChange={(e) => setDiscountAmount(e.target.value)} />
+                </div>
+
+                <div className="space-y-1">
+                  <Label>Discount reason</Label>
+                  <Input value={discountReason} onChange={(e) => setDiscountReason(e.target.value)} placeholder="e.g. Term promotion" />
+                </div>
+
+                <div className="space-y-1 sm:col-span-2">
+                  <Label>Notes</Label>
+                  <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+                </div>
               </div>
 
-              <div className="space-y-1">
-                <Label>Discount %</Label>
-                <Input type="number" value={discountPct} onChange={(e) => setDiscountPct(e.target.value)} />
-              </div>
+              <TabsContent value="class" className="mt-4 space-y-3">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Grade-based merit discount</CardTitle>
+                    <p className="text-xs text-muted-foreground">
+                      Students whose average grade meets a tier get extra % discount. Highest matching tier applies.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {tiers.map((t) => (
+                      <div key={t.id} className="flex items-center gap-2">
+                        <span className="text-xs">If avg ≥</span>
+                        <Input type="number" className="w-20" value={t.minGrade}
+                          onChange={(e) => setTiers((arr) => arr.map((x) => x.id === t.id ? { ...x, minGrade: Number(e.target.value) } : x))}
+                        />
+                        <span className="text-xs">% → discount</span>
+                        <Input type="number" className="w-20" value={t.discountPct}
+                          onChange={(e) => setTiers((arr) => arr.map((x) => x.id === t.id ? { ...x, discountPct: Number(e.target.value) } : x))}
+                        />
+                        <span className="text-xs">%</span>
+                        <Button size="icon" variant="ghost" onClick={() => removeTier(t.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button variant="outline" size="sm" onClick={addTier}>
+                      <Plus className="mr-1 h-3 w-3" /> Add tier
+                    </Button>
+                  </CardContent>
+                </Card>
 
-              <div className="space-y-1">
-                <Label>Discount (fixed amount)</Label>
-                <Input type="number" value={discountAmount} onChange={(e) => setDiscountAmount(e.target.value)} />
-              </div>
+                <div className="text-sm text-muted-foreground">
+                  {students.length} student(s) will receive a voucher.
+                </div>
+              </TabsContent>
+            </Tabs>
+          </ScrollArea>
 
-              <div className="space-y-1">
-                <Label>Discount reason</Label>
-                <Input value={discountReason} onChange={(e) => setDiscountReason(e.target.value)} placeholder="e.g. Term promotion" />
+          {/* Right – preview + progress */}
+          <div className="flex flex-col border rounded-md bg-muted/30 overflow-hidden min-h-[400px]">
+            <div className="flex items-center justify-between px-3 py-2 border-b bg-background/50">
+              <div className="flex items-center gap-2 text-xs font-medium">
+                <Eye className="h-3.5 w-3.5" /> Live preview
+                {previewLoading && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
               </div>
-
-              <div className="space-y-1 sm:col-span-2">
-                <Label>Notes</Label>
-                <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
-              </div>
+              <span className="text-[10px] text-muted-foreground">
+                {mode === "class" && targetStudents.length > 1
+                  ? `Showing ${targetStudents[0]?.first_name ?? "first student"} — others use same layout`
+                  : "Sample render"}
+              </span>
             </div>
 
-            <TabsContent value="class" className="mt-4 space-y-3">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Grade-based merit discount</CardTitle>
-                  <p className="text-xs text-muted-foreground">
-                    Students whose average grade meets a tier get extra % discount. Highest matching tier applies.
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {tiers.map((t) => (
-                    <div key={t.id} className="flex items-center gap-2">
-                      <span className="text-xs">If avg ≥</span>
-                      <Input
-                        type="number"
-                        className="w-20"
-                        value={t.minGrade}
-                        onChange={(e) => setTiers((arr) => arr.map((x) => x.id === t.id ? { ...x, minGrade: Number(e.target.value) } : x))}
-                      />
-                      <span className="text-xs">% → discount</span>
-                      <Input
-                        type="number"
-                        className="w-20"
-                        value={t.discountPct}
-                        onChange={(e) => setTiers((arr) => arr.map((x) => x.id === t.id ? { ...x, discountPct: Number(e.target.value) } : x))}
-                      />
-                      <span className="text-xs">%</span>
-                      <Button size="icon" variant="ghost" onClick={() => removeTier(t.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+            {/* Progress / results section */}
+            {(submitting || results.length > 0) && (
+              <div className="border-b p-3 space-y-2 bg-background/40 max-h-[40%] overflow-hidden flex flex-col">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium">
+                    {submitting ? "Generating…" : "Last run results"}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {doneCount + failCount}/{targetStudents.length} · {doneCount} ok · {failCount} failed
+                  </span>
+                </div>
+                <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                  <div className="h-full bg-primary transition-all" style={{ width: `${progressPct}%` }} />
+                </div>
+                {progress && (
+                  <div className="text-[10px] text-muted-foreground truncate">{progress}</div>
+                )}
+                {results.length > 0 && (
+                  <ScrollArea className="flex-1 max-h-[160px] pr-2">
+                    <div className="space-y-1">
+                      {results.map((r, idx) => (
+                        <div
+                          key={`${r.studentId}-${idx}`}
+                          className={`flex items-start gap-2 text-[11px] rounded px-2 py-1 ${
+                            r.status === "success" ? "bg-emerald-500/10" : "bg-destructive/10"
+                          }`}
+                        >
+                          {r.status === "success"
+                            ? <CheckCircle2 className="h-3 w-3 mt-0.5 text-emerald-600 shrink-0" />
+                            : <XCircle className="h-3 w-3 mt-0.5 text-destructive shrink-0" />}
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium truncate">{r.name}</div>
+                            {r.error && <div className="text-destructive break-words">{r.error}</div>}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                  <Button variant="outline" size="sm" onClick={addTier}>
-                    <Plus className="mr-1 h-3 w-3" /> Add tier
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <div className="text-sm text-muted-foreground">
-                {students.length} student(s) will receive a voucher.
+                  </ScrollArea>
+                )}
               </div>
-            </TabsContent>
-          </Tabs>
-        </ScrollArea>
+            )}
+
+            <div className="flex-1 bg-background overflow-hidden">
+              {previewUrl ? (
+                <iframe
+                  title="Voucher preview"
+                  src={previewUrl}
+                  className="w-full h-full border-0 min-h-[300px]"
+                />
+              ) : (
+                <div className="h-full min-h-[300px] flex items-center justify-center text-xs text-muted-foreground p-6 text-center">
+                  {feePlanId
+                    ? "Pick a class & student (or section) to see the live PDF preview."
+                    : "Pick a fee plan to see a live PDF preview."}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
 
         <DialogFooter className="mt-2">
-          {progress && <span className="text-xs text-muted-foreground self-center mr-auto">{progress}</span>}
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>Cancel</Button>
+          {submitting && progress && (
+            <span className="text-xs text-muted-foreground self-center mr-auto">{progress}</span>
+          )}
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
+            {results.length > 0 && !submitting ? "Close" : "Cancel"}
+          </Button>
           <Button variant="hero" onClick={handleGenerate} disabled={submitting || !feePlanId}>
             {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
             Generate {mode === "individual" ? "Voucher" : `${students.length} Vouchers`}
@@ -682,5 +1000,6 @@ function GenerateVoucherDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
   );
 }
