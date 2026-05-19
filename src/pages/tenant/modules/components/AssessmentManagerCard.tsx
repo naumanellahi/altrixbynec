@@ -286,6 +286,9 @@ export function AssessmentManagerCard({
         term_label: parsed.data.term_label?.trim() || null,
         assessment_date: parsed.data.assessment_date,
         max_marks: parsed.data.max_marks,
+        assessment_type: parsed.data.assessment_type,
+        weightage_percent: parsed.data.weightage_percent === undefined || parsed.data.weightage_percent === null || (parsed.data.weightage_percent as any) === "" ? null : parsed.data.weightage_percent,
+        passing_marks: parsed.data.passing_marks === undefined || parsed.data.passing_marks === null || (parsed.data.passing_marks as any) === "" ? null : parsed.data.passing_marks,
       };
 
       const q = editId
