@@ -415,6 +415,11 @@ function GenerateVoucherDialog({
       .select("accent_hue,accent_saturation,accent_lightness")
       .eq("school_id", schoolId!)
       .maybeSingle();
+    const { data: settings } = await (supabase as any)
+      .from("fee_settings")
+      .select("bank_name,bank_account_title,bank_account_number,bank_iban,bank_branch,bank_swift,voucher_footer_note")
+      .eq("school_id", schoolId!)
+      .maybeSingle();
     return {
       school,
       branding: branding
@@ -424,6 +429,17 @@ function GenerateVoucherDialog({
             l: Number(branding.accent_lightness ?? 50),
           }
         : { h: 210, s: 100, l: 50 },
+      bank: settings
+        ? {
+            bankName: settings.bank_name,
+            accountTitle: settings.bank_account_title,
+            accountNumber: settings.bank_account_number,
+            iban: settings.bank_iban,
+            branch: settings.bank_branch,
+            swift: settings.bank_swift,
+          }
+        : null,
+      footerNote: settings?.voucher_footer_note ?? null,
     };
   }
 
