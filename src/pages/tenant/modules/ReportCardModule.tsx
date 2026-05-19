@@ -581,7 +581,7 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
         published_at: new Date().toISOString(),
         created_by: uid,
       })
-      .select("id,subject_id,max_marks,is_published,title,assessment_date,assessment_type,weightage_percent")
+      .select("id,subject_id,max_marks,is_published,title,assessment_date,assessment_type,weightage_percent,class_section_id")
       .single();
     if (aErr || !a) return toast.error(aErr?.message || "Failed to add");
 
