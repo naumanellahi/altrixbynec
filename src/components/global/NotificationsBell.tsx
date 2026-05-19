@@ -117,17 +117,31 @@ export function NotificationsBell({ schoolId, schoolSlug, role }: NotificationsB
         return;
       }
 
-      // Fee voucher → navigate to fees module
-      if ((notification.type === "fee_voucher" || notification.entity_type === "fee_invoice") && schoolSlug) {
-        const rolePath = role === "parent" ? "parent"
-          : role === "student" ? "student"
-          : role === "hr_manager" ? "hr"
-          : role === "accountant" ? "accountant"
-          : role || "";
+      // Fee voucher / proof → navigate to fees module
+      const isFeeNotif =
+        notification.type === "fee_voucher" ||
+        notification.type === "fee_proof_submitted" ||
+        notification.type === "fee_proof_pending" ||
+        notification.type === "fee_proof_verified" ||
+        notification.type === "fee_proof_rejected" ||
+        notification.entity_type === "fee_invoice";
+
+      if (isFeeNotif) {
+        // Hard-guard: never build a malformed URL that could bounce to /auth
+        if (!schoolSlug || !role) return;
+        const rolePathMap: Record<string, string> = {
+          parent: "parent", student: "student",
+          hr_manager: "hr", accountant: "accountant", marketing_staff: "marketing",
+          principal: "principal", vice_principal: "vice_principal",
+          school_admin: "school_admin", academic_coordinator: "academic_coordinator",
+          school_owner: "school_owner", super_admin: "super_admin", teacher: "teacher",
+        };
+        const rolePath = rolePathMap[role];
+        if (!rolePath) return;
         const feesPath = role === "parent" || role === "student"
           ? `/${schoolSlug}/${rolePath}/fees`
           : `/${schoolSlug}/${rolePath}/fee-vouchers`;
-        navigate(notification.entity_id ? `${feesPath}?invoice=${notification.entity_id}` : feesPath);
+        navigate(feesPath);
         return;
       }
     },
