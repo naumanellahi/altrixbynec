@@ -38,6 +38,7 @@ import PrincipalComplaintsModule from "@/pages/tenant/modules/PrincipalComplaint
 import PrincipalParentNotesModule from "@/pages/tenant/modules/PrincipalParentNotesModule";
 import FeesAdvancedModule from "@/pages/tenant/modules/FeesAdvancedModule";
 import AdmissionsModule from "@/pages/tenant/modules/AdmissionsModule";
+import FeeVouchersModule from "@/pages/tenant/modules/FeeVouchersModule";
 
 const TenantDashboard = () => {
   const { schoolSlug, role: roleParam } = useParams();
