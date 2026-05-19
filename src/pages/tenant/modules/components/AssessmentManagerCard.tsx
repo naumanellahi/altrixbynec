@@ -526,6 +526,30 @@ export function AssessmentManagerCard({
                 placeholder="Max"
               />
             </div>
+            <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-3">
+              <Select value={form.assessment_type} onValueChange={(v) => setForm((p) => ({ ...p, assessment_type: v as AssessmentType }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ASSESSMENT_TYPES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                type="number"
+                value={String(form.weightage_percent)}
+                onChange={(e) => setForm((p) => ({ ...p, weightage_percent: e.target.value }))}
+                placeholder="Weightage % (optional)"
+              />
+              <Input
+                type="number"
+                value={String(form.passing_marks)}
+                onChange={(e) => setForm((p) => ({ ...p, passing_marks: e.target.value }))}
+                placeholder="Passing marks (optional)"
+              />
+            </div>
             <div className="mt-3 flex flex-wrap gap-2">
               <Button variant="hero" onClick={saveAssessment} disabled={busy || !schoolId}>
                 {editId ? "Save changes" : "Create"}
