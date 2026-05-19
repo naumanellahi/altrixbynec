@@ -160,18 +160,21 @@ export default function ExamPublishDialog({
     if (!studId) return toast.error("Pick a student");
     const publishAtIso = studAt ? new Date(studAt).toISOString() : null;
     const scheduled = isFuture(publishAtIso);
-    const { error } = await (supabase as any).from("exam_result_publications").upsert(
-      {
-        school_id: schoolId, exam_id: examId, scope: "student",
-        student_id: studId,
-        is_published: studPublished,
-        publish_at: publishAtIso,
-        notes: studNotes || null,
-        created_by: user?.id ?? null,
-        processed_at: scheduled ? null : new Date().toISOString(),
-      },
-      { onConflict: "exam_id,student_id" } as any
-    );
+    await (supabase as any)
+      .from("exam_result_publications")
+      .delete()
+      .eq("exam_id", examId)
+      .eq("scope", "student")
+      .eq("student_id", studId);
+    const { error } = await (supabase as any).from("exam_result_publications").insert({
+      school_id: schoolId, exam_id: examId, scope: "student",
+      student_id: studId,
+      is_published: studPublished,
+      publish_at: publishAtIso,
+      notes: studNotes || null,
+      created_by: user?.id ?? null,
+      processed_at: scheduled ? null : new Date().toISOString(),
+    });
     if (error) return toast.error(error.message);
     if (!scheduled) {
       const { data: notified } = await (supabase as any).rpc("notify_exam_result_publish", {
