@@ -164,11 +164,45 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          {canManage && (
-            <div className="flex justify-end">
-              <Button size="sm" onClick={addRow}><Plus className="mr-1 h-4 w-4" />Add paper</Button>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Select value={exportSection} onValueChange={setExportSection}>
+                <SelectTrigger className="h-8 w-[220px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={SECTION_ALL}>All classes/sections</SelectItem>
+                  {sections.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.class_name ? `${s.class_name} — ` : ""}{s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button size="sm" variant="outline" onClick={exportPdf}>
+                <FileDown className="mr-1 h-4 w-4" />Export PDF
+              </Button>
             </div>
+            {canManage && (
+              <Button size="sm" onClick={addRow}><Plus className="mr-1 h-4 w-4" />Add paper</Button>
+            )}
+          </div>
+
+          {conflicts.length > 0 && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>{conflicts.length} scheduling conflict{conflicts.length !== 1 && "s"} detected</AlertTitle>
+              <AlertDescription>
+                <ul className="mt-1 list-disc pl-5 text-xs space-y-0.5">
+                  {conflicts.slice(0, 5).map((c: any, i: number) => (
+                    <li key={i}>
+                      {c.conflict_type === "room" ? `Room "${c.room}"` : "Invigilator"} double-booked on {c.exam_date} ({c.a_start?.slice(0,5)}–{c.a_end?.slice(0,5)} vs {c.b_start?.slice(0,5)}–{c.b_end?.slice(0,5)})
+                    </li>
+                  ))}
+                  {conflicts.length > 5 && <li>…and {conflicts.length - 5} more</li>}
+                </ul>
+              </AlertDescription>
+            </Alert>
           )}
+
           <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
