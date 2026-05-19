@@ -486,13 +486,18 @@ export default function ReportCardModule({ schoolId, canManage: canManageProp = 
   const filteredStudents = useMemo(() => {
     const q = search.trim().toLowerCase();
     return enriched.filter((s) => {
+      // Teachers (non-admin) can only see students from sections assigned to them.
+      if (teacherSectionIds !== null) {
+        if (!s.section_id || !teacherSectionIds.includes(s.section_id)) return false;
+      }
       const fullName = `${s.first_name} ${s.last_name || ""}`.toLowerCase();
       if (q && !fullName.includes(q) && !(s.student_code || "").toLowerCase().includes(q)) return false;
       if (classFilter !== "all" && s.class_id !== classFilter) return false;
       if (sectionFilter !== "all" && s.section_id !== sectionFilter) return false;
       return true;
     });
-  }, [enriched, search, classFilter, sectionFilter]);
+  }, [enriched, search, classFilter, sectionFilter, teacherSectionIds]);
+
 
   const periodTitle = useMemo(() => {
     if (card.exam_id) return exams.find((e) => e.id === card.exam_id)?.name || "Exam Report";
