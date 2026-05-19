@@ -79,7 +79,7 @@ const academicYearLabel = () => {
   return m >= 7 ? `${y}-${y + 1}` : `${y - 1}-${y}`;
 };
 
-export default function ReportCardModule({ schoolId, canManage = false, studentIdLocked }: Props) {
+export default function ReportCardModule({ schoolId, canManage: canManageProp = false, studentIdLocked }: Props) {
   const [exams, setExams] = useState<Exam[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -94,6 +94,8 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
   const [studentInfo, setStudentInfo] = useState<any>(null);
   const [allAssessments, setAllAssessments] = useState<AssessmentRow[]>([]);
   const [allMarks, setAllMarks] = useState<MarkRow[]>([]);
+  // null = no scope restriction (admin/principal/etc.). Array = teacher restricted to these section ids.
+  const [teacherSectionIds, setTeacherSectionIds] = useState<string[] | null>(null);
 
   // Period mode
   const [periodType, setPeriodType] = useState<PeriodType>("exam");
@@ -109,7 +111,50 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
   // List view (parent/student)
   const [myCards, setMyCards] = useState<ReportCardRow[]>([]);
   const [viewingCardId, setViewingCardId] = useState<string | null>(null);
-  const isReadOnlyForChild = !!studentIdLocked && !canManage;
+  // Derived permission: a teacher (no admin role) is only allowed to manage report cards for students enrolled in sections assigned to them.
+  const currentStudentSectionId = useMemo(
+    () => enrollments.find((e) => e.student_id === studentId)?.class_section_id ?? null,
+    [enrollments, studentId]
+  );
+  const allowedForCurrentStudent =
+    teacherSectionIds === null ||
+    (!!currentStudentSectionId && teacherSectionIds.includes(currentStudentSectionId));
+  const canManage = canManageProp && allowedForCurrentStudent;
+  const isReadOnlyForChild = !!studentIdLocked && !canManageProp;
+
+  // Detect scope: if the current user has any admin-style role for this school we leave
+  // teacherSectionIds=null (full access). Otherwise we restrict to sections assigned to them.
+  useEffect(() => {
+    if (!schoolId || !canManageProp) { setTeacherSectionIds(null); return; }
+    let cancelled = false;
+    (async () => {
+      const { data: auth } = await (supabase as any).auth.getUser();
+      const uid = auth?.user?.id;
+      if (!uid) return;
+      const { data: roles } = await (supabase as any)
+        .from("user_roles")
+        .select("role")
+        .eq("school_id", schoolId)
+        .eq("user_id", uid);
+      const roleList: string[] = (roles || []).map((r: any) => r.role);
+      const adminRoles = ["super_admin", "school_owner", "principal", "vice_principal", "school_admin", "academic_coordinator"];
+      const isAdmin = roleList.some((r) => adminRoles.includes(r));
+      if (isAdmin) { if (!cancelled) setTeacherSectionIds(null); return; }
+      // Gather sections assigned to this teacher
+      const [ta, ss, tsa] = await Promise.all([
+        (supabase as any).from("teacher_assignments").select("class_section_id").eq("school_id", schoolId).eq("teacher_user_id", uid),
+        (supabase as any).from("section_subjects").select("class_section_id").eq("school_id", schoolId).eq("teacher_user_id", uid),
+        (supabase as any).from("teacher_subject_assignments").select("class_section_id").eq("school_id", schoolId).eq("teacher_user_id", uid),
+      ]);
+      const ids = new Set<string>();
+      [...(ta.data || []), ...(ss.data || []), ...(tsa.data || [])].forEach((r: any) => {
+        if (r?.class_section_id) ids.add(r.class_section_id);
+      });
+      if (!cancelled) setTeacherSectionIds(Array.from(ids));
+    })();
+    return () => { cancelled = true; };
+  }, [schoolId, canManageProp]);
+
 
   // Load directory
   useEffect(() => {
@@ -441,13 +486,18 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
   const filteredStudents = useMemo(() => {
     const q = search.trim().toLowerCase();
     return enriched.filter((s) => {
+      // Teachers (non-admin) can only see students from sections assigned to them.
+      if (teacherSectionIds !== null) {
+        if (!s.section_id || !teacherSectionIds.includes(s.section_id)) return false;
+      }
       const fullName = `${s.first_name} ${s.last_name || ""}`.toLowerCase();
       if (q && !fullName.includes(q) && !(s.student_code || "").toLowerCase().includes(q)) return false;
       if (classFilter !== "all" && s.class_id !== classFilter) return false;
       if (sectionFilter !== "all" && s.section_id !== sectionFilter) return false;
       return true;
     });
-  }, [enriched, search, classFilter, sectionFilter]);
+  }, [enriched, search, classFilter, sectionFilter, teacherSectionIds]);
+
 
   const periodTitle = useMemo(() => {
     if (card.exam_id) return exams.find((e) => e.id === card.exam_id)?.name || "Exam Report";
