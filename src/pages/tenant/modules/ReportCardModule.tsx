@@ -604,6 +604,89 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
     setAddOpen(false);
   };
 
+  // Edit an existing assessment + the current student's mark for it
+  const [editAssessmentId, setEditAssessmentId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editType, setEditType] = useState<string>("quiz");
+  const [editMax, setEditMax] = useState<number>(10);
+  const [editMarks, setEditMarks] = useState<number>(0);
+  const [editDate, setEditDate] = useState<string>("");
+
+  const openEditAssessment = (id: string) => {
+    const a = allAssessments.find((x) => x.id === id);
+    if (!a) return;
+    const m = allMarks.find((x) => x.assessment_id === id);
+    setEditAssessmentId(id);
+    setEditTitle(a.title || "");
+    setEditType((a.assessment_type || "quiz").toLowerCase());
+    setEditMax(Number(a.max_marks || 0));
+    setEditMarks(Number(m?.marks ?? 0));
+    setEditDate(a.assessment_date || new Date().toISOString().slice(0, 10));
+  };
+
+  const submitEditAssessment = async () => {
+    if (!schoolId || !studentId || !editAssessmentId) return;
+    if (!editTitle.trim()) return toast.error("Title required");
+    const userResp = await (supabase as any).auth.getUser();
+    const uid = userResp.data?.user?.id ?? null;
+
+    const { error: aErr } = await (supabase as any)
+      .from("academic_assessments")
+      .update({
+        title: editTitle.trim(),
+        assessment_type: editType,
+        assessment_date: editDate,
+        max_marks: editMax,
+      })
+      .eq("id", editAssessmentId)
+      .eq("school_id", schoolId);
+    if (aErr) return toast.error(aErr.message);
+
+    const pct = editMax > 0 ? (editMarks / editMax) * 100 : 0;
+    const { error: mErr } = await (supabase as any)
+      .from("student_marks")
+      .upsert({
+        school_id: schoolId,
+        assessment_id: editAssessmentId,
+        student_id: studentId,
+        marks: editMarks,
+        computed_grade: calcGrade(pct).grade,
+        created_by: uid,
+      }, { onConflict: "school_id,assessment_id,student_id" });
+    if (mErr) return toast.error(mErr.message);
+
+    setAllAssessments((prev) => prev.map((a) =>
+      a.id === editAssessmentId
+        ? { ...a, title: editTitle.trim(), assessment_type: editType, assessment_date: editDate, max_marks: editMax }
+        : a
+    ));
+    setAllMarks((prev) => {
+      const exists = prev.some((m) => m.assessment_id === editAssessmentId);
+      if (exists) {
+        return prev.map((m) => m.assessment_id === editAssessmentId
+          ? { ...m, marks: editMarks, computed_grade: calcGrade(pct).grade }
+          : m);
+      }
+      return [...prev, { assessment_id: editAssessmentId, marks: editMarks, computed_grade: calcGrade(pct).grade } as any];
+    });
+    toast.success("Updated");
+    setEditAssessmentId(null);
+  };
+
+  const deleteAssessment = async (id: string) => {
+    if (!schoolId) return;
+    if (!confirm("Delete this assessment? This removes it and all student marks for it.")) return;
+    // Delete marks first (in case FK is not cascading), then assessment
+    await (supabase as any).from("student_marks").delete().eq("school_id", schoolId).eq("assessment_id", id);
+    const { error } = await (supabase as any).from("academic_assessments").delete().eq("school_id", schoolId).eq("id", id);
+    if (error) return toast.error(error.message);
+    setAllAssessments((prev) => prev.filter((a) => a.id !== id));
+    setAllMarks((prev) => prev.filter((m) => m.assessment_id !== id));
+    toast.success("Deleted");
+  };
+
+
+
 
   const showPicker = !studentIdLocked;
   const today = format(new Date(), "MMMM d, yyyy");
