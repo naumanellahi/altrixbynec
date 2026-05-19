@@ -261,17 +261,6 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 min-h-0">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
-              <Select value={exportSection} onValueChange={setExportSection}>
-                <SelectTrigger className="h-8 w-[220px]"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={SECTION_ALL}>All classes/sections</SelectItem>
-                  {sections.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.class_name ? `${s.class_name} — ` : ""}{s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button size="sm" variant="outline"><Settings2 className="mr-1 h-4 w-4" />PDF options</Button>
@@ -297,7 +286,7 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
                   </div>
                 </PopoverContent>
               </Popover>
-              <Button size="sm" variant="outline" onClick={exportPdf}>
+              <Button size="sm" variant="outline" onClick={() => { setExportScope("all"); setExportSection(SECTION_ALL); setExportOpen(true); }}>
                 <FileDown className="mr-1 h-4 w-4" />Export PDF
               </Button>
               {canManage && (
@@ -307,9 +296,76 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
               )}
             </div>
             {canManage && (
-              <Button size="sm" onClick={addRow}><Plus className="mr-1 h-4 w-4" />Add paper</Button>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={addRow}><Plus className="mr-1 h-4 w-4" />Add blank paper</Button>
+                <Button size="sm" onClick={() => { setAddSection(""); setAddOpen(true); }}>
+                  <Plus className="mr-1 h-4 w-4" />Generate for class
+                </Button>
+              </div>
             )}
           </div>
+
+          <Dialog open={exportOpen} onOpenChange={setExportOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader><DialogTitle>Export datesheet PDF</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">Choose what to include in the PDF.</p>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="radio" checked={exportScope === "all"} onChange={() => setExportScope("all")} />
+                    Whole school (all classes & sections)
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="radio" checked={exportScope === "section"} onChange={() => setExportScope("section")} />
+                    Specific class / section
+                  </label>
+                </div>
+                {exportScope === "section" && (
+                  <Select value={exportSection} onValueChange={setExportSection}>
+                    <SelectTrigger><SelectValue placeholder="Choose class / section" /></SelectTrigger>
+                    <SelectContent>
+                      {sections.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.class_name ? `${s.class_name} — ` : ""}{s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setExportOpen(false)}>Cancel</Button>
+                <Button onClick={exportPdf} disabled={exportScope === "section" && (exportSection === SECTION_ALL || !exportSection)}>
+                  <FileDown className="mr-1 h-4 w-4" />Download
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={addOpen} onOpenChange={setAddOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader><DialogTitle>Generate datesheet for a class</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">Pick a class/section. We'll add one paper per subject assigned to it — you can then set dates, times and rooms.</p>
+                <Select value={addSection} onValueChange={setAddSection}>
+                  <SelectTrigger><SelectValue placeholder="Choose class / section" /></SelectTrigger>
+                  <SelectContent>
+                    {sections.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.class_name ? `${s.class_name} — ` : ""}{s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setAddOpen(false)}>Cancel</Button>
+                <Button onClick={generateForSection} disabled={generating || !addSection}>
+                  {generating ? "Generating…" : "Generate papers"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
 
           {conflicts.length > 0 && (
