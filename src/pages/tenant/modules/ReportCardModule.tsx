@@ -396,13 +396,12 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
     return currentPeriodLabel || "Report Card";
   }, [card, exams, examId, periodType, currentPeriodLabel]);
 
-  const save = async (publish = false) => {
-    if (!schoolId || !studentId) return toast.error("Select a student");
-    if (periodType === "exam" && !examId) return toast.error("Select an exam");
+  const save = async () => {
+    if (!schoolId || !studentId) { toast.error("Select a student"); return null; }
+    if (periodType === "exam" && !examId) { toast.error("Select an exam"); return null; }
     const userResp = await (supabase as any).auth.getUser();
     const uid = userResp.data?.user?.id ?? null;
 
-    // Save subject-level marks only for exam mode (where exam_results table is keyed by exam_id)
     if (periodType === "exam") {
       for (const subjectId of Object.keys(results)) {
         const r = results[subjectId];
@@ -420,8 +419,8 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
       gpa: totals.gpa, overall_grade: totals.grade,
       teacher_remarks: card.teacher_remarks, principal_remarks: card.principal_remarks,
       attendance_percentage: card.attendance_percentage,
-      is_published: publish || card.is_published,
-      published_at: publish ? new Date().toISOString() : (card as any).published_at ?? null,
+      is_published: card.is_published, // preserve current state, do NOT auto-publish on save
+      published_at: (card as any).published_at ?? null,
       last_edited_by: uid,
       period_type: periodType,
     };
@@ -440,10 +439,160 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
       onConflict = "school_id,student_id,period_type,period_label";
     }
 
-    const { error } = await (supabase as any).from("report_cards").upsert(basePayload, { onConflict });
-    if (error) return toast.error(error.message);
-    toast.success(publish ? "Published — visible to student & parents" : "Saved as draft");
+    const { data, error } = await (supabase as any)
+      .from("report_cards")
+      .upsert(basePayload, { onConflict })
+      .select("id,is_published,published_at")
+      .maybeSingle();
+    if (error) { toast.error(error.message); return null; }
+    toast.success("Saved as draft");
+    if (data) setCard((c) => ({ ...c, id: data.id, is_published: data.is_published, published_at: data.published_at }));
+    return data?.id ?? null;
   };
+
+  const notifyPublish = async (studentIds: string[], published: boolean) => {
+    if (!schoolId || studentIds.length === 0) return;
+    const title = published ? "New report card published" : "Report card unpublished";
+    const body = `${periodTitle} — ${published ? "now available on your dashboard" : "temporarily withdrawn"}.`;
+    // Resolve recipients: student profile_id + guardians
+    const [{ data: studs }, { data: guards }] = await Promise.all([
+      (supabase as any).from("students").select("id,profile_id").in("id", studentIds),
+      (supabase as any).from("student_guardians").select("student_id,user_id").in("student_id", studentIds),
+    ]);
+    const recipients = new Set<string>();
+    (studs || []).forEach((s: any) => { if (s.profile_id) recipients.add(s.profile_id); });
+    (guards || []).forEach((g: any) => { if (g.user_id) recipients.add(g.user_id); });
+    if (recipients.size === 0) return;
+    const rows = Array.from(recipients).map((uid) => ({
+      school_id: schoolId, user_id: uid,
+      type: published ? "report_card_published" : "report_card_unpublished",
+      title, body, entity_type: "report_card", entity_id: null,
+    }));
+    await (supabase as any).from("app_notifications").insert(rows);
+  };
+
+  const publishIndividual = async (publish: boolean) => {
+    // Ensure saved first
+    let id = card.id;
+    if (!id) {
+      id = await save();
+      if (!id) return;
+    }
+    const { error } = await (supabase as any)
+      .from("report_cards")
+      .update({ is_published: publish, published_at: publish ? new Date().toISOString() : null })
+      .eq("id", id);
+    if (error) return toast.error(error.message);
+    setCard((c) => ({ ...c, is_published: publish, published_at: publish ? new Date().toISOString() : null }));
+    await notifyPublish([studentId], publish);
+    toast.success(publish ? "Published — sent to parent dashboard" : "Unpublished");
+  };
+
+  // Whole-class publish dialog state
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [publishSectionId, setPublishSectionId] = useState<string>("");
+  const [publishBusy, setPublishBusy] = useState(false);
+
+  const publishWholeClass = async (publish: boolean) => {
+    if (!schoolId) return;
+    if (!publishSectionId) return toast.error("Select a section");
+    setPublishBusy(true);
+    try {
+      const sectionStudentIds = enrollments
+        .filter((e) => e.class_section_id === publishSectionId)
+        .map((e) => e.student_id);
+      if (sectionStudentIds.length === 0) { toast.error("No students in section"); return; }
+
+      let query = (supabase as any)
+        .from("report_cards")
+        .update({ is_published: publish, published_at: publish ? new Date().toISOString() : null })
+        .eq("school_id", schoolId)
+        .in("student_id", sectionStudentIds);
+      if (periodType === "exam") {
+        if (!examId) return toast.error("Select an exam first");
+        query = query.eq("exam_id", examId);
+      } else {
+        query = query.eq("period_type", periodType).eq("period_label", currentPeriodLabel);
+      }
+      const { data, error } = await query.select("student_id");
+      if (error) return toast.error(error.message);
+      const affected = (data || []).map((r: any) => r.student_id);
+      if (affected.length === 0) {
+        toast.error("No saved report cards found for this section — save students' cards first.");
+        return;
+      }
+      await notifyPublish(affected, publish);
+      toast.success(`${publish ? "Published" : "Unpublished"} ${affected.length} report card${affected.length === 1 ? "" : "s"}`);
+      setPublishDialogOpen(false);
+    } finally {
+      setPublishBusy(false);
+    }
+  };
+
+  // ───────── Inline "+ add quiz/test/assignment" for current student/subject
+  const [addOpen, setAddOpen] = useState(false);
+  const [addSubjectId, setAddSubjectId] = useState<string>("");
+  const [addType, setAddType] = useState<string>("quiz");
+  const [addTitle, setAddTitle] = useState("");
+  const [addMax, setAddMax] = useState<number>(10);
+  const [addMarks, setAddMarks] = useState<number>(0);
+  const [addDate, setAddDate] = useState<string>(new Date().toISOString().slice(0, 10));
+
+  const openAddFor = (subjectId: string) => {
+    setAddSubjectId(subjectId);
+    setAddType("quiz");
+    setAddTitle("");
+    setAddMax(10);
+    setAddMarks(0);
+    setAddDate(new Date().toISOString().slice(0, 10));
+    setAddOpen(true);
+  };
+
+  const submitAddAssessment = async () => {
+    if (!schoolId || !studentId || !addSubjectId) return;
+    if (!addTitle.trim()) return toast.error("Title required");
+    const enr = enrollments.find((e) => e.student_id === studentId);
+    if (!enr?.class_section_id) return toast.error("Student has no class section");
+    const userResp = await (supabase as any).auth.getUser();
+    const uid = userResp.data?.user?.id ?? null;
+
+    const { data: a, error: aErr } = await (supabase as any)
+      .from("academic_assessments")
+      .insert({
+        school_id: schoolId,
+        class_section_id: enr.class_section_id,
+        subject_id: addSubjectId,
+        title: addTitle.trim(),
+        assessment_type: addType,
+        assessment_date: addDate,
+        max_marks: addMax,
+        is_published: true,
+        published_at: new Date().toISOString(),
+        created_by: uid,
+      })
+      .select("id,subject_id,max_marks,is_published,title,assessment_date,assessment_type,weightage_percent")
+      .single();
+    if (aErr || !a) return toast.error(aErr?.message || "Failed to add");
+
+    const pct = addMax > 0 ? (addMarks / addMax) * 100 : 0;
+    const { error: mErr } = await (supabase as any)
+      .from("student_marks")
+      .upsert({
+        school_id: schoolId,
+        assessment_id: a.id,
+        student_id: studentId,
+        marks: addMarks,
+        computed_grade: calcGrade(pct).grade,
+        created_by: uid,
+      }, { onConflict: "school_id,assessment_id,student_id" });
+    if (mErr) return toast.error(mErr.message);
+
+    setAllAssessments((prev) => [...prev, a as any]);
+    setAllMarks((prev) => [...prev, { assessment_id: a.id, marks: addMarks, computed_grade: calcGrade(pct).grade } as any]);
+    toast.success(`${addType[0].toUpperCase() + addType.slice(1)} added`);
+    setAddOpen(false);
+  };
+
 
   const showPicker = !studentIdLocked;
   const today = format(new Date(), "MMMM d, yyyy");
