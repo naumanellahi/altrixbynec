@@ -195,6 +195,7 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
       if (students.length === 0) { toast.error("No enrolled students found"); return; }
 
       let success = 0; let failed = 0; let firstErr = "";
+      const completedSections = new Set<string>();
       for (const en of students) {
         const studentRows = rows.filter((r) => r.class_section_id === en.class_section_id);
         if (studentRows.length === 0) continue;
@@ -222,18 +223,7 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
           }, { onConflict: "exam_id,student_id" } as any);
           if (distErr) throw distErr;
 
-          if (!scheduleAt) {
-            const { data: guards } = await (supabase as any)
-              .from("student_guardians").select("user_id").eq("student_id", en.student_id).not("user_id", "is", null);
-            for (const g of (guards || []) as any[]) {
-              await (supabase as any).from("app_notifications").insert({
-                school_id: schoolId, user_id: g.user_id, type: "exam_datesheet",
-                title: `Datesheet ready: ${examName}`,
-                body: `Download ${studentLabel}'s exam datesheet from the Datesheets section.`,
-                entity_type: "exam", entity_id: examId,
-              });
-            }
-          }
+          completedSections.add(en.class_section_id);
           success++;
         } catch (err: any) {
           console.error("send fail", en.student_id, err);
@@ -241,9 +231,20 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
           failed++;
         }
       }
+      let notified = 0;
+      if (success > 0 && !scheduleAt) {
+        for (const sectionId of Array.from(completedSections)) {
+          const { data: count, error: notifyErr } = await (supabase as any).rpc("notify_exam_datesheet_ready", {
+            _exam_id: examId,
+            _class_section_id: sectionId,
+          });
+          if (notifyErr) throw notifyErr;
+          notified += Number(count || 0);
+        }
+      }
       if (success > 0) {
         if (scheduleAt) toast.success(`Scheduled ${success} datesheet${success !== 1 ? "s" : ""} for ${format(new Date(scheduleAt), "PPp")}${failed ? ` (${failed} failed)` : ""}`);
-        else toast.success(`Sent to ${success} student${success !== 1 ? "s" : ""}${failed ? ` (${failed} failed)` : ""}`);
+        else toast.success(`Sent to ${success} student${success !== 1 ? "s" : ""}; ${notified} concerned people notified${failed ? ` (${failed} failed)` : ""}`);
       }
       if (success === 0 && failed > 0) toast.error(`All ${failed} failed${firstErr ? `: ${firstErr}` : ""}`);
       loadSchedules();
