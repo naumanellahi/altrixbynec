@@ -43,6 +43,7 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
   const navItems = [
     { to: `/${schoolSlug}/${role}`, icon: LayoutGrid, label: "Dashboard", show: true, badge: 0 },
     { to: `/${schoolSlug}/${role}/fees-pro`, icon: Coins, label: "Fees", show: canAccessFees, badge: 0 },
+    { to: `/${schoolSlug}/${role}/fee-vouchers`, icon: FileText, label: "Fee Vouchers", show: ["principal", "vice_principal", "school_admin", "school_owner", "super_admin", "accountant", "hr_manager"].includes(role), badge: 0 },
     { to: `/${schoolSlug}/${role}/admissions`, icon: UserPlus, label: "Admissions", show: canAccessAdmissions, badge: 0 },
     { to: `/${schoolSlug}/${role}/messages`, icon: MessageSquare, label: "Messages", show: true, badge: unreadCount },
     { to: `/${schoolSlug}/${role}/admin`, icon: ShieldCheck, label: "Admin", show: role === "super_admin", badge: 0 },
