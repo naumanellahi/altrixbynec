@@ -19,7 +19,12 @@ import {
   CalendarRange,
   ClipboardList,
   Sparkles,
+  Plus,
+  Send,
+  Users,
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import jsPDF from "jspdf";
@@ -391,13 +396,12 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
     return currentPeriodLabel || "Report Card";
   }, [card, exams, examId, periodType, currentPeriodLabel]);
 
-  const save = async (publish = false) => {
-    if (!schoolId || !studentId) return toast.error("Select a student");
-    if (periodType === "exam" && !examId) return toast.error("Select an exam");
+  const save = async () => {
+    if (!schoolId || !studentId) { toast.error("Select a student"); return null; }
+    if (periodType === "exam" && !examId) { toast.error("Select an exam"); return null; }
     const userResp = await (supabase as any).auth.getUser();
     const uid = userResp.data?.user?.id ?? null;
 
-    // Save subject-level marks only for exam mode (where exam_results table is keyed by exam_id)
     if (periodType === "exam") {
       for (const subjectId of Object.keys(results)) {
         const r = results[subjectId];
@@ -415,8 +419,8 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
       gpa: totals.gpa, overall_grade: totals.grade,
       teacher_remarks: card.teacher_remarks, principal_remarks: card.principal_remarks,
       attendance_percentage: card.attendance_percentage,
-      is_published: publish || card.is_published,
-      published_at: publish ? new Date().toISOString() : (card as any).published_at ?? null,
+      is_published: card.is_published, // preserve current state, do NOT auto-publish on save
+      published_at: (card as any).published_at ?? null,
       last_edited_by: uid,
       period_type: periodType,
     };
@@ -435,10 +439,160 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
       onConflict = "school_id,student_id,period_type,period_label";
     }
 
-    const { error } = await (supabase as any).from("report_cards").upsert(basePayload, { onConflict });
-    if (error) return toast.error(error.message);
-    toast.success(publish ? "Published — visible to student & parents" : "Saved as draft");
+    const { data, error } = await (supabase as any)
+      .from("report_cards")
+      .upsert(basePayload, { onConflict })
+      .select("id,is_published,published_at")
+      .maybeSingle();
+    if (error) { toast.error(error.message); return null; }
+    toast.success("Saved as draft");
+    if (data) setCard((c) => ({ ...c, id: data.id, is_published: data.is_published, published_at: data.published_at }));
+    return data?.id ?? null;
   };
+
+  const notifyPublish = async (studentIds: string[], published: boolean) => {
+    if (!schoolId || studentIds.length === 0) return;
+    const title = published ? "New report card published" : "Report card unpublished";
+    const body = `${periodTitle} — ${published ? "now available on your dashboard" : "temporarily withdrawn"}.`;
+    // Resolve recipients: student profile_id + guardians
+    const [{ data: studs }, { data: guards }] = await Promise.all([
+      (supabase as any).from("students").select("id,profile_id").in("id", studentIds),
+      (supabase as any).from("student_guardians").select("student_id,user_id").in("student_id", studentIds),
+    ]);
+    const recipients = new Set<string>();
+    (studs || []).forEach((s: any) => { if (s.profile_id) recipients.add(s.profile_id); });
+    (guards || []).forEach((g: any) => { if (g.user_id) recipients.add(g.user_id); });
+    if (recipients.size === 0) return;
+    const rows = Array.from(recipients).map((uid) => ({
+      school_id: schoolId, user_id: uid,
+      type: published ? "report_card_published" : "report_card_unpublished",
+      title, body, entity_type: "report_card", entity_id: null,
+    }));
+    await (supabase as any).from("app_notifications").insert(rows);
+  };
+
+  const publishIndividual = async (publish: boolean) => {
+    // Ensure saved first
+    let id = card.id;
+    if (!id) {
+      id = await save();
+      if (!id) return;
+    }
+    const { error } = await (supabase as any)
+      .from("report_cards")
+      .update({ is_published: publish, published_at: publish ? new Date().toISOString() : null })
+      .eq("id", id);
+    if (error) return toast.error(error.message);
+    setCard((c) => ({ ...c, is_published: publish, published_at: publish ? new Date().toISOString() : null }));
+    await notifyPublish([studentId], publish);
+    toast.success(publish ? "Published — sent to parent dashboard" : "Unpublished");
+  };
+
+  // Whole-class publish dialog state
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [publishSectionId, setPublishSectionId] = useState<string>("");
+  const [publishBusy, setPublishBusy] = useState(false);
+
+  const publishWholeClass = async (publish: boolean) => {
+    if (!schoolId) return;
+    if (!publishSectionId) return toast.error("Select a section");
+    setPublishBusy(true);
+    try {
+      const sectionStudentIds = enrollments
+        .filter((e) => e.class_section_id === publishSectionId)
+        .map((e) => e.student_id);
+      if (sectionStudentIds.length === 0) { toast.error("No students in section"); return; }
+
+      let query = (supabase as any)
+        .from("report_cards")
+        .update({ is_published: publish, published_at: publish ? new Date().toISOString() : null })
+        .eq("school_id", schoolId)
+        .in("student_id", sectionStudentIds);
+      if (periodType === "exam") {
+        if (!examId) return toast.error("Select an exam first");
+        query = query.eq("exam_id", examId);
+      } else {
+        query = query.eq("period_type", periodType).eq("period_label", currentPeriodLabel);
+      }
+      const { data, error } = await query.select("student_id");
+      if (error) return toast.error(error.message);
+      const affected = (data || []).map((r: any) => r.student_id);
+      if (affected.length === 0) {
+        toast.error("No saved report cards found for this section — save students' cards first.");
+        return;
+      }
+      await notifyPublish(affected, publish);
+      toast.success(`${publish ? "Published" : "Unpublished"} ${affected.length} report card${affected.length === 1 ? "" : "s"}`);
+      setPublishDialogOpen(false);
+    } finally {
+      setPublishBusy(false);
+    }
+  };
+
+  // ───────── Inline "+ add quiz/test/assignment" for current student/subject
+  const [addOpen, setAddOpen] = useState(false);
+  const [addSubjectId, setAddSubjectId] = useState<string>("");
+  const [addType, setAddType] = useState<string>("quiz");
+  const [addTitle, setAddTitle] = useState("");
+  const [addMax, setAddMax] = useState<number>(10);
+  const [addMarks, setAddMarks] = useState<number>(0);
+  const [addDate, setAddDate] = useState<string>(new Date().toISOString().slice(0, 10));
+
+  const openAddFor = (subjectId: string) => {
+    setAddSubjectId(subjectId);
+    setAddType("quiz");
+    setAddTitle("");
+    setAddMax(10);
+    setAddMarks(0);
+    setAddDate(new Date().toISOString().slice(0, 10));
+    setAddOpen(true);
+  };
+
+  const submitAddAssessment = async () => {
+    if (!schoolId || !studentId || !addSubjectId) return;
+    if (!addTitle.trim()) return toast.error("Title required");
+    const enr = enrollments.find((e) => e.student_id === studentId);
+    if (!enr?.class_section_id) return toast.error("Student has no class section");
+    const userResp = await (supabase as any).auth.getUser();
+    const uid = userResp.data?.user?.id ?? null;
+
+    const { data: a, error: aErr } = await (supabase as any)
+      .from("academic_assessments")
+      .insert({
+        school_id: schoolId,
+        class_section_id: enr.class_section_id,
+        subject_id: addSubjectId,
+        title: addTitle.trim(),
+        assessment_type: addType,
+        assessment_date: addDate,
+        max_marks: addMax,
+        is_published: true,
+        published_at: new Date().toISOString(),
+        created_by: uid,
+      })
+      .select("id,subject_id,max_marks,is_published,title,assessment_date,assessment_type,weightage_percent")
+      .single();
+    if (aErr || !a) return toast.error(aErr?.message || "Failed to add");
+
+    const pct = addMax > 0 ? (addMarks / addMax) * 100 : 0;
+    const { error: mErr } = await (supabase as any)
+      .from("student_marks")
+      .upsert({
+        school_id: schoolId,
+        assessment_id: a.id,
+        student_id: studentId,
+        marks: addMarks,
+        computed_grade: calcGrade(pct).grade,
+        created_by: uid,
+      }, { onConflict: "school_id,assessment_id,student_id" });
+    if (mErr) return toast.error(mErr.message);
+
+    setAllAssessments((prev) => [...prev, a as any]);
+    setAllMarks((prev) => [...prev, { assessment_id: a.id, marks: addMarks, computed_grade: calcGrade(pct).grade } as any]);
+    toast.success(`${addType[0].toUpperCase() + addType.slice(1)} added`);
+    setAddOpen(false);
+  };
+
 
   const showPicker = !studentIdLocked;
   const today = format(new Date(), "MMMM d, yyyy");
@@ -747,7 +901,21 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
                 const pct = obtained != null && max > 0 ? Math.round((Number(obtained) / Number(max)) * 100) : null;
                 return (
                   <tr key={s.id}>
-                    <td className="border border-gray-300 p-2">{s.name}</td>
+                    <td className="border border-gray-300 p-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span>{s.name}</span>
+                        {canManage && (
+                          <button
+                            type="button"
+                            onClick={() => openAddFor(s.id)}
+                            className="grid h-6 w-6 place-items-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 print:hidden"
+                            title="Add quiz / test / assignment"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
                     <td className="border border-gray-300 p-2 text-center">
                       {canManage ? (
                         <Input type="number" className="h-8 w-20 text-black" value={r?.marks_obtained ?? ""} onChange={(e) => updateMark(s.id, Number(e.target.value), max)} />
@@ -917,17 +1085,128 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
                 : `Ready to save ${periodType} report card — ${currentPeriodLabel}`}
             </p>
             <p className="text-xs text-muted-foreground">
-              Drafts are private. Publishing makes the card visible to the student & parents.
+              {card.is_published
+                ? "Published — visible on student & parent dashboards."
+                : "Save first. Publish separately when ready to release to parents."}
             </p>
           </div>
-          <Button variant="outline" disabled={periodType === "exam" && !examId} onClick={() => save(false)}>
-            Save Draft
+          <Button variant="outline" disabled={periodType === "exam" && !examId} onClick={() => save()}>
+            Save
           </Button>
-          <Button disabled={periodType === "exam" && !examId} onClick={() => save(true)}>
-            Save &amp; Publish
+          {card.is_published ? (
+            <Button variant="secondary" onClick={() => publishIndividual(false)}>
+              Unpublish
+            </Button>
+          ) : (
+            <Button disabled={periodType === "exam" && !examId} onClick={() => publishIndividual(true)}>
+              <Send className="mr-1.5 h-4 w-4" /> Publish to parent
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            disabled={periodType === "exam" && !examId}
+            onClick={() => {
+              const enr = enrollments.find((e) => e.student_id === studentId);
+              setPublishSectionId(enr?.class_section_id || "");
+              setPublishDialogOpen(true);
+            }}
+          >
+            <Users className="mr-1.5 h-4 w-4" /> Publish whole class
           </Button>
         </div>
       )}
+
+      {/* Add quiz/test/assignment dialog */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add marks entry</DialogTitle>
+            <DialogDescription>
+              Quickly log a quiz, test or assignment for this student. It will be reflected in the report card.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Type</Label>
+                <Select value={addType} onValueChange={setAddType}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="quiz">Quiz</SelectItem>
+                    <SelectItem value="test">Test</SelectItem>
+                    <SelectItem value="assignment">Assignment</SelectItem>
+                    <SelectItem value="project">Project</SelectItem>
+                    <SelectItem value="classwork">Classwork</SelectItem>
+                    <SelectItem value="homework">Homework</SelectItem>
+                    <SelectItem value="practical">Practical</SelectItem>
+                    <SelectItem value="oral">Oral</SelectItem>
+                    <SelectItem value="presentation">Presentation</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Date</Label>
+                <Input type="date" value={addDate} onChange={(e) => setAddDate(e.target.value)} />
+              </div>
+            </div>
+            <div>
+              <Label>Title</Label>
+              <Input value={addTitle} onChange={(e) => setAddTitle(e.target.value)} placeholder="e.g. Chapter 3 quiz" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Marks obtained</Label>
+                <Input type="number" value={addMarks} onChange={(e) => setAddMarks(Number(e.target.value))} />
+              </div>
+              <div>
+                <Label>Out of</Label>
+                <Input type="number" value={addMax} onChange={(e) => setAddMax(Number(e.target.value))} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
+            <Button onClick={submitAddAssessment}>Add</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Publish whole class dialog */}
+      <Dialog open={publishDialogOpen} onOpenChange={setPublishDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Publish whole class</DialogTitle>
+            <DialogDescription>
+              Publish or unpublish saved report cards for every student in a section.
+              Only cards that have already been saved will be affected.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <div>
+              <Label>Section</Label>
+              <Select value={publishSectionId} onValueChange={setPublishSectionId}>
+                <SelectTrigger><SelectValue placeholder="Select a section" /></SelectTrigger>
+                <SelectContent>
+                  {sections.map((s) => {
+                    const cls = classes.find((c) => c.id === s.class_id);
+                    return <SelectItem key={s.id} value={s.id}>{cls?.name ? `${cls.name} • ` : ""}{s.name}</SelectItem>;
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Scope: <strong>{periodType === "exam" ? (exams.find((e) => e.id === examId)?.name || "Exam") : currentPeriodLabel}</strong>
+            </p>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" disabled={publishBusy} onClick={() => publishWholeClass(false)}>Unpublish all</Button>
+            <Button disabled={publishBusy} onClick={() => publishWholeClass(true)}>
+              <Send className="mr-1.5 h-4 w-4" /> Publish all
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
