@@ -280,25 +280,55 @@ function PaymentProofsCard({ schoolId }: { schoolId: string | null }) {
     setSearch(""); setMethodFilter("__all"); setFromDate(""); setToDate(""); setMinAmount(""); setMaxAmount("");
   };
 
-  const exportCsv = () => {
-    if (filteredProofs.length === 0) { toast.info("Nothing to export"); return; }
-    const rows = filteredProofs.map(p => {
-      const s = studentMap.get(p.student_id);
-      const inv = invoiceMap.get(p.invoice_id);
-      return {
-        uploaded_at: new Date(p.created_at).toLocaleString(),
-        student: s ? `${s.first_name} ${s.last_name || ""}`.trim() : "",
-        roll_number: s?.roll_number || "",
-        invoice_number: inv?.invoice_number || "",
-        method: p.method || "",
-        paid_at: p.paid_at || "",
-        amount: Number(p.amount),
-        status: p.status,
-        rejection_reason: p.rejection_reason || "",
-        note: p.note || "",
-      };
-    });
-    exportToCSV(rows, `payment-proofs-${new Date().toISOString().slice(0, 10)}`);
+  const [exporting, setExporting] = useState(false);
+  const exportCsv = async () => {
+    if (!schoolId) return;
+    setExporting(true);
+    const tId = toast.loading("Preparing export…");
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess.session?.access_token;
+      if (!token) throw new Error("Not signed in");
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/export-payment-proofs`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({
+          schoolId,
+          status: statusFilter,
+          method: methodFilter,
+          fromDate, toDate,
+          minAmount: minAmount || null,
+          maxAmount: maxAmount || null,
+          search: debouncedSearch,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(err || `Export failed (${res.status})`);
+      }
+      const count = Number(res.headers.get("X-Row-Count") || 0);
+      if (count === 0) {
+        toast.info("Nothing to export", { id: tId });
+        return;
+      }
+      const blob = await res.blob();
+      const href = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = href;
+      a.download = `payment-proofs-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(href);
+      toast.success(`Exported ${count} row${count === 1 ? "" : "s"}`, { id: tId });
+    } catch (e: any) {
+      toast.error(e?.message || "Export failed", { id: tId });
+    } finally {
+      setExporting(false);
+    }
   };
 
   const openProof = async (p: ProofRow) => {
@@ -340,8 +370,9 @@ function PaymentProofsCard({ schoolId }: { schoolId: string | null }) {
             <div className="text-xs text-muted-foreground">
               Showing <span className="font-medium text-foreground">{filteredProofs.length}</span> of {proofs.length}
             </div>
-            <Button size="sm" variant="outline" onClick={exportCsv} disabled={filteredProofs.length === 0}>
-              <FileDown className="h-3 w-3 mr-1" /> Export CSV
+            <Button size="sm" variant="outline" onClick={exportCsv} disabled={exporting || !schoolId}>
+              {exporting ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <FileDown className="h-3 w-3 mr-1" />}
+              Export CSV
             </Button>
           </div>
 

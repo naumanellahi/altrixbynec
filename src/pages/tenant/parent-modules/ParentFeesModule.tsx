@@ -737,17 +737,25 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
             <Button variant="destructive" disabled={deletingProof} onClick={async () => {
               if (!deleteProof) return;
               setDeletingProof(true);
+              const tId = toast.loading("Deleting proof…");
+              let fileRemoved: boolean | null = null;
               try {
                 if (deleteProof.file_path) {
-                  await supabase.storage.from("fee-payment-proofs").remove([deleteProof.file_path]);
+                  const { error: rmErr } = await supabase.storage.from("fee-payment-proofs").remove([deleteProof.file_path]);
+                  fileRemoved = !rmErr;
                 }
                 const { error } = await (supabase as any).from("fee_payment_proofs").delete().eq("id", deleteProof.id);
                 if (error) throw error;
-                toast.success("Proof deleted");
+                const desc = fileRemoved === true
+                  ? "Receipt file removed from storage."
+                  : fileRemoved === false
+                    ? "Record deleted, but the receipt file could not be removed."
+                    : undefined;
+                toast.success("Proof deleted", { id: tId, description: desc });
                 setProofs(prev => prev.filter(p => p.id !== deleteProof.id));
                 setDeleteProof(null);
               } catch (e: any) {
-                toast.error(e?.message || "Failed to delete");
+                toast.error(e?.message || "Failed to delete proof", { id: tId });
               } finally {
                 setDeletingProof(false);
               }

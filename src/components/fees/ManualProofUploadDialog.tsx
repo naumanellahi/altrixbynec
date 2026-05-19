@@ -66,6 +66,7 @@ export function ManualProofUploadDialog({ open, onOpenChange, schoolId, studentI
       let filePath = existingProof?.file_path || "";
       let fileName = existingProof?.file_name || null;
       let mimeType: string | null = null;
+      let oldFileRemoved: boolean | null = null;
 
       if (file) {
         const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
@@ -79,7 +80,8 @@ export function ManualProofUploadDialog({ open, onOpenChange, schoolId, studentI
 
         // remove previous file if replacing
         if (isEdit && existingProof?.file_path && existingProof.file_path !== filePath) {
-          await supabase.storage.from("fee-payment-proofs").remove([existingProof.file_path]);
+          const { error: rmErr } = await supabase.storage.from("fee-payment-proofs").remove([existingProof.file_path]);
+          oldFileRemoved = !rmErr;
         }
       }
 
@@ -91,7 +93,12 @@ export function ManualProofUploadDialog({ open, onOpenChange, schoolId, studentI
         const { error: upErr } = await (supabase as any).from("fee_payment_proofs")
           .update(patch).eq("id", existingProof!.id);
         if (upErr) throw upErr;
-        toast.success("Proof updated");
+        const desc = file
+          ? (oldFileRemoved === false
+              ? "New receipt uploaded, but the old file could not be removed."
+              : "Receipt replaced successfully.")
+          : "Details updated.";
+        toast.success("Proof updated", { description: desc });
       } else {
         const { error: insErr } = await (supabase as any).from("fee_payment_proofs").insert({
           school_id: schoolId, invoice_id: invoiceId, student_id: studentId,
