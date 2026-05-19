@@ -1075,7 +1075,15 @@ export default function ReportCardModule({ schoolId, canManage: canManageProp = 
               </div>
             </div>
 
-          <table className="relative mt-5 w-full border-collapse text-sm">
+          <table className="relative mt-5 w-full table-fixed border-collapse text-sm">
+            <colgroup>
+              <col style={{ width: "30%" }} />
+              <col style={{ width: "12%" }} />
+              <col style={{ width: "12%" }} />
+              <col style={{ width: "12%" }} />
+              <col style={{ width: "12%" }} />
+              <col style={{ width: "22%" }} className="print:hidden" />
+            </colgroup>
             <thead>
               <tr className="bg-primary/10 text-left">
                 <th className="border border-gray-300 p-2">Subject</th>
@@ -1086,6 +1094,7 @@ export default function ReportCardModule({ schoolId, canManage: canManageProp = 
                 <th className="border border-gray-300 p-2 print:hidden">Remarks</th>
               </tr>
             </thead>
+
             <tbody>
               {subjects.map((s) => {
                 const r = results[s.id];
