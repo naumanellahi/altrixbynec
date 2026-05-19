@@ -32,7 +32,7 @@ interface Result { id?: string; subject_id: string; marks_obtained: number | nul
 interface Card { id?: string; exam_id?: string | null; total_marks: number | null; max_total: number | null; percentage: number | null; gpa: number | null; overall_grade: string | null; teacher_remarks: string | null; principal_remarks: string | null; attendance_percentage: number | null; is_published: boolean; period_type?: string; period_label?: string | null; period_start?: string | null; period_end?: string | null; academic_year?: string | null; published_at?: string | null; }
 interface ClassRow { id: string; name: string; }
 interface SectionRow { id: string; name: string; class_id: string; }
-interface AssessmentRow { id: string; title: string; subject_id: string | null; assessment_date: string | null; max_marks: number; is_published?: boolean | null; }
+interface AssessmentRow { id: string; title: string; subject_id: string | null; assessment_date: string | null; max_marks: number; is_published?: boolean | null; assessment_type?: string | null; weightage_percent?: number | null; }
 interface MarkRow { assessment_id: string; marks: number | null; computed_grade: string | null; }
 interface ReportCardRow {
   id: string;
