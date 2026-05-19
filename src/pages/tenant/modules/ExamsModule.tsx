@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import ExamDatesheetDialog from "./components/ExamDatesheetDialog";
 import ExamPublishDialog from "./components/ExamPublishDialog";
+import ParentDatesheetsCard from "@/components/parent/ParentDatesheetsCard";
 
 interface Exam {
   id: string; name: string; term_label: string | null;
