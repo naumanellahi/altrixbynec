@@ -629,6 +629,29 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
           })()}
         </DialogContent>
       </Dialog>
+
+      {uploadFor && schoolId && child && (
+        <ManualProofUploadDialog
+          open={!!uploadFor}
+          onOpenChange={(v) => !v && setUploadFor(null)}
+          schoolId={schoolId}
+          studentId={child.student_id}
+          invoiceId={uploadFor.id}
+          invoiceNumber={uploadFor.invoice_number}
+          amountDue={Math.max(Number(uploadFor.total_amount) - Number(uploadFor.paid_amount), 0)}
+        />
+      )}
+
+      <Dialog open={!!viewProof} onOpenChange={(o) => !o && setViewProof(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader><DialogTitle>{viewProof?.name}</DialogTitle></DialogHeader>
+          {viewProof && (
+            viewProof.name.toLowerCase().endsWith(".pdf")
+              ? <iframe src={viewProof.url} className="w-full h-[70vh] rounded border" />
+              : <img src={viewProof.url} alt="proof" className="w-full max-h-[70vh] object-contain rounded border" />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
