@@ -148,6 +148,8 @@ export default function FeeVouchersModule() {
         </CardContent>
       </Card>
 
+      <PaymentProofsCard schoolId={schoolId} />
+
       <GenerateVoucherDialog
         open={dialogOpen}
         onOpenChange={(v) => {
@@ -159,6 +161,181 @@ export default function FeeVouchersModule() {
 
       <DeliveriesDialog batch={deliveriesBatch} onClose={() => setDeliveriesBatch(null)} />
     </div>
+  );
+}
+
+type ProofRow = {
+  id: string; school_id: string; invoice_id: string; student_id: string;
+  file_path: string; file_name: string | null; mime_type: string | null;
+  amount: number; paid_at: string | null; method: string | null; note: string | null;
+  status: string; rejection_reason: string | null; verified_at: string | null;
+  created_at: string;
+};
+
+function PaymentProofsCard({ schoolId }: { schoolId: string | null }) {
+  const qc = useQueryClient();
+  const [statusFilter, setStatusFilter] = useState<string>("pending");
+  const [viewing, setViewing] = useState<{ url: string; name: string; pdf: boolean } | null>(null);
+  const [rejectFor, setRejectFor] = useState<ProofRow | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const { data: proofs = [] } = useQuery({
+    queryKey: ["fee_payment_proofs", schoolId, statusFilter],
+    queryFn: async () => {
+      let q = (supabase as any).from("fee_payment_proofs")
+        .select("id, school_id, invoice_id, student_id, file_path, file_name, mime_type, amount, paid_at, method, note, status, rejection_reason, verified_at, created_at")
+        .eq("school_id", schoolId!).order("created_at", { ascending: false }).limit(100);
+      if (statusFilter !== "__all") q = q.eq("status", statusFilter);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data as ProofRow[];
+    },
+    enabled: !!schoolId,
+  });
+
+  const studentIds = Array.from(new Set(proofs.map(p => p.student_id)));
+  const invoiceIds = Array.from(new Set(proofs.map(p => p.invoice_id)));
+  const { data: students = [] } = useQuery({
+    queryKey: ["proof_students", studentIds.join(",")],
+    queryFn: async () => {
+      const { data } = await supabase.from("students").select("id, first_name, last_name, roll_number").in("id", studentIds);
+      return data || [];
+    },
+    enabled: studentIds.length > 0,
+  });
+  const { data: invoices = [] } = useQuery({
+    queryKey: ["proof_invoices", invoiceIds.join(",")],
+    queryFn: async () => {
+      const { data } = await supabase.from("fee_invoices").select("id, invoice_number, total_amount, paid_amount, status").in("id", invoiceIds);
+      return data || [];
+    },
+    enabled: invoiceIds.length > 0,
+  });
+  const studentMap = new Map((students as any[]).map(s => [s.id, s]));
+  const invoiceMap = new Map((invoices as any[]).map(i => [i.id, i]));
+
+  const openProof = async (p: ProofRow) => {
+    const { data, error } = await supabase.storage.from("fee-payment-proofs").createSignedUrl(p.file_path, 600);
+    if (error || !data) { toast.error("Could not open file"); return; }
+    const name = p.file_name || "proof";
+    setViewing({ url: data.signedUrl, name, pdf: (p.mime_type || name).toLowerCase().includes("pdf") });
+  };
+
+  const verify = async (p: ProofRow, approve: boolean, reason?: string) => {
+    setBusy(p.id);
+    try {
+      const { error } = await (supabase as any).rpc("verify_fee_payment_proof", {
+        _proof_id: p.id, _approve: approve, _amount: null, _reason: reason || null,
+      });
+      if (error) throw error;
+      toast.success(approve ? "Payment verified & invoice updated" : "Proof rejected");
+      qc.invalidateQueries({ queryKey: ["fee_payment_proofs"] });
+    } catch (e: any) {
+      toast.error(e?.message || "Action failed");
+    } finally {
+      setBusy(null);
+      setRejectFor(null);
+      setRejectReason("");
+    }
+  };
+
+  return (
+    <Card className="shadow-elevated">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Upload className="h-4 w-4" /> Manual payment proofs
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">Parents' uploaded bank/cash receipts awaiting verification.</p>
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="verified">Verified</SelectItem>
+            <SelectItem value="rejected">Rejected</SelectItem>
+            <SelectItem value="__all">All</SelectItem>
+          </SelectContent>
+        </Select>
+      </CardHeader>
+      <CardContent>
+        {proofs.length === 0 ? (
+          <div className="py-6 text-center text-sm text-muted-foreground">No {statusFilter !== "__all" ? statusFilter : ""} proofs.</div>
+        ) : (
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead>Uploaded</TableHead>
+              <TableHead>Student</TableHead>
+              <TableHead>Invoice</TableHead>
+              <TableHead>Method</TableHead>
+              <TableHead className="text-right">Amount</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {proofs.map(p => {
+                const s = studentMap.get(p.student_id);
+                const inv = invoiceMap.get(p.invoice_id);
+                return (
+                  <TableRow key={p.id}>
+                    <TableCell className="text-xs">{new Date(p.created_at).toLocaleString()}</TableCell>
+                    <TableCell>{s ? `${s.first_name} ${s.last_name || ""}` : "—"}<div className="text-xs text-muted-foreground">{s?.roll_number || ""}</div></TableCell>
+                    <TableCell className="font-mono text-xs">{inv?.invoice_number || "—"}</TableCell>
+                    <TableCell className="text-xs">{p.method || "—"}{p.paid_at ? ` · ${p.paid_at}` : ""}{p.note ? <div className="text-muted-foreground truncate max-w-[180px]">{p.note}</div> : null}</TableCell>
+                    <TableCell className="text-right">PKR {Number(p.amount).toLocaleString()}</TableCell>
+                    <TableCell>
+                      <Badge variant={p.status === "verified" ? "default" : p.status === "rejected" ? "destructive" : "secondary"}>
+                        {p.status}
+                      </Badge>
+                      {p.rejection_reason && <div className="text-[10px] text-muted-foreground mt-1 max-w-[160px] truncate">{p.rejection_reason}</div>}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button size="sm" variant="outline" onClick={() => openProof(p)}><Eye className="h-3 w-3 mr-1" />View</Button>
+                        {p.status === "pending" && (
+                          <>
+                            <Button size="sm" onClick={() => verify(p, true)} disabled={busy === p.id}>
+                              {busy === p.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
+                              Verify
+                            </Button>
+                            <Button size="sm" variant="destructive" onClick={() => setRejectFor(p)} disabled={busy === p.id}>
+                              <XCircle className="h-3 w-3 mr-1" /> Reject
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+
+      <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader><DialogTitle>{viewing?.name}</DialogTitle></DialogHeader>
+          {viewing && (viewing.pdf
+            ? <iframe src={viewing.url} className="w-full h-[70vh] rounded border" />
+            : <img src={viewing.url} alt="proof" className="w-full max-h-[70vh] object-contain rounded border" />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!rejectFor} onOpenChange={(o) => !o && setRejectFor(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Reject proof</DialogTitle></DialogHeader>
+          <Label>Reason (shared with parent)</Label>
+          <Textarea rows={3} value={rejectReason} onChange={e => setRejectReason(e.target.value)} placeholder="e.g. amount mismatch, unreadable receipt" />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectFor(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={() => rejectFor && verify(rejectFor, false, rejectReason)} disabled={!!busy}>Reject</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
   );
 }
 
