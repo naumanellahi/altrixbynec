@@ -355,7 +355,7 @@ function PaymentProofsCard({ schoolId }: { schoolId: string | null }) {
               <TableHead className="text-right">Actions</TableHead>
             </TableRow></TableHeader>
             <TableBody>
-              {proofs.map(p => {
+              {filteredProofs.map(p => {
                 const s = studentMap.get(p.student_id);
                 const inv = invoiceMap.get(p.invoice_id);
                 return (
