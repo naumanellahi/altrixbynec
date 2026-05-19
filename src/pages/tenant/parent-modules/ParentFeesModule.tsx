@@ -102,6 +102,9 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
   const [invStatus, setInvStatus] = useState("__all");
   const [invFromDate, setInvFromDate] = useState("");
   const [invToDate, setInvToDate] = useState("");
+  const [uploadFor, setUploadFor] = useState<InvoiceRecord | null>(null);
+  const [proofs, setProofs] = useState<any[]>([]);
+  const [viewProof, setViewProof] = useState<{ url: string; name: string } | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const highlightInvoice = useMemo(() => new URLSearchParams(location.search).get("invoice"), [location.search]);
