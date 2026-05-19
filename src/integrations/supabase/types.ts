@@ -2447,6 +2447,8 @@ export type Database = {
           id: string
           invoice_number: string
           late_fee: number
+          merit_discount_amount: number
+          merit_discount_reason: string | null
           notes: string | null
           paid_amount: number
           period_end: string | null
@@ -2469,6 +2471,8 @@ export type Database = {
           id?: string
           invoice_number: string
           late_fee?: number
+          merit_discount_amount?: number
+          merit_discount_reason?: string | null
           notes?: string | null
           paid_amount?: number
           period_end?: string | null
@@ -2491,6 +2495,8 @@ export type Database = {
           id?: string
           invoice_number?: string
           late_fee?: number
+          merit_discount_amount?: number
+          merit_discount_reason?: string | null
           notes?: string | null
           paid_amount?: number
           period_end?: string | null
@@ -2767,6 +2773,99 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      fee_voucher_batches: {
+        Row: {
+          campus_id: string | null
+          class_id: string | null
+          class_section_id: string | null
+          created_at: string
+          created_by: string
+          default_discount_pct: number
+          due_date: string
+          fee_plan_id: string | null
+          grade_discount_tiers: Json
+          id: string
+          notes: string | null
+          period_label: string | null
+          school_id: string
+          scope: string
+          total_amount: number
+          total_students: number
+        }
+        Insert: {
+          campus_id?: string | null
+          class_id?: string | null
+          class_section_id?: string | null
+          created_at?: string
+          created_by?: string
+          default_discount_pct?: number
+          due_date: string
+          fee_plan_id?: string | null
+          grade_discount_tiers?: Json
+          id?: string
+          notes?: string | null
+          period_label?: string | null
+          school_id: string
+          scope?: string
+          total_amount?: number
+          total_students?: number
+        }
+        Update: {
+          campus_id?: string | null
+          class_id?: string | null
+          class_section_id?: string | null
+          created_at?: string
+          created_by?: string
+          default_discount_pct?: number
+          due_date?: string
+          fee_plan_id?: string | null
+          grade_discount_tiers?: Json
+          id?: string
+          notes?: string | null
+          period_label?: string | null
+          school_id?: string
+          scope?: string
+          total_amount?: number
+          total_students?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fee_voucher_batches_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fee_voucher_batches_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "academic_classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fee_voucher_batches_class_section_id_fkey"
+            columns: ["class_section_id"]
+            isOneToOne: false
+            referencedRelation: "class_sections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fee_voucher_batches_fee_plan_id_fkey"
+            columns: ["fee_plan_id"]
+            isOneToOne: false
+            referencedRelation: "fee_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fee_voucher_batches_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       finance_expenses: {
         Row: {
@@ -5687,6 +5786,21 @@ export type Database = {
       }
       find_parent_user_by_email: {
         Args: { _email: string; _school_id: string }
+        Returns: string
+      }
+      generate_fee_voucher: {
+        Args: {
+          _batch_id?: string
+          _due_date: string
+          _extra_discount_amount?: number
+          _extra_discount_pct?: number
+          _extra_discount_reason?: string
+          _fee_plan_id: string
+          _notes?: string
+          _period_label: string
+          _school_id: string
+          _student_id: string
+        }
         Returns: string
       }
       generate_invoice_for_student: {
