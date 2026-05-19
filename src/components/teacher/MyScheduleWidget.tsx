@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { CalendarDays, Check, ChevronRight, Clock, Coffee, DoorOpen, LogIn, Pencil, Wifi, WifiOff, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,8 +9,6 @@ import { PeriodLogDialog } from "./PeriodLogDialog";
 import { useTeacherSchedule, ScheduleEntry, PeriodLog } from "@/hooks/useTeacherSchedule";
 import { useTeacherPresence } from "@/hooks/useTeacherPresence";
 import { useSession } from "@/hooks/useSession";
-import { toast } from "@/hooks/use-toast";
-import { toast as sonner } from "sonner";
 import {
   Dialog,
   DialogContent,
