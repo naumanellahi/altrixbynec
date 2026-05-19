@@ -261,14 +261,23 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
       if (!cancelled) setTxns(merged);
     };
 
+    const loadProofs = async () => {
+      const { data } = await (supabase as any).from("fee_payment_proofs")
+        .select("id, invoice_id, file_path, file_name, amount, paid_at, method, note, status, rejection_reason, created_at, verified_at")
+        .eq("school_id", schoolId).eq("student_id", child.student_id)
+        .order("created_at", { ascending: false }).limit(100);
+      if (!cancelled) setProofs(data || []);
+    };
+
     (async () => {
       setLoading(true);
-      await Promise.all([loadInvoices(), loadProviders(), loadTxns()]);
+      await Promise.all([loadInvoices(), loadProviders(), loadTxns(), loadProofs()]);
       if (!cancelled) setLoading(false);
     })();
 
     const ch = supabase.channel(`pfees-${child.student_id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "fee_invoices", filter: `student_id=eq.${child.student_id}` }, loadInvoices)
+      .on("postgres_changes", { event: "*", schema: "public", table: "fee_payment_proofs", filter: `student_id=eq.${child.student_id}` }, loadProofs)
       .on("postgres_changes", { event: "*", schema: "public", table: "jazzcash_settings", filter: `school_id=eq.${schoolId}` }, loadProviders)
       .on("postgres_changes", { event: "*", schema: "public", table: "easypaisa_settings", filter: `school_id=eq.${schoolId}` }, loadProviders)
       .on("postgres_changes", { event: "*", schema: "public", table: "jazzcash_transactions", filter: `student_id=eq.${child.student_id}` }, (payload) => {
