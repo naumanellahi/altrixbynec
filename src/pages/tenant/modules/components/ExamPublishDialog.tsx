@@ -83,38 +83,39 @@ export default function ExamPublishDialog({
 
   const studentsInClass = students.filter((s) => !studClassId || s.class_section_id === studClassId);
 
+  const isFuture = (iso: string | null) => !!iso && new Date(iso).getTime() > Date.now() + 30_000;
+
   const publishExam = async (publish: boolean) => {
+    const publishAtIso = publish ? (examPublishAt ? new Date(examPublishAt).toISOString() : new Date().toISOString()) : null;
+    const scheduled = publish && isFuture(publishAtIso);
     const patch: any = {
-      result_published: publish,
-      result_published_at: publish ? (examPublishAt ? new Date(examPublishAt).toISOString() : new Date().toISOString()) : null,
+      result_published: scheduled ? false : publish,
+      result_published_at: scheduled ? null : publishAtIso,
     };
     const { error } = await (supabase as any).from("exams").update(patch).eq("id", examId);
     if (error) return toast.error(error.message);
 
-    // upsert exam-scope publication record for history
     await (supabase as any).from("exam_result_publications").upsert(
       {
         school_id: schoolId, exam_id: examId, scope: "exam",
         is_published: publish,
-        publish_at: patch.result_published_at,
+        publish_at: publishAtIso,
         notes: examNotes || null,
         created_by: user?.id ?? null,
+        processed_at: scheduled ? null : new Date().toISOString(),
       },
       { onConflict: "exam_id", ignoreDuplicates: false } as any
     );
 
-    const { data: notified } = await (supabase as any).rpc("notify_exam_result_publish", {
-      _exam_id: examId,
-      _scope: "exam",
-      _is_published: publish,
-      _section_id: null,
-      _student_id: null,
-      _message: examNotes || null,
-    });
-
-    toast.success(
-      `${publish ? "Results published" : "Results unpublished"} — ${notified ?? 0} recipients notified`
-    );
+    if (!scheduled) {
+      const { data: notified } = await (supabase as any).rpc("notify_exam_result_publish", {
+        _exam_id: examId, _scope: "exam", _is_published: publish,
+        _section_id: null, _student_id: null, _message: examNotes || null,
+      });
+      toast.success(`${publish ? "Results published" : "Results unpublished"} — ${notified ?? 0} recipients notified`);
+    } else {
+      toast.success(`Scheduled for ${format(new Date(publishAtIso!), "PPp")}`);
+    }
     setExamNotes("");
     onUpdated();
     load();
@@ -122,47 +123,61 @@ export default function ExamPublishDialog({
 
   const addSection = async () => {
     if (!secId) return toast.error("Pick a section");
+    const publishAtIso = secAt ? new Date(secAt).toISOString() : null;
+    const scheduled = isFuture(publishAtIso);
     const { error } = await (supabase as any).from("exam_result_publications").upsert(
       {
         school_id: schoolId, exam_id: examId, scope: "section",
         class_section_id: secId,
         is_published: secPublished,
-        publish_at: secAt ? new Date(secAt).toISOString() : null,
+        publish_at: publishAtIso,
         notes: secNotes || null,
         created_by: user?.id ?? null,
+        processed_at: scheduled ? null : new Date().toISOString(),
       },
       { onConflict: "exam_id,class_section_id" } as any
     );
     if (error) return toast.error(error.message);
-    const { data: notified } = await (supabase as any).rpc("notify_exam_result_publish", {
-      _exam_id: examId, _scope: "section", _is_published: secPublished,
-      _section_id: secId, _student_id: null, _message: secNotes || null,
-    });
-    toast.success(`Section rule saved — ${notified ?? 0} notified`);
+    if (!scheduled) {
+      const { data: notified } = await (supabase as any).rpc("notify_exam_result_publish", {
+        _exam_id: examId, _scope: "section", _is_published: secPublished,
+        _section_id: secId, _student_id: null, _message: secNotes || null,
+      });
+      toast.success(`Section rule saved — ${notified ?? 0} notified`);
+    } else {
+      toast.success(`Section scheduled for ${format(new Date(publishAtIso!), "PPp")}`);
+    }
     setSecId(""); setSecAt(""); setSecNotes(""); setSecPublished(true);
     load();
   };
 
   const addStudent = async () => {
     if (!studId) return toast.error("Pick a student");
+    const publishAtIso = studAt ? new Date(studAt).toISOString() : null;
+    const scheduled = isFuture(publishAtIso);
     const { error } = await (supabase as any).from("exam_result_publications").upsert(
       {
         school_id: schoolId, exam_id: examId, scope: "student",
         student_id: studId,
         is_published: studPublished,
-        publish_at: studAt ? new Date(studAt).toISOString() : null,
+        publish_at: publishAtIso,
         notes: studNotes || null,
         created_by: user?.id ?? null,
+        processed_at: scheduled ? null : new Date().toISOString(),
       },
       { onConflict: "exam_id,student_id" } as any
     );
     if (error) return toast.error(error.message);
-    const { data: notified } = await (supabase as any).rpc("notify_exam_result_publish", {
-      _exam_id: examId, _scope: "student", _is_published: studPublished,
-      _section_id: null, _student_id: studId, _message: studNotes || null,
-    });
-    toast.success(`Student rule saved — ${notified ?? 0} notified`);
-    setStudId(""); setStudAt(""); setStudNotes(""); setStudPublished(true);
+    if (!scheduled) {
+      const { data: notified } = await (supabase as any).rpc("notify_exam_result_publish", {
+        _exam_id: examId, _scope: "student", _is_published: studPublished,
+        _section_id: null, _student_id: studId, _message: studNotes || null,
+      });
+      toast.success(`Student rule saved — ${notified ?? 0} notified`);
+    } else {
+      toast.success(`Student scheduled for ${format(new Date(publishAtIso!), "PPp")}`);
+    }
+    setStudClassId(""); setStudId(""); setStudAt(""); setStudNotes(""); setStudPublished(true);
     load();
   };
 
