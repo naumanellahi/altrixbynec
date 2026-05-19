@@ -94,12 +94,90 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
   const [jcEnabled, setJcEnabled] = useState(false);
   const [epEnabled, setEpEnabled] = useState(false);
   const [paying, setPaying] = useState<string | null>(null);
+  const [downloadingVoucher, setDownloadingVoucher] = useState<string | null>(null);
   const [txns, setTxns] = useState<JcTxn[]>([]);
   const [receiptTxn, setReceiptTxn] = useState<JcTxn | null>(null);
   const [invSearch, setInvSearch] = useState("");
   const [invStatus, setInvStatus] = useState("__all");
   const [invFromDate, setInvFromDate] = useState("");
   const [invToDate, setInvToDate] = useState("");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const highlightInvoice = useMemo(() => new URLSearchParams(location.search).get("invoice"), [location.search]);
+  const highlightRef = useRef<HTMLTableRowElement | null>(null);
+
+  useEffect(() => {
+    if (highlightInvoice && highlightRef.current) {
+      highlightRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [highlightInvoice, invoices.length]);
+
+  const downloadVoucher = async (inv: InvoiceRecord) => {
+    if (!schoolId || !child) return;
+    setDownloadingVoucher(inv.id);
+    try {
+      const [{ data: school }, { data: branding }, { data: settings }, { data: items }, { data: fullInv }] = await Promise.all([
+        supabase.from("schools").select("id,name,address,phone,email,website,motto,logo_url").eq("id", schoolId).maybeSingle(),
+        (supabase as any).from("school_branding").select("accent_hue,accent_saturation,accent_lightness").eq("school_id", schoolId).maybeSingle(),
+        (supabase as any).from("fee_settings").select("bank_name,bank_account_title,bank_account_number,bank_iban,bank_branch,bank_swift,voucher_footer_note,currency").eq("school_id", schoolId).maybeSingle(),
+        supabase.from("fee_invoice_items").select("label,amount,sort_order").eq("invoice_id", inv.id).order("sort_order"),
+        supabase.from("fee_invoices").select("subtotal,discount_amount,sibling_discount_amount,merit_discount_amount,merit_discount_reason,total_amount").eq("id", inv.id).maybeSingle(),
+      ]);
+      const data: VoucherCopyData = {
+        invoiceNumber: inv.invoice_number,
+        issueDate: new Date().toISOString().slice(0, 10),
+        dueDate: inv.due_date,
+        periodLabel: inv.period_label,
+        school: {
+          name: school?.name ?? "School",
+          address: (school as any)?.address ?? null,
+          phone: (school as any)?.phone ?? null,
+          email: (school as any)?.email ?? null,
+          website: (school as any)?.website ?? null,
+          logoUrl: (school as any)?.logo_url ?? null,
+          motto: (school as any)?.motto ?? null,
+        },
+        student: {
+          name: `${child.first_name ?? ""} ${child.last_name ?? ""}`.trim(),
+          rollNumber: (child as any).roll_number ?? null,
+          studentCode: (child as any).student_code ?? null,
+          className: (child as any).class_name ?? null,
+          sectionName: (child as any).section_name ?? null,
+          parentName: null,
+          parentPhone: null,
+        },
+        items: (items ?? []).map((it: any) => ({ label: it.label, amount: Number(it.amount) })),
+        subtotal: Number((fullInv as any)?.subtotal ?? inv.total_amount),
+        baseDiscount: Number((fullInv as any)?.discount_amount ?? 0),
+        meritDiscount: Number((fullInv as any)?.merit_discount_amount ?? 0),
+        meritReason: (fullInv as any)?.merit_discount_reason ?? null,
+        siblingDiscount: Number((fullInv as any)?.sibling_discount_amount ?? 0),
+        total: Number((fullInv as any)?.total_amount ?? inv.total_amount),
+        currency: (settings as any)?.currency ?? "PKR",
+        accentHsl: branding
+          ? { h: Number((branding as any).accent_hue ?? 210), s: Number((branding as any).accent_saturation ?? 100), l: Number((branding as any).accent_lightness ?? 50) }
+          : { h: 210, s: 100, l: 50 },
+        notes: null,
+        bank: settings
+          ? {
+              bankName: (settings as any).bank_name,
+              accountTitle: (settings as any).bank_account_title,
+              accountNumber: (settings as any).bank_account_number,
+              iban: (settings as any).bank_iban,
+              branch: (settings as any).bank_branch,
+              swift: (settings as any).bank_swift,
+            }
+          : null,
+        footerNote: (settings as any)?.voucher_footer_note ?? null,
+      };
+      const doc = generateVoucherPdf(data);
+      doc.save(`voucher-${inv.invoice_number}.pdf`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not download voucher");
+    } finally {
+      setDownloadingVoucher(null);
+    }
+  };
 
   const printChallan = (inv: InvoiceRecord) => {
     const due = Math.max(Number(inv.total_amount) - Number(inv.paid_amount), 0);
