@@ -105,6 +105,9 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
   const [invFromDate, setInvFromDate] = useState("");
   const [invToDate, setInvToDate] = useState("");
   const [uploadFor, setUploadFor] = useState<InvoiceRecord | null>(null);
+  const [editProof, setEditProof] = useState<any | null>(null);
+  const [deleteProof, setDeleteProof] = useState<any | null>(null);
+  const [deletingProof, setDeletingProof] = useState(false);
   const [proofs, setProofs] = useState<any[]>([]);
   const [viewProof, setViewProof] = useState<{ url: string; name: string } | null>(null);
   const location = useLocation();
