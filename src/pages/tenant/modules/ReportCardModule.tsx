@@ -22,6 +22,8 @@ import {
   Plus,
   Send,
   Users,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -37,7 +39,7 @@ interface Result { id?: string; subject_id: string; marks_obtained: number | nul
 interface Card { id?: string; exam_id?: string | null; total_marks: number | null; max_total: number | null; percentage: number | null; gpa: number | null; overall_grade: string | null; teacher_remarks: string | null; principal_remarks: string | null; attendance_percentage: number | null; is_published: boolean; period_type?: string; period_label?: string | null; period_start?: string | null; period_end?: string | null; academic_year?: string | null; published_at?: string | null; }
 interface ClassRow { id: string; name: string; }
 interface SectionRow { id: string; name: string; class_id: string; }
-interface AssessmentRow { id: string; title: string; subject_id: string | null; assessment_date: string | null; max_marks: number; is_published?: boolean | null; assessment_type?: string | null; weightage_percent?: number | null; }
+interface AssessmentRow { id: string; title: string; subject_id: string | null; assessment_date: string | null; max_marks: number; is_published?: boolean | null; assessment_type?: string | null; weightage_percent?: number | null; class_section_id?: string | null; }
 interface MarkRow { assessment_id: string; marks: number | null; computed_grade: string | null; }
 interface ReportCardRow {
   id: string;
@@ -191,7 +193,7 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
           : Promise.resolve({ data: [] }),
         rcQuery,
         (supabase as any).from("students").select("*").eq("id", studentId).maybeSingle(),
-        (supabase as any).from("academic_assessments").select("id,subject_id,max_marks,is_published,title,assessment_date,assessment_type,weightage_percent").eq("school_id", schoolId),
+        (supabase as any).from("academic_assessments").select("id,subject_id,max_marks,is_published,title,assessment_date,assessment_type,weightage_percent,class_section_id").eq("school_id", schoolId),
         (supabase as any).from("student_marks").select("assessment_id,marks,computed_grade").eq("school_id", schoolId).eq("student_id", studentId),
       ]);
 
@@ -212,8 +214,12 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
       savedResults.forEach((r: any) => { map[r.subject_id] = r; });
 
       // Determine which assessments are in scope for the period
+      const studentSectionId = enrollments.find((e) => e.student_id === studentId)?.class_section_id ?? null;
       const inScope = (assessments.data || []).filter((a: any) => {
         if (a.is_published === false) return false;
+        // Strictly scope to the student's class section so quizzes/tests added for one class
+        // do not leak into other classes' report cards.
+        if (studentSectionId && a.class_section_id && a.class_section_id !== studentSectionId) return false;
         if (loadedCard?.exam_id || examIdForResults) return true; // exam mode: include all (existing fallback behavior)
         if (periodType === "monthly") {
           const d = a.assessment_date ? new Date(a.assessment_date) : null;
@@ -273,7 +279,7 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
         }
       }
     })();
-  }, [examId, studentId, schoolId, periodType, currentPeriodLabel, viewingCardId, isReadOnlyForChild, monthIdx, monthYear, currentPeriodRange.start, currentPeriodRange.end]);
+  }, [examId, studentId, schoolId, periodType, currentPeriodLabel, viewingCardId, isReadOnlyForChild, monthIdx, monthYear, currentPeriodRange.start, currentPeriodRange.end, JSON.stringify(enrollments)]);
 
   const updateMark = (subjectId: string, marks: number, max: number) => {
     setResults((prev) => ({ ...prev, [subjectId]: { ...(prev[subjectId] || {}), subject_id: subjectId, marks_obtained: marks, max_marks: max, grade: calcGrade((marks / max) * 100).grade, remarks: prev[subjectId]?.remarks || null } }));
@@ -290,7 +296,12 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
   // Per-assessment appendix for the loaded card
   const appendix = useMemo(() => {
     const subjectName = new Map(subjects.map((s) => [s.id, s.name]));
-    let scope = allAssessments.filter((a) => a.is_published !== false);
+    const studentSectionId = enrollments.find((e) => e.student_id === studentId)?.class_section_id ?? null;
+    let scope = allAssessments.filter((a) => {
+      if (a.is_published === false) return false;
+      if (studentSectionId && a.class_section_id && a.class_section_id !== studentSectionId) return false;
+      return true;
+    });
     if (card.exam_id || (periodType === "exam" && examId)) {
       // exam mode — show all marks for this student (existing behavior)
     } else if (card.period_type === "monthly" && card.period_start && card.period_end) {
@@ -314,14 +325,16 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
       .map((a) => ({
         id: a.id,
         title: a.title,
+        subject_id: a.subject_id,
         subject: a.subject_id ? subjectName.get(a.subject_id) ?? "—" : "—",
         date: a.assessment_date,
         max: a.max_marks,
+        type: a.assessment_type || "test",
         marks: markByA.get(a.id)?.marks ?? null,
         grade: markByA.get(a.id)?.computed_grade ?? null,
       }))
       .sort((x, y) => (x.date || "").localeCompare(y.date || ""));
-  }, [allAssessments, allMarks, subjects, card, periodType, examId, monthIdx, monthYear, currentPeriodRange.start, currentPeriodRange.end]);
+  }, [allAssessments, allMarks, subjects, card, periodType, examId, monthIdx, monthYear, currentPeriodRange.start, currentPeriodRange.end, studentId, JSON.stringify(enrollments)]);
 
   // ───── Per-subject × per-category breakdown (quiz/test/assignment/project/exam/etc.)
   const CATEGORY_ORDER: { key: string; label: string }[] = [
@@ -570,7 +583,7 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
         published_at: new Date().toISOString(),
         created_by: uid,
       })
-      .select("id,subject_id,max_marks,is_published,title,assessment_date,assessment_type,weightage_percent")
+      .select("id,subject_id,max_marks,is_published,title,assessment_date,assessment_type,weightage_percent,class_section_id")
       .single();
     if (aErr || !a) return toast.error(aErr?.message || "Failed to add");
 
@@ -592,6 +605,89 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
     toast.success(`${addType[0].toUpperCase() + addType.slice(1)} added`);
     setAddOpen(false);
   };
+
+  // Edit an existing assessment + the current student's mark for it
+  const [editAssessmentId, setEditAssessmentId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editType, setEditType] = useState<string>("quiz");
+  const [editMax, setEditMax] = useState<number>(10);
+  const [editMarks, setEditMarks] = useState<number>(0);
+  const [editDate, setEditDate] = useState<string>("");
+
+  const openEditAssessment = (id: string) => {
+    const a = allAssessments.find((x) => x.id === id);
+    if (!a) return;
+    const m = allMarks.find((x) => x.assessment_id === id);
+    setEditAssessmentId(id);
+    setEditTitle(a.title || "");
+    setEditType((a.assessment_type || "quiz").toLowerCase());
+    setEditMax(Number(a.max_marks || 0));
+    setEditMarks(Number(m?.marks ?? 0));
+    setEditDate(a.assessment_date || new Date().toISOString().slice(0, 10));
+  };
+
+  const submitEditAssessment = async () => {
+    if (!schoolId || !studentId || !editAssessmentId) return;
+    if (!editTitle.trim()) return toast.error("Title required");
+    const userResp = await (supabase as any).auth.getUser();
+    const uid = userResp.data?.user?.id ?? null;
+
+    const { error: aErr } = await (supabase as any)
+      .from("academic_assessments")
+      .update({
+        title: editTitle.trim(),
+        assessment_type: editType,
+        assessment_date: editDate,
+        max_marks: editMax,
+      })
+      .eq("id", editAssessmentId)
+      .eq("school_id", schoolId);
+    if (aErr) return toast.error(aErr.message);
+
+    const pct = editMax > 0 ? (editMarks / editMax) * 100 : 0;
+    const { error: mErr } = await (supabase as any)
+      .from("student_marks")
+      .upsert({
+        school_id: schoolId,
+        assessment_id: editAssessmentId,
+        student_id: studentId,
+        marks: editMarks,
+        computed_grade: calcGrade(pct).grade,
+        created_by: uid,
+      }, { onConflict: "school_id,assessment_id,student_id" });
+    if (mErr) return toast.error(mErr.message);
+
+    setAllAssessments((prev) => prev.map((a) =>
+      a.id === editAssessmentId
+        ? { ...a, title: editTitle.trim(), assessment_type: editType, assessment_date: editDate, max_marks: editMax }
+        : a
+    ));
+    setAllMarks((prev) => {
+      const exists = prev.some((m) => m.assessment_id === editAssessmentId);
+      if (exists) {
+        return prev.map((m) => m.assessment_id === editAssessmentId
+          ? { ...m, marks: editMarks, computed_grade: calcGrade(pct).grade }
+          : m);
+      }
+      return [...prev, { assessment_id: editAssessmentId, marks: editMarks, computed_grade: calcGrade(pct).grade } as any];
+    });
+    toast.success("Updated");
+    setEditAssessmentId(null);
+  };
+
+  const deleteAssessment = async (id: string) => {
+    if (!schoolId) return;
+    if (!confirm("Delete this assessment? This removes it and all student marks for it.")) return;
+    // Delete marks first (in case FK is not cascading), then assessment
+    await (supabase as any).from("student_marks").delete().eq("school_id", schoolId).eq("assessment_id", id);
+    const { error } = await (supabase as any).from("academic_assessments").delete().eq("school_id", schoolId).eq("id", id);
+    if (error) return toast.error(error.message);
+    setAllAssessments((prev) => prev.filter((a) => a.id !== id));
+    setAllMarks((prev) => prev.filter((m) => m.assessment_id !== id));
+    toast.success("Deleted");
+  };
+
+
 
 
   const showPicker = !studentIdLocked;
@@ -1022,6 +1118,7 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
                     <th className="border border-gray-300 p-1.5">Date</th>
                     <th className="border border-gray-300 p-1.5 text-center">Marks</th>
                     <th className="border border-gray-300 p-1.5 text-center">Grade</th>
+                    {canManage && <th className="border border-gray-300 p-1.5 text-center print:hidden">Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -1032,6 +1129,18 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
                       <td className="border border-gray-300 p-1.5">{a.date ? format(new Date(a.date), "MMM d, yyyy") : "—"}</td>
                       <td className="border border-gray-300 p-1.5 text-center">{a.marks != null ? `${a.marks} / ${a.max}` : "—"}</td>
                       <td className="border border-gray-300 p-1.5 text-center">{a.grade ?? "—"}</td>
+                      {canManage && (
+                        <td className="border border-gray-300 p-1.5 text-center print:hidden">
+                          <div className="flex items-center justify-center gap-1">
+                            <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditAssessment(a.id)} title="Edit">
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => deleteAssessment(a.id)} title="Delete">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -1170,6 +1279,63 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit assessment dialog */}
+      <Dialog open={!!editAssessmentId} onOpenChange={(o) => !o && setEditAssessmentId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit marks entry</DialogTitle>
+            <DialogDescription>
+              Update this assessment's details and the current student's marks for it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Type</Label>
+                <Select value={editType} onValueChange={setEditType}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="quiz">Quiz</SelectItem>
+                    <SelectItem value="test">Test</SelectItem>
+                    <SelectItem value="assignment">Assignment</SelectItem>
+                    <SelectItem value="project">Project</SelectItem>
+                    <SelectItem value="classwork">Classwork</SelectItem>
+                    <SelectItem value="homework">Homework</SelectItem>
+                    <SelectItem value="practical">Practical</SelectItem>
+                    <SelectItem value="oral">Oral</SelectItem>
+                    <SelectItem value="presentation">Presentation</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Date</Label>
+                <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} />
+              </div>
+            </div>
+            <div>
+              <Label>Title</Label>
+              <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Marks obtained</Label>
+                <Input type="number" value={editMarks} onChange={(e) => setEditMarks(Number(e.target.value))} />
+              </div>
+              <div>
+                <Label>Out of</Label>
+                <Input type="number" value={editMax} onChange={(e) => setEditMax(Number(e.target.value))} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditAssessmentId(null)}>Cancel</Button>
+            <Button onClick={submitEditAssessment}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
 
       {/* Publish whole class dialog */}
       <Dialog open={publishDialogOpen} onOpenChange={setPublishDialogOpen}>
