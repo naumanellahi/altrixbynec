@@ -27,7 +27,7 @@ type FeePlanItem = { id: string; fee_plan_id: string; label: string; category: s
 type StudentAssignment = { id: string; student_id: string; fee_plan_id: string; discount_pct: number; scholarship_amount: number };
 type FeeInvoice = { id: string; invoice_number: string; student_id: string; fee_plan_id: string | null; period_label: string | null; due_date: string; total_amount: number; paid_amount: number; status: string; created_at: string };
 type FeePayment = { id: string; invoice_id: string; student_id: string; amount: number; method: string; transaction_ref: string | null; paid_at: string; status: string };
-type FeeSettings = { id?: string; sibling_discount_2nd_pct: number; sibling_discount_3rd_plus_pct: number; late_fee_enabled: boolean; late_fee_amount: number; late_fee_grace_days: number; invoice_prefix: string; currency: string };
+type FeeSettings = { id?: string; sibling_discount_2nd_pct: number; sibling_discount_3rd_plus_pct: number; late_fee_enabled: boolean; late_fee_amount: number; late_fee_grace_days: number; invoice_prefix: string; currency: string; bank_name?: string | null; bank_account_title?: string | null; bank_account_number?: string | null; bank_iban?: string | null; bank_branch?: string | null; bank_swift?: string | null; voucher_footer_note?: string | null };
 
 const CATEGORIES = ["tuition", "admission", "transport", "exam", "uniform", "books", "lab", "sports", "library", "other"];
 
