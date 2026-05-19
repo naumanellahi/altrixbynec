@@ -238,16 +238,6 @@ export function GradeThresholdsCard({ schoolId }: { schoolId: string }) {
                 className="w-20"
               />
             </div>
-            <div>
-              <Label className="text-xs">GPA</Label>
-              <Input
-                type="number"
-                step="0.1"
-                value={newThreshold.grade_points}
-                onChange={(e) => setNewThreshold({ ...newThreshold, grade_points: parseFloat(e.target.value) || 0 })}
-                className="w-20"
-              />
-            </div>
             <Button onClick={addThreshold} disabled={saving}>
               <Plus className="h-4 w-4 mr-1" />
               Add
