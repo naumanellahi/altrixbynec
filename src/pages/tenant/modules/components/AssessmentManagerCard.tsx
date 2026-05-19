@@ -429,6 +429,20 @@ export function AssessmentManagerCard({
           <Input type="date" value={filterTo} onChange={(e) => setFilterTo(e.target.value)} />
         </div>
 
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-5">
+          <Select value={filterType || "__all"} onValueChange={(v) => setFilterType(v === "__all" ? "" : v)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filter: type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all">All types</SelectItem>
+              {ASSESSMENT_TYPES.map((t) => (
+                <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div className="text-xs text-muted-foreground">
             {busy ? "Working…" : `${assessments.length} assessments`}
