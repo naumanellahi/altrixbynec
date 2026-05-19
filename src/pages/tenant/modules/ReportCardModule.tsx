@@ -79,7 +79,7 @@ const academicYearLabel = () => {
   return m >= 7 ? `${y}-${y + 1}` : `${y - 1}-${y}`;
 };
 
-export default function ReportCardModule({ schoolId, canManage = false, studentIdLocked }: Props) {
+export default function ReportCardModule({ schoolId, canManage: canManageProp = false, studentIdLocked }: Props) {
   const [exams, setExams] = useState<Exam[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -94,6 +94,8 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
   const [studentInfo, setStudentInfo] = useState<any>(null);
   const [allAssessments, setAllAssessments] = useState<AssessmentRow[]>([]);
   const [allMarks, setAllMarks] = useState<MarkRow[]>([]);
+  // null = no scope restriction (admin/principal/etc.). Array = teacher restricted to these section ids.
+  const [teacherSectionIds, setTeacherSectionIds] = useState<string[] | null>(null);
 
   // Period mode
   const [periodType, setPeriodType] = useState<PeriodType>("exam");
