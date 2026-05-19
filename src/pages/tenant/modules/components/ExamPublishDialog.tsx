@@ -43,7 +43,7 @@ export default function ExamPublishDialog({
   const { user } = useSession();
   const [pubs, setPubs] = useState<Pub[]>([]);
   const [sections, setSections] = useState<{ id: string; name: string; class_name?: string }[]>([]);
-  const [students, setStudents] = useState<{ id: string; first_name: string; last_name: string }[]>([]);
+  const [students, setStudents] = useState<{ id: string; first_name: string; last_name: string; class_section_id?: string | null }[]>([]);
 
   // exam-wide
   const [examPublishAt, setExamPublishAt] = useState<string>("");
@@ -56,6 +56,7 @@ export default function ExamPublishDialog({
   const [secPublished, setSecPublished] = useState(true);
 
   // student
+  const [studClassId, setStudClassId] = useState<string>("");
   const [studId, setStudId] = useState<string>("");
   const [studAt, setStudAt] = useState<string>("");
   const [studNotes, setStudNotes] = useState<string>("");
@@ -66,14 +67,21 @@ export default function ExamPublishDialog({
     const [p, s, st] = await Promise.all([
       (supabase as any).from("exam_result_publications").select("*").eq("exam_id", examId).order("created_at", { ascending: false }),
       (supabase as any).from("class_sections").select("id,name,academic_classes(name)").eq("school_id", schoolId),
-      (supabase as any).from("students").select("id,first_name,last_name").eq("school_id", schoolId).order("first_name").limit(500),
+      (supabase as any).from("student_enrollments")
+        .select("class_section_id,students!inner(id,first_name,last_name,school_id)")
+        .eq("school_id", schoolId).is("end_date", null).limit(2000),
     ]);
     setPubs(p.data || []);
     setSections((s.data || []).map((x: any) => ({ id: x.id, name: x.name, class_name: x.academic_classes?.name })));
-    setStudents(st.data || []);
+    setStudents((st.data || []).map((e: any) => ({
+      id: e.students.id, first_name: e.students.first_name, last_name: e.students.last_name,
+      class_section_id: e.class_section_id,
+    })));
     setExamPublishAt(resultPublishedAt ? resultPublishedAt.slice(0, 16) : "");
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [open, examId]);
+
+  const studentsInClass = students.filter((s) => !studClassId || s.class_section_id === studClassId);
 
   const publishExam = async (publish: boolean) => {
     const patch: any = {
