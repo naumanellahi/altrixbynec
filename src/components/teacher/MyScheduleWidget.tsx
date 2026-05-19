@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { CalendarDays, Check, ChevronRight, Clock, Coffee, DoorOpen, LogIn, Pencil, Wifi, WifiOff, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,8 +9,6 @@ import { PeriodLogDialog } from "./PeriodLogDialog";
 import { useTeacherSchedule, ScheduleEntry, PeriodLog } from "@/hooks/useTeacherSchedule";
 import { useTeacherPresence } from "@/hooks/useTeacherPresence";
 import { useSession } from "@/hooks/useSession";
-import { toast } from "@/hooks/use-toast";
-import { toast as sonner } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -51,31 +49,8 @@ function getStatusIcon(status: string) {
 export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps) {
   // Determine initial day: today if weekday, else Monday
   const { user } = useSession();
-  const { rows: presenceRows, setStatus: setPresenceStatus, saving: presenceSaving, realtimeStatus, lastEcho } =
+  const { rows: presenceRows, setStatus: setPresenceStatus, saving: presenceSaving, realtimeStatus } =
     useTeacherPresence(schoolId, user?.id ?? null);
-
-  // Track entries awaiting realtime echo confirmation
-  const pendingRef = useRef<Map<string, { status: string; label: string; ts: number }>>(new Map());
-
-  useEffect(() => {
-    if (!lastEcho) return;
-    const pending = pendingRef.current.get(lastEcho.entryId);
-    if (pending && pending.status === lastEcho.status) {
-      pendingRef.current.delete(lastEcho.entryId);
-      sonner.success("Synced live", {
-        description: pending.label,
-        duration: 1800,
-      });
-    }
-  }, [lastEcho]);
-
-  // Track realtime reconnection state changes silently (no toasts)
-  const prevRtRef = useRef(realtimeStatus);
-  useEffect(() => {
-    if (prevRtRef.current !== realtimeStatus) {
-      prevRtRef.current = realtimeStatus;
-    }
-  }, [realtimeStatus]);
 
   // Determine initial day: today if weekday, else Monday
   const [selectedDay, setSelectedDay] = useState(() => {
@@ -309,32 +284,9 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
                           status: "in_class" | "left",
                           reason?: string | null,
                         ) => {
-                          const label = `${entry.subjectName} • ${entry.periodLabel}`;
-                          const res = await setPresenceStatus(entry.id, status, {
+                          await setPresenceStatus(entry.id, status, {
                             reason: reason ?? null,
                             startTime: entry.startTime,
-                          });
-                          const err = res?.error;
-                          const effective = res?.effectiveStatus ?? status;
-                          if (!err) {
-                            pendingRef.current.set(entry.id, {
-                              status: effective,
-                              label,
-                              ts: Date.now(),
-                            });
-                          }
-                          toast({
-                            title: err
-                              ? "Failed to update"
-                              : effective === "in_class"
-                                ? "Marked as In Class"
-                                : effective === "late"
-                                  ? "Marked as Late"
-                                  : "Marked as Left",
-                            description: err
-                              ? (err as { message?: string })?.message ?? "Try again"
-                              : label,
-                            variant: err ? "destructive" : "default",
                           });
                         };
                         const askReasonAndSet = (status: "in_class" | "left") => {
