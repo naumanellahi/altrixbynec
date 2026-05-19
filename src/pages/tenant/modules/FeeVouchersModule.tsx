@@ -255,7 +255,7 @@ function PaymentProofsCard({ schoolId }: { schoolId: string | null }) {
   }, [proofs]);
 
   const filteredProofs = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = debouncedSearch.trim().toLowerCase();
     const min = minAmount ? Number(minAmount) : null;
     const max = maxAmount ? Number(maxAmount) : null;
     return proofs.filter(p => {
@@ -273,11 +273,32 @@ function PaymentProofsCard({ schoolId }: { schoolId: string | null }) {
       }
       return true;
     });
-  }, [proofs, search, methodFilter, fromDate, toDate, minAmount, maxAmount, studentMap, invoiceMap]);
+  }, [proofs, debouncedSearch, methodFilter, fromDate, toDate, minAmount, maxAmount, studentMap, invoiceMap]);
 
   const hasActiveFilters = search || methodFilter !== "__all" || fromDate || toDate || minAmount || maxAmount;
   const clearFilters = () => {
     setSearch(""); setMethodFilter("__all"); setFromDate(""); setToDate(""); setMinAmount(""); setMaxAmount("");
+  };
+
+  const exportCsv = () => {
+    if (filteredProofs.length === 0) { toast.info("Nothing to export"); return; }
+    const rows = filteredProofs.map(p => {
+      const s = studentMap.get(p.student_id);
+      const inv = invoiceMap.get(p.invoice_id);
+      return {
+        uploaded_at: new Date(p.created_at).toLocaleString(),
+        student: s ? `${s.first_name} ${s.last_name || ""}`.trim() : "",
+        roll_number: s?.roll_number || "",
+        invoice_number: inv?.invoice_number || "",
+        method: p.method || "",
+        paid_at: p.paid_at || "",
+        amount: Number(p.amount),
+        status: p.status,
+        rejection_reason: p.rejection_reason || "",
+        note: p.note || "",
+      };
+    });
+    exportToCSV(rows, `payment-proofs-${new Date().toISOString().slice(0, 10)}`);
   };
 
   const openProof = async (p: ProofRow) => {
