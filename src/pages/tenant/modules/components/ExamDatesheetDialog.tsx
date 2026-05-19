@@ -327,9 +327,14 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
                 <FileDown className="mr-1 h-4 w-4" />Export PDF
               </Button>
               {canManage && (
-                <Button size="sm" variant="default" disabled={sending} onClick={sendToParents}>
-                  <Send className="mr-1 h-4 w-4" />{sending ? "Sending…" : "Send to parents"}
-                </Button>
+                <>
+                  <Button size="sm" variant="default" disabled={sending} onClick={() => sendToParents()}>
+                    <Send className="mr-1 h-4 w-4" />{sending ? "Sending…" : "Send now"}
+                  </Button>
+                  <Button size="sm" variant="outline" disabled={sending} onClick={() => { setScheduleAt(""); setScheduleOpen(true); }}>
+                    <CalendarDays className="mr-1 h-4 w-4" />Schedule send
+                  </Button>
+                </>
               )}
             </div>
             {canManage && (
