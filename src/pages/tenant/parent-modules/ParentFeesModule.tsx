@@ -10,11 +10,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { ChildInfo } from "@/hooks/useMyChildren";
 import { format } from "date-fns";
-import { CheckCircle2, CreditCard, Loader2, XCircle, Clock, RefreshCw, Download, Receipt, Printer, Wallet, AlertCircle, History, Search, X, FileText, Upload, Eye } from "lucide-react";
+import { CheckCircle2, CreditCard, Loader2, XCircle, Clock, RefreshCw, Download, Receipt, Printer, Wallet, AlertCircle, History, Search, X, FileText, Upload, Eye, Inbox } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { generateVoucherPdf, type VoucherCopyData } from "@/lib/fee-voucher-pdf";
 import { ManualProofUploadDialog } from "@/components/fees/ManualProofUploadDialog";
+
 
 interface ParentFeesModuleProps {
   child: ChildInfo | null;
@@ -298,7 +300,24 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
       })
       .subscribe();
 
-    return () => { cancelled = true; supabase.removeChannel(ch); };
+
+
+    // Separate channel for app_notifications keyed to current auth user (parent), to refresh on proof verify/reject
+    const userChan = supabase.channel(`pfees-notif-${child.student_id}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "app_notifications" }, (payload: any) => {
+        const n = payload.new;
+        if (!n) return;
+        if (["fee_proof_verified", "fee_proof_rejected", "fee_proof_submitted"].includes(n.type)) {
+          loadInvoices();
+          loadProofs();
+          if (n.type === "fee_proof_verified") toast.success(n.title);
+          else if (n.type === "fee_proof_rejected") toast.error(n.title);
+        }
+      })
+      .subscribe();
+
+
+    return () => { cancelled = true; supabase.removeChannel(ch); supabase.removeChannel(userChan); };
   }, [child, schoolId]);
 
   const payNow = async (invoiceId: string, provider: "jazzcash" | "easypaisa" = "jazzcash") => {
@@ -344,8 +363,19 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
   }, [invoices, invSearch, invStatus, invFromDate, invToDate]);
 
   if (!child) {
-    return <div className="text-center text-muted-foreground py-12">Please select a child to view fee status.</div>;
+    return (
+      <Card className="border-dashed">
+        <CardContent className="flex flex-col items-center justify-center text-center py-16 gap-3">
+          <div className="rounded-full bg-muted p-4"><Inbox className="h-8 w-8 text-muted-foreground" /></div>
+          <h3 className="font-display text-lg font-semibold">Select a child to view fees</h3>
+          <p className="text-sm text-muted-foreground max-w-sm">
+            Use the child switcher above to choose which child's fee vouchers and payment status you'd like to see.
+          </p>
+        </CardContent>
+      </Card>
+    );
   }
+
 
   const statusVariant = (status: string): any => status === "paid" ? "default" : status === "overdue" ? "destructive" : status === "partial" ? "secondary" : "outline";
   const totalOutstanding = invoices.filter(i => i.status !== "paid" && i.status !== "cancelled").reduce((sum, i) => sum + Math.max(Number(i.total_amount) - Number(i.paid_amount), 0), 0);
@@ -452,9 +482,28 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
             )}
           </div>
           {loading ? (
-            <p className="text-muted-foreground">Loading…</p>
+            <div className="space-y-2">
+              {[0,1,2,3].map(i => (
+                <div key={i} className="flex items-center gap-3 p-2 border rounded-md">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-20 ml-auto" />
+                  <Skeleton className="h-6 w-16" />
+                  <Skeleton className="h-8 w-24" />
+                </div>
+              ))}
+            </div>
           ) : filteredInvoices.length === 0 ? (
-            <p className="text-muted-foreground">{invoices.length === 0 ? "No invoices found." : "No invoices match your search."}</p>
+            <div className="flex flex-col items-center justify-center text-center py-10 gap-2">
+              <div className="rounded-full bg-muted p-3"><FileText className="h-6 w-6 text-muted-foreground" /></div>
+              <p className="font-medium">{invoices.length === 0 ? "No invoices yet" : "No invoices match your filters"}</p>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                {invoices.length === 0
+                  ? "When the school issues a fee voucher for " + (child.first_name || "your child") + ", it will appear here instantly."
+                  : "Try clearing the search or status filter to see more results."}
+              </p>
+            </div>
           ) : (
             <Table>
               <TableHeader><TableRow>
