@@ -370,8 +370,9 @@ function PaymentProofsCard({ schoolId }: { schoolId: string | null }) {
             <div className="text-xs text-muted-foreground">
               Showing <span className="font-medium text-foreground">{filteredProofs.length}</span> of {proofs.length}
             </div>
-            <Button size="sm" variant="outline" onClick={exportCsv} disabled={filteredProofs.length === 0}>
-              <FileDown className="h-3 w-3 mr-1" /> Export CSV
+            <Button size="sm" variant="outline" onClick={exportCsv} disabled={exporting || !schoolId}>
+              {exporting ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <FileDown className="h-3 w-3 mr-1" />}
+              Export CSV
             </Button>
           </div>
 
