@@ -409,6 +409,65 @@ export default function ExamDatesheetDialog({ open, onOpenChange, schoolId, exam
             </DialogContent>
           </Dialog>
 
+          <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader><DialogTitle>Schedule send to parents</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">PDFs are generated now and stored. Parents will be notified at the date/time you choose. You can change or cancel the schedule afterwards in the list below.</p>
+                <div>
+                  <label className="text-sm font-medium">Notify parents at</label>
+                  <Input type="datetime-local" value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)} />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setScheduleOpen(false)}>Cancel</Button>
+                <Button disabled={!scheduleAt || sending} onClick={async () => { await sendToParents(scheduleAt); setScheduleOpen(false); }}>
+                  <CalendarDays className="mr-1 h-4 w-4" />{sending ? "Saving…" : "Schedule"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {schedules.length > 0 && (
+            <div className="rounded-md border">
+              <div className="px-3 py-2 border-b bg-muted/30 text-xs font-semibold uppercase text-muted-foreground">
+                Scheduled / sent datesheets ({schedules.length})
+              </div>
+              <div className="max-h-44 overflow-y-auto">
+                <Table>
+                  <TableBody>
+                    {schedules.map((s) => {
+                      const pending = s.notify_at && !s.notified_at;
+                      const sent = !!s.notified_at;
+                      return (
+                        <TableRow key={s.id}>
+                          <TableCell className="text-xs">{lookups.sections.get(s.class_section_id) || "—"}</TableCell>
+                          <TableCell className="text-xs">
+                            {sent ? `Sent ${format(new Date(s.notified_at), "PPp")}`
+                              : pending ? `Scheduled ${format(new Date(s.notify_at), "PPp")}`
+                              : "Not scheduled"}
+                          </TableCell>
+                          <TableCell className="w-[200px]">
+                            {canManage && !sent && (
+                              <Input type="datetime-local" className="h-7 text-xs"
+                                defaultValue={s.notify_at ? new Date(s.notify_at).toISOString().slice(0,16) : ""}
+                                onBlur={(e) => e.target.value && e.target.value !== (s.notify_at ? new Date(s.notify_at).toISOString().slice(0,16) : "") && updateSchedule(s.id, e.target.value)} />
+                            )}
+                          </TableCell>
+                          <TableCell className="w-[80px]">
+                            {canManage && pending && (
+                              <Button size="sm" variant="ghost" onClick={() => cancelSchedule(s.id)}>Cancel</Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
+
 
           {conflicts.length > 0 && (
             <Alert variant="destructive">
