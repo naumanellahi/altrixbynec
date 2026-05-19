@@ -284,7 +284,7 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
     Object.values(results).forEach((r) => { if (r.marks_obtained != null) { total += Number(r.marks_obtained); max += Number(r.max_marks || 100); } });
     const pct = max > 0 ? (total / max) * 100 : 0;
     const g = calcGrade(pct);
-    return { total, max, pct: Math.round(pct * 100) / 100, grade: g.grade, gpa: g.gpa };
+    return { total, max, pct: Math.round(pct * 100) / 100, grade: g.grade };
   }, [results]);
 
   // Per-assessment appendix for the loaded card
