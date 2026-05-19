@@ -1280,6 +1280,63 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
         </DialogContent>
       </Dialog>
 
+      {/* Edit assessment dialog */}
+      <Dialog open={!!editAssessmentId} onOpenChange={(o) => !o && setEditAssessmentId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit marks entry</DialogTitle>
+            <DialogDescription>
+              Update this assessment's details and the current student's marks for it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Type</Label>
+                <Select value={editType} onValueChange={setEditType}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="quiz">Quiz</SelectItem>
+                    <SelectItem value="test">Test</SelectItem>
+                    <SelectItem value="assignment">Assignment</SelectItem>
+                    <SelectItem value="project">Project</SelectItem>
+                    <SelectItem value="classwork">Classwork</SelectItem>
+                    <SelectItem value="homework">Homework</SelectItem>
+                    <SelectItem value="practical">Practical</SelectItem>
+                    <SelectItem value="oral">Oral</SelectItem>
+                    <SelectItem value="presentation">Presentation</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Date</Label>
+                <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} />
+              </div>
+            </div>
+            <div>
+              <Label>Title</Label>
+              <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Marks obtained</Label>
+                <Input type="number" value={editMarks} onChange={(e) => setEditMarks(Number(e.target.value))} />
+              </div>
+              <div>
+                <Label>Out of</Label>
+                <Input type="number" value={editMax} onChange={(e) => setEditMax(Number(e.target.value))} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditAssessmentId(null)}>Cancel</Button>
+            <Button onClick={submitEditAssessment}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
+
       {/* Publish whole class dialog */}
       <Dialog open={publishDialogOpen} onOpenChange={setPublishDialogOpen}>
         <DialogContent>
