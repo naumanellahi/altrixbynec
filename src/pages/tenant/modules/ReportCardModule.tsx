@@ -294,7 +294,12 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
   // Per-assessment appendix for the loaded card
   const appendix = useMemo(() => {
     const subjectName = new Map(subjects.map((s) => [s.id, s.name]));
-    let scope = allAssessments.filter((a) => a.is_published !== false);
+    const studentSectionId = enrollments.find((e) => e.student_id === studentId)?.class_section_id ?? null;
+    let scope = allAssessments.filter((a) => {
+      if (a.is_published === false) return false;
+      if (studentSectionId && a.class_section_id && a.class_section_id !== studentSectionId) return false;
+      return true;
+    });
     if (card.exam_id || (periodType === "exam" && examId)) {
       // exam mode — show all marks for this student (existing behavior)
     } else if (card.period_type === "monthly" && card.period_start && card.period_end) {
