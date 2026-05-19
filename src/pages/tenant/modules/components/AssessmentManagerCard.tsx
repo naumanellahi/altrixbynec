@@ -13,6 +13,27 @@ type Subject = { id: string; name: string };
 type Section = { id: string; name: string; class_id: string };
 type ClassRow = { id: string; name: string };
 
+export type AssessmentType =
+  | "quiz" | "test" | "assignment" | "project" | "exam"
+  | "classwork" | "homework" | "midterm" | "final"
+  | "practical" | "oral" | "presentation" | "lab";
+
+export const ASSESSMENT_TYPES: { value: AssessmentType; label: string }[] = [
+  { value: "quiz", label: "Quiz" },
+  { value: "test", label: "Test" },
+  { value: "assignment", label: "Assignment" },
+  { value: "project", label: "Project" },
+  { value: "exam", label: "Exam" },
+  { value: "midterm", label: "Mid-term" },
+  { value: "final", label: "Final" },
+  { value: "classwork", label: "Classwork" },
+  { value: "homework", label: "Homework" },
+  { value: "practical", label: "Practical" },
+  { value: "oral", label: "Oral" },
+  { value: "presentation", label: "Presentation" },
+  { value: "lab", label: "Lab" },
+];
+
 type AssessmentRow = {
   id: string;
   title: string;
@@ -22,6 +43,9 @@ type AssessmentRow = {
   subject_id: string | null;
   class_section_id: string;
   is_published: boolean;
+  assessment_type: AssessmentType | null;
+  weightage_percent: number | null;
+  passing_marks: number | null;
 };
 
 type StudentRow = { id: string; first_name: string; last_name: string | null };
@@ -34,6 +58,9 @@ const assessmentSchema = z.object({
   term_label: z.string().trim().optional(),
   assessment_date: z.string().min(1, "Date is required"),
   max_marks: z.coerce.number().positive().max(1000),
+  assessment_type: z.string().min(1, "Type is required"),
+  weightage_percent: z.coerce.number().min(0).max(100).optional().nullable(),
+  passing_marks: z.coerce.number().min(0).max(1000).optional().nullable(),
 });
 
 function safeNum(v: unknown): number | null {
