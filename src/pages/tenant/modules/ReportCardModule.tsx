@@ -281,6 +281,53 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
     })();
   }, [examId, studentId, schoolId, periodType, currentPeriodLabel, viewingCardId, isReadOnlyForChild, monthIdx, monthYear, currentPeriodRange.start, currentPeriodRange.end, JSON.stringify(enrollments)]);
 
+  // Auto-compute attendance % from attendance history for the selected period (read-only)
+  useEffect(() => {
+    if (!studentId || !schoolId) return;
+    const studentSectionId = enrollments.find((e) => e.student_id === studentId)?.class_section_id ?? null;
+    if (!studentSectionId) return;
+
+    let start: string | null = null;
+    let end: string | null = null;
+    if (card.period_start && card.period_end) {
+      start = card.period_start; end = card.period_end;
+    } else if (periodType === "exam" && examId) {
+      const ex: any = (exams as any[]).find((e: any) => e.id === examId);
+      start = ex?.start_date || null; end = ex?.end_date || null;
+    } else if (currentPeriodRange.start && currentPeriodRange.end) {
+      start = currentPeriodRange.start; end = currentPeriodRange.end;
+    }
+
+    (async () => {
+      let sessionsQ = (supabase as any)
+        .from("attendance_sessions")
+        .select("id")
+        .eq("school_id", schoolId)
+        .eq("class_section_id", studentSectionId);
+      if (start) sessionsQ = sessionsQ.gte("session_date", start);
+      if (end) sessionsQ = sessionsQ.lte("session_date", end);
+      const { data: sessions } = await sessionsQ;
+      const sessionIds = (sessions || []).map((s: any) => s.id);
+      if (sessionIds.length === 0) {
+        setCard((c) => ({ ...c, attendance_percentage: null }));
+        return;
+      }
+      const { data: entries } = await (supabase as any)
+        .from("attendance_entries")
+        .select("status")
+        .eq("student_id", studentId)
+        .in("session_id", sessionIds);
+      const total = entries?.length || 0;
+      if (total === 0) {
+        setCard((c) => ({ ...c, attendance_percentage: null }));
+        return;
+      }
+      const attended = (entries || []).filter((e: any) => e.status === "present" || e.status === "late").length;
+      const pct = Math.round((attended / total) * 1000) / 10;
+      setCard((c) => ({ ...c, attendance_percentage: pct }));
+    })();
+  }, [studentId, schoolId, periodType, examId, currentPeriodRange.start, currentPeriodRange.end, card.period_start, card.period_end, JSON.stringify(enrollments), exams]);
+
   const updateMark = (subjectId: string, marks: number, max: number) => {
     setResults((prev) => ({ ...prev, [subjectId]: { ...(prev[subjectId] || {}), subject_id: subjectId, marks_obtained: marks, max_marks: max, grade: calcGrade((marks / max) * 100).grade, remarks: prev[subjectId]?.remarks || null } }));
   };
