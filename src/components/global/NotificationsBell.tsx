@@ -128,6 +128,8 @@ export function NotificationsBell({ schoolId, schoolSlug, role }: NotificationsB
           ? `/${schoolSlug}/${rolePath}/fees`
           : `/${schoolSlug}/${rolePath}/fee-vouchers`;
         navigate(notification.entity_id ? `${feesPath}?invoice=${notification.entity_id}` : feesPath);
+        return;
+      }
     },
     [markRead, navigate, location.pathname, schoolSlug, role]
   );
