@@ -32,7 +32,7 @@ interface Result { id?: string; subject_id: string; marks_obtained: number | nul
 interface Card { id?: string; exam_id?: string | null; total_marks: number | null; max_total: number | null; percentage: number | null; gpa: number | null; overall_grade: string | null; teacher_remarks: string | null; principal_remarks: string | null; attendance_percentage: number | null; is_published: boolean; period_type?: string; period_label?: string | null; period_start?: string | null; period_end?: string | null; academic_year?: string | null; published_at?: string | null; }
 interface ClassRow { id: string; name: string; }
 interface SectionRow { id: string; name: string; class_id: string; }
-interface AssessmentRow { id: string; title: string; subject_id: string | null; assessment_date: string | null; max_marks: number; is_published?: boolean | null; }
+interface AssessmentRow { id: string; title: string; subject_id: string | null; assessment_date: string | null; max_marks: number; is_published?: boolean | null; assessment_type?: string | null; weightage_percent?: number | null; }
 interface MarkRow { assessment_id: string; marks: number | null; computed_grade: string | null; }
 interface ReportCardRow {
   id: string;
@@ -186,7 +186,7 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
           : Promise.resolve({ data: [] }),
         rcQuery,
         (supabase as any).from("students").select("*").eq("id", studentId).maybeSingle(),
-        (supabase as any).from("academic_assessments").select("id,subject_id,max_marks,is_published,title,assessment_date").eq("school_id", schoolId),
+        (supabase as any).from("academic_assessments").select("id,subject_id,max_marks,is_published,title,assessment_date,assessment_type,weightage_percent").eq("school_id", schoolId),
         (supabase as any).from("student_marks").select("assessment_id,marks,computed_grade").eq("school_id", schoolId).eq("student_id", studentId),
       ]);
 
@@ -317,6 +317,52 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
       }))
       .sort((x, y) => (x.date || "").localeCompare(y.date || ""));
   }, [allAssessments, allMarks, subjects, card, periodType, examId, monthIdx, monthYear, currentPeriodRange.start, currentPeriodRange.end]);
+
+  // ───── Per-subject × per-category breakdown (quiz/test/assignment/project/exam/etc.)
+  const CATEGORY_ORDER: { key: string; label: string }[] = [
+    { key: "quiz", label: "Quizzes" },
+    { key: "test", label: "Tests" },
+    { key: "assignment", label: "Assignments" },
+    { key: "project", label: "Projects" },
+    { key: "classwork", label: "Classwork" },
+    { key: "homework", label: "Homework" },
+    { key: "practical", label: "Practical" },
+    { key: "oral", label: "Oral" },
+    { key: "presentation", label: "Presentation" },
+    { key: "lab", label: "Lab" },
+    { key: "midterm", label: "Mid-term" },
+    { key: "exam", label: "Exam" },
+    { key: "final", label: "Final" },
+  ];
+
+  const categoryBreakdown = useMemo(() => {
+    // Filter assessments by current period scope
+    const inScope = appendix.map((a) => a.id);
+    const inScopeSet = new Set(inScope);
+    const markByA = new Map(allMarks.map((m) => [m.assessment_id, m]));
+
+    // matrix: subjectId -> categoryKey -> { obtained, max }
+    const matrix: Record<string, Record<string, { obtained: number; max: number }>> = {};
+    const usedCategories = new Set<string>();
+
+    allAssessments.forEach((a) => {
+      if (!inScopeSet.has(a.id)) return;
+      if (!a.subject_id) return;
+      const cat = (a.assessment_type || "test").toLowerCase();
+      const m = markByA.get(a.id);
+      if (m?.marks == null) return;
+      usedCategories.add(cat);
+      const max = Number(a.max_marks || 100);
+      if (!matrix[a.subject_id]) matrix[a.subject_id] = {};
+      if (!matrix[a.subject_id][cat]) matrix[a.subject_id][cat] = { obtained: 0, max: 0 };
+      matrix[a.subject_id][cat].obtained += Number(m.marks);
+      matrix[a.subject_id][cat].max += max;
+    });
+
+    const visibleCategories = CATEGORY_ORDER.filter((c) => usedCategories.has(c.key));
+    return { matrix, visibleCategories };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allAssessments, allMarks, appendix]);
 
   const enriched = useMemo(() => {
     return students.map((s) => {
@@ -614,51 +660,73 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
       {studentId && studentInfo && (
         <div
           id="report-card-print"
-          className="relative mx-auto rounded-2xl border-4 border-double border-primary/40 bg-white p-8 text-black shadow-2xl print:border-2 print:border-black print:shadow-none print:p-6"
-          style={{ maxWidth: 820 }}
+          className="relative mx-auto overflow-hidden rounded-3xl bg-white text-black shadow-[0_30px_80px_-30px_rgba(0,0,0,0.35)] ring-1 ring-black/5 print:rounded-none print:shadow-none print:ring-0"
+          style={{ maxWidth: 860 }}
         >
-          {school?.logo_url && (
-            <img src={school.logo_url} alt="" aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.04]" />
-          )}
-
-          <div className="relative flex items-center justify-between gap-4 border-b-2 border-gray-800 pb-4">
-            <div className="flex items-center gap-4">
-              {school?.logo_url ? (
-                <img src={school.logo_url} alt="School logo" className="h-20 w-20 rounded-lg object-contain ring-1 ring-gray-200" />
-              ) : (
-                <div className="grid h-20 w-20 place-items-center rounded-lg bg-gray-100 ring-1 ring-gray-200">
-                  <FileText className="h-10 w-10 text-gray-500" />
+          {/* Decorative top band */}
+          <div className="relative h-32 overflow-hidden bg-gradient-to-br from-primary via-primary to-primary/70 text-primary-foreground">
+            <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle at 20% 20%, rgba(255,255,255,0.55) 0, transparent 40%), radial-gradient(circle at 80% 60%, rgba(255,255,255,0.35) 0, transparent 45%)" }} />
+            <div className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
+            <div className="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-white/10 blur-xl" />
+            <div className="relative flex h-full items-center justify-between px-8">
+              <div className="flex items-center gap-4">
+                {school?.logo_url ? (
+                  <img src={school.logo_url} alt="School logo" className="h-16 w-16 rounded-xl bg-white/95 object-contain p-1.5 shadow-lg" />
+                ) : (
+                  <div className="grid h-16 w-16 place-items-center rounded-xl bg-white/95 shadow-lg">
+                    <FileText className="h-8 w-8 text-primary" />
+                  </div>
+                )}
+                <div>
+                  <p className="font-display text-2xl font-bold leading-tight tracking-tight">{school?.name || "School"}</p>
+                  {school?.motto && <p className="text-[11px] italic opacity-90">"{school.motto}"</p>}
+                  <p className="text-[11px] opacity-90">{[school?.address, school?.phone, school?.email].filter(Boolean).join(" • ")}</p>
                 </div>
-              )}
-              <div>
-                <p className="font-display text-3xl font-bold tracking-tight">{school?.name || "School"}</p>
-                {school?.motto && <p className="text-xs italic text-gray-600">"{school.motto}"</p>}
-                {school?.address && <p className="text-xs text-gray-600">{school.address}</p>}
-                <p className="text-xs text-gray-600">
-                  {[school?.phone, school?.email, school?.website].filter(Boolean).join(" • ")}
+              </div>
+              <div className="text-right">
+                <p className="rounded-full bg-white/20 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] backdrop-blur">
+                  {(card.period_type || periodType) === "annual" ? "Annual Report" : (card.period_type || periodType) === "monthly" ? "Monthly Report" : "Official Report"}
                 </p>
+                {card.is_published && <p className="mt-2 text-[10px] font-bold text-emerald-200">● PUBLISHED</p>}
               </div>
             </div>
-            <div className="text-right">
-              <p className="rounded-md bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
-                {(card.period_type || periodType) === "annual" ? "Annual Report Card" : (card.period_type || periodType) === "monthly" ? "Monthly Report Card" : "Official Report Card"}
-              </p>
-              <p className="mt-2 text-sm font-semibold">{periodTitle}</p>
-              <p className="text-xs text-gray-600">Issued: {today}</p>
-              {card.is_published && <p className="mt-1 text-[10px] font-bold text-green-700">PUBLISHED</p>}
-            </div>
           </div>
 
-          <div className="relative mt-4 grid grid-cols-2 gap-x-6 gap-y-1 rounded-lg bg-gray-50 p-3 text-sm md:grid-cols-3">
-            <p><span className="text-gray-500">Name:</span> <strong>{studentInfo.first_name} {studentInfo.last_name}</strong></p>
-            <p><span className="text-gray-500">Roll No:</span> <strong>{studentInfo.student_code || "—"}</strong></p>
-            <p><span className="text-gray-500">Class:</span> <strong>{(() => { const e = enrollments.find(x => x.student_id === studentId); const sec = sections.find(s => s.id === e?.class_section_id); const cls = classes.find(c => c.id === sec?.class_id); return cls?.name || "—"; })()}</strong></p>
-            <p><span className="text-gray-500">Section:</span> <strong>{(() => { const e = enrollments.find(x => x.student_id === studentId); const sec = sections.find(s => s.id === e?.class_section_id); return sec?.name || "—"; })()}</strong></p>
-            <p><span className="text-gray-500">DOB:</span> <strong>{studentInfo.date_of_birth ? format(new Date(studentInfo.date_of_birth), "MMM d, yyyy") : "—"}</strong></p>
-            <p><span className="text-gray-500">Parent:</span> <strong>{studentInfo.parent_name || "—"}</strong></p>
-            <p><span className="text-gray-500">Phone:</span> <strong>{studentInfo.phone || studentInfo.parent_phone || "—"}</strong></p>
-            <p className="md:col-span-2"><span className="text-gray-500">Address:</span> <strong>{studentInfo.address || "—"}</strong></p>
-          </div>
+          {/* Watermark */}
+          {school?.logo_url && (
+            <img src={school.logo_url} alt="" aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 h-80 w-80 -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.035]" />
+          )}
+
+          <div className="relative px-8 pb-8 pt-6">
+            {/* Title + meta */}
+            <div className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-dashed border-gray-300 pb-4">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">Academic Report Card</p>
+                <p className="font-display text-2xl font-bold tracking-tight">{periodTitle}</p>
+              </div>
+              <p className="text-xs text-gray-500">Issued <strong className="text-gray-700">{today}</strong></p>
+            </div>
+
+            {/* Student profile card */}
+            <div className="relative mb-5 grid grid-cols-1 gap-4 rounded-2xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-5 md:grid-cols-[auto_1fr]">
+              {studentInfo.profile_image_url ? (
+                <img src={studentInfo.profile_image_url} alt="" className="h-24 w-24 rounded-2xl object-cover ring-2 ring-primary/20" />
+              ) : (
+                <div className="grid h-24 w-24 place-items-center rounded-2xl bg-primary/10 ring-2 ring-primary/20">
+                  <User className="h-10 w-10 text-primary" />
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm md:grid-cols-3">
+                <p><span className="text-gray-500">Name:</span> <strong>{studentInfo.first_name} {studentInfo.last_name}</strong></p>
+                <p><span className="text-gray-500">Roll No:</span> <strong>{studentInfo.student_code || "—"}</strong></p>
+                <p><span className="text-gray-500">Class:</span> <strong>{(() => { const e = enrollments.find(x => x.student_id === studentId); const sec = sections.find(s => s.id === e?.class_section_id); const cls = classes.find(c => c.id === sec?.class_id); return cls?.name || "—"; })()}</strong></p>
+                <p><span className="text-gray-500">Section:</span> <strong>{(() => { const e = enrollments.find(x => x.student_id === studentId); const sec = sections.find(s => s.id === e?.class_section_id); return sec?.name || "—"; })()}</strong></p>
+                <p><span className="text-gray-500">DOB:</span> <strong>{studentInfo.date_of_birth ? format(new Date(studentInfo.date_of_birth), "MMM d, yyyy") : "—"}</strong></p>
+                <p><span className="text-gray-500">Parent:</span> <strong>{studentInfo.parent_name || "—"}</strong></p>
+                <p><span className="text-gray-500">Phone:</span> <strong>{studentInfo.phone || studentInfo.parent_phone || "—"}</strong></p>
+                <p className="md:col-span-2"><span className="text-gray-500">Address:</span> <strong>{studentInfo.address || "—"}</strong></p>
+              </div>
+            </div>
 
           <table className="relative mt-5 w-full border-collapse text-sm">
             <thead>
@@ -711,11 +779,68 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
             </tbody>
           </table>
 
-          <div className="relative mt-4 grid grid-cols-3 gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm">
-            <div><p className="text-xs text-gray-600">Percentage</p><p className="font-display text-2xl font-bold">{totals.pct}%</p></div>
-            <div><p className="text-xs text-gray-600">GPA</p><p className="font-display text-2xl font-bold">{totals.gpa}</p></div>
-            <div><p className="text-xs text-gray-600">Overall Grade</p><p className="font-display text-2xl font-bold">{totals.grade}</p></div>
+          {/* Premium summary tiles */}
+          <div className="relative mt-5 grid grid-cols-3 gap-3">
+            <div className="rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 p-4 ring-1 ring-primary/20">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Percentage</p>
+              <p className="font-display text-3xl font-bold text-primary">{totals.pct}%</p>
+            </div>
+            <div className="rounded-2xl bg-gradient-to-br from-amber-100 to-amber-50 p-4 ring-1 ring-amber-200">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">GPA</p>
+              <p className="font-display text-3xl font-bold text-amber-700">{totals.gpa}</p>
+            </div>
+            <div className="rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-50 p-4 ring-1 ring-emerald-200">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Overall Grade</p>
+              <p className="font-display text-3xl font-bold text-emerald-700">{totals.grade}</p>
+            </div>
           </div>
+
+          {/* Category breakdown — Quizzes / Tests / Assignments / Projects / Exam etc. */}
+          {categoryBreakdown.visibleCategories.length > 0 && (
+            <div className="relative mt-6">
+              <p className="mb-2 text-sm font-semibold">Continuous Assessment Breakdown</p>
+              <div className="overflow-x-auto rounded-xl ring-1 ring-gray-200">
+                <table className="w-full border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-gradient-to-r from-primary/10 to-primary/5 text-left">
+                      <th className="p-2 font-semibold">Subject</th>
+                      {categoryBreakdown.visibleCategories.map((c) => (
+                        <th key={c.key} className="p-2 text-center font-semibold">{c.label}</th>
+                      ))}
+                      <th className="p-2 text-center font-semibold">Combined</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {subjects.map((s) => {
+                      const row = categoryBreakdown.matrix[s.id];
+                      if (!row) return null;
+                      let tObt = 0, tMax = 0;
+                      Object.values(row).forEach((v) => { tObt += v.obtained; tMax += v.max; });
+                      if (tMax === 0) return null;
+                      return (
+                        <tr key={s.id} className="border-t border-gray-200">
+                          <td className="p-2 font-medium">{s.name}</td>
+                          {categoryBreakdown.visibleCategories.map((c) => {
+                            const v = row[c.key];
+                            return (
+                              <td key={c.key} className="p-2 text-center text-gray-700">
+                                {v ? <span><strong>{v.obtained}</strong><span className="text-gray-400">/{v.max}</span></span> : <span className="text-gray-300">—</span>}
+                              </td>
+                            );
+                          })}
+                          <td className="p-2 text-center font-semibold text-primary">
+                            {tObt}/{tMax}<span className="ml-1 text-[10px] text-gray-500">({tMax ? Math.round((tObt/tMax)*100) : 0}%)</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <p className="mt-1 text-[10px] text-gray-500">Includes all published quizzes, tests, assignments, projects and exam-style assessments in this period.</p>
+            </div>
+          )}
+
 
           {/* Per-assessment appendix */}
           {appendix.length > 0 && (
@@ -778,6 +903,7 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
 
           <div className="relative mt-4 border-t border-dashed border-gray-300 pt-2 text-center text-[10px] text-gray-500">
             This is a computer-generated document by AltRix • {school?.name || "School"} • {today}
+          </div>
           </div>
         </div>
       )}

@@ -17,48 +17,60 @@ export type Database = {
       academic_assessments: {
         Row: {
           assessment_date: string | null
+          assessment_type: string
           campus_id: string | null
           class_section_id: string
           created_at: string | null
           created_by: string | null
           id: string
+          instructions: string | null
           is_published: boolean | null
           max_marks: number | null
+          passing_marks: number | null
           published_at: string | null
           school_id: string
           subject_id: string | null
           term_label: string | null
           title: string
+          weightage_percent: number | null
         }
         Insert: {
           assessment_date?: string | null
+          assessment_type?: string
           campus_id?: string | null
           class_section_id: string
           created_at?: string | null
           created_by?: string | null
           id?: string
+          instructions?: string | null
           is_published?: boolean | null
           max_marks?: number | null
+          passing_marks?: number | null
           published_at?: string | null
           school_id: string
           subject_id?: string | null
           term_label?: string | null
           title: string
+          weightage_percent?: number | null
         }
         Update: {
           assessment_date?: string | null
+          assessment_type?: string
           campus_id?: string | null
           class_section_id?: string
           created_at?: string | null
           created_by?: string | null
           id?: string
+          instructions?: string | null
           is_published?: boolean | null
           max_marks?: number | null
+          passing_marks?: number | null
           published_at?: string | null
           school_id?: string
           subject_id?: string | null
           term_label?: string | null
           title?: string
+          weightage_percent?: number | null
         }
         Relationships: [
           {
@@ -2281,6 +2293,61 @@ export type Database = {
           },
         ]
       }
+      exam_seat_allocations: {
+        Row: {
+          created_at: string
+          exam_id: string
+          id: string
+          roll_number: string | null
+          room: string | null
+          school_id: string
+          seat_number: string | null
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          exam_id: string
+          id?: string
+          roll_number?: string | null
+          room?: string | null
+          school_id: string
+          seat_number?: string | null
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          exam_id?: string
+          id?: string
+          roll_number?: string | null
+          room?: string | null
+          school_id?: string
+          seat_number?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_seat_allocations_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_seat_allocations_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_seat_allocations_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exam_subjects: {
         Row: {
           class_section_id: string | null
@@ -2289,7 +2356,10 @@ export type Database = {
           exam_date: string | null
           exam_id: string
           id: string
+          instructions: string | null
+          invigilator_user_id: string | null
           max_marks: number | null
+          passing_marks: number | null
           room: string | null
           school_id: string
           start_time: string | null
@@ -2302,7 +2372,10 @@ export type Database = {
           exam_date?: string | null
           exam_id: string
           id?: string
+          instructions?: string | null
+          invigilator_user_id?: string | null
           max_marks?: number | null
+          passing_marks?: number | null
           room?: string | null
           school_id: string
           start_time?: string | null
@@ -2315,7 +2388,10 @@ export type Database = {
           exam_date?: string | null
           exam_id?: string
           id?: string
+          instructions?: string | null
+          invigilator_user_id?: string | null
           max_marks?: number | null
+          passing_marks?: number | null
           room?: string | null
           school_id?: string
           start_time?: string | null
@@ -2354,11 +2430,17 @@ export type Database = {
       }
       exams: {
         Row: {
+          academic_year: string | null
           created_at: string
           created_by: string | null
+          description: string | null
           end_date: string | null
           id: string
+          instructions: string | null
           name: string
+          passing_percentage: number | null
+          result_published: boolean
+          result_published_at: string | null
           school_id: string
           start_date: string | null
           status: string
@@ -2366,11 +2448,17 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          academic_year?: string | null
           created_at?: string
           created_by?: string | null
+          description?: string | null
           end_date?: string | null
           id?: string
+          instructions?: string | null
           name: string
+          passing_percentage?: number | null
+          result_published?: boolean
+          result_published_at?: string | null
           school_id: string
           start_date?: string | null
           status?: string
@@ -2378,11 +2466,17 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          academic_year?: string | null
           created_at?: string
           created_by?: string | null
+          description?: string | null
           end_date?: string | null
           id?: string
+          instructions?: string | null
           name?: string
+          passing_percentage?: number | null
+          result_published?: boolean
+          result_published_at?: string | null
           school_id?: string
           start_date?: string | null
           status?: string
