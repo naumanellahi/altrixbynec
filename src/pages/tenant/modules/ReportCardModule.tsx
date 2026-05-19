@@ -954,8 +954,8 @@ export default function ReportCardModule({ schoolId, canManage = false, studentI
               <p className="font-display text-3xl font-bold text-primary">{totals.pct}%</p>
             </div>
             <div className="rounded-2xl bg-gradient-to-br from-amber-100 to-amber-50 p-4 ring-1 ring-amber-200">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">GPA</p>
-              <p className="font-display text-3xl font-bold text-amber-700">{totals.gpa}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Marks</p>
+              <p className="font-display text-3xl font-bold text-amber-700">{totals.total}<span className="text-base font-medium text-gray-500"> / {totals.max}</span></p>
             </div>
             <div className="rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-50 p-4 ring-1 ring-emerald-200">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Overall Grade</p>
