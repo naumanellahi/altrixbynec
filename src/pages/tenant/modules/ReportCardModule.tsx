@@ -57,12 +57,12 @@ type PeriodType = "exam" | "monthly" | "annual";
 interface Props { schoolId: string | null; canManage?: boolean; studentIdLocked?: string | null; }
 
 const calcGrade = (pct: number) => {
-  if (pct >= 90) return { grade: "A+", gpa: 4.0 };
-  if (pct >= 80) return { grade: "A", gpa: 3.7 };
-  if (pct >= 70) return { grade: "B", gpa: 3.0 };
-  if (pct >= 60) return { grade: "C", gpa: 2.5 };
-  if (pct >= 50) return { grade: "D", gpa: 2.0 };
-  return { grade: "F", gpa: 0 };
+  if (pct >= 90) return { grade: "A+" };
+  if (pct >= 80) return { grade: "A" };
+  if (pct >= 70) return { grade: "B" };
+  if (pct >= 60) return { grade: "C" };
+  if (pct >= 50) return { grade: "D" };
+  return { grade: "F" };
 };
 
 const MONTHS = [
