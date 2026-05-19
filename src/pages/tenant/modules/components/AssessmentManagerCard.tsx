@@ -572,10 +572,12 @@ export function AssessmentManagerCard({
             <TableHeader>
               <TableRow>
                 <TableHead>Title</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead>Section</TableHead>
                 <TableHead>Subject</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead className="text-right">Max</TableHead>
+                <TableHead className="text-right">Weight</TableHead>
                 <TableHead>Published</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -584,10 +586,16 @@ export function AssessmentManagerCard({
               {assessments.map((a) => (
                 <TableRow key={a.id}>
                   <TableCell className="font-medium">{a.title}</TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium capitalize text-primary">
+                      {a.assessment_type ?? "test"}
+                    </span>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">{sectionLabelById.get(a.class_section_id) ?? a.class_section_id}</TableCell>
                   <TableCell className="text-muted-foreground">{a.subject_id ? subjectNameById.get(a.subject_id) ?? "—" : "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{new Date(a.assessment_date).toLocaleDateString()}</TableCell>
                   <TableCell className="text-right text-muted-foreground">{a.max_marks}</TableCell>
+                  <TableCell className="text-right text-muted-foreground">{a.weightage_percent != null ? `${a.weightage_percent}%` : "—"}</TableCell>
                   <TableCell>
                     <Button variant="soft" size="sm" onClick={() => void togglePublish(a)}>
                       {a.is_published ? "Published" : "Draft"}
