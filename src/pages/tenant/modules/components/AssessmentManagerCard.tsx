@@ -97,7 +97,11 @@ export function AssessmentManagerCard({
     term_label: "",
     assessment_date: new Date().toISOString().slice(0, 10),
     max_marks: 100,
+    assessment_type: "test" as AssessmentType,
+    weightage_percent: "" as string | number,
+    passing_marks: "" as string | number,
   });
+  const [filterType, setFilterType] = useState<string>("");
 
   // marks entry
   const [activeAssessmentId, setActiveAssessmentId] = useState<string | null>(null);
