@@ -363,8 +363,19 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
   }, [invoices, invSearch, invStatus, invFromDate, invToDate]);
 
   if (!child) {
-    return <div className="text-center text-muted-foreground py-12">Please select a child to view fee status.</div>;
+    return (
+      <Card className="border-dashed">
+        <CardContent className="flex flex-col items-center justify-center text-center py-16 gap-3">
+          <div className="rounded-full bg-muted p-4"><Inbox className="h-8 w-8 text-muted-foreground" /></div>
+          <h3 className="font-display text-lg font-semibold">Select a child to view fees</h3>
+          <p className="text-sm text-muted-foreground max-w-sm">
+            Use the child switcher above to choose which child's fee vouchers and payment status you'd like to see.
+          </p>
+        </CardContent>
+      </Card>
+    );
   }
+
 
   const statusVariant = (status: string): any => status === "paid" ? "default" : status === "overdue" ? "destructive" : status === "partial" ? "secondary" : "outline";
   const totalOutstanding = invoices.filter(i => i.status !== "paid" && i.status !== "cancelled").reduce((sum, i) => sum + Math.max(Number(i.total_amount) - Number(i.paid_amount), 0), 0);
