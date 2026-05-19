@@ -114,7 +114,20 @@ export function NotificationsBell({ schoolId, schoolSlug, role }: NotificationsB
           // Navigate to messages with query param
           navigate(`${messagesPath}?open_message=${notification.entity_id}`);
         }
+        return;
       }
+
+      // Fee voucher → navigate to fees module
+      if ((notification.type === "fee_voucher" || notification.entity_type === "fee_invoice") && schoolSlug) {
+        const rolePath = role === "parent" ? "parent"
+          : role === "student" ? "student"
+          : role === "hr_manager" ? "hr"
+          : role === "accountant" ? "accountant"
+          : role || "";
+        const feesPath = role === "parent" || role === "student"
+          ? `/${schoolSlug}/${rolePath}/fees`
+          : `/${schoolSlug}/${rolePath}/fee-vouchers`;
+        navigate(notification.entity_id ? `${feesPath}?invoice=${notification.entity_id}` : feesPath);
     },
     [markRead, navigate, location.pathname, schoolSlug, role]
   );
