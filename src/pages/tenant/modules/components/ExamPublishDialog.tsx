@@ -95,17 +95,19 @@ export default function ExamPublishDialog({
     const { error } = await (supabase as any).from("exams").update(patch).eq("id", examId);
     if (error) return toast.error(error.message);
 
-    await (supabase as any).from("exam_result_publications").upsert(
-      {
-        school_id: schoolId, exam_id: examId, scope: "exam",
-        is_published: publish,
-        publish_at: publishAtIso,
-        notes: examNotes || null,
-        created_by: user?.id ?? null,
-        processed_at: scheduled ? null : new Date().toISOString(),
-      },
-      { onConflict: "exam_id", ignoreDuplicates: false } as any
-    );
+    await (supabase as any)
+      .from("exam_result_publications")
+      .delete()
+      .eq("exam_id", examId)
+      .eq("scope", "exam");
+    await (supabase as any).from("exam_result_publications").insert({
+      school_id: schoolId, exam_id: examId, scope: "exam",
+      is_published: publish,
+      publish_at: publishAtIso,
+      notes: examNotes || null,
+      created_by: user?.id ?? null,
+      processed_at: scheduled ? null : new Date().toISOString(),
+    });
 
     if (!scheduled) {
       const { data: notified } = await (supabase as any).rpc("notify_exam_result_publish", {
