@@ -1120,14 +1120,15 @@ export default function ReportCardModule({ schoolId, canManage: canManageProp = 
                     </td>
                     <td className="border border-gray-300 p-2 text-center">
                       {canManage ? (
-                        <Input type="number" className="h-8 w-20 text-black" value={r?.marks_obtained ?? ""} onChange={(e) => updateMark(s.id, Number(e.target.value), max)} />
+                        <Input type="number" className="mx-auto h-8 w-20 text-center text-black" value={r?.marks_obtained ?? ""} onChange={(e) => updateMark(s.id, Number(e.target.value), max)} />
                       ) : (obtained ?? "—")}
                     </td>
                     <td className="border border-gray-300 p-2 text-center">
                       {canManage ? (
-                        <Input type="number" className="h-8 w-20 text-black" value={r?.max_marks ?? 100} onChange={(e) => updateMark(s.id, Number(r?.marks_obtained || 0), Number(e.target.value))} />
+                        <Input type="number" className="mx-auto h-8 w-20 text-center text-black" value={r?.max_marks ?? 100} onChange={(e) => updateMark(s.id, Number(r?.marks_obtained || 0), Number(e.target.value))} />
                       ) : max}
                     </td>
+
                     <td className="border border-gray-300 p-2 text-center">{pct != null ? `${pct}%` : "—"}</td>
                     <td className="border border-gray-300 p-2 text-center font-semibold">{r?.grade ?? "—"}</td>
                     <td className="border border-gray-300 p-2 print:hidden">
