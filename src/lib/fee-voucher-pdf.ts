@@ -182,9 +182,7 @@ function drawCopy(
   doc.text("Powered by Altrix", left, 205, { maxWidth: innerW });
 }
 
-export function generateVoucherPdf(data: VoucherCopyData): jsPDF {
-  // Landscape A4: 297 x 210 mm, three copies side-by-side
-  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+function drawVoucherOnDoc(doc: jsPDF, data: VoucherCopyData) {
   const accent = data.accentHsl
     ? hslToRgb(data.accentHsl.h, data.accentHsl.s, data.accentHsl.l)
     : ([35, 96, 178] as [number, number, number]);
@@ -198,5 +196,15 @@ export function generateVoucherPdf(data: VoucherCopyData): jsPDF {
       doc.setLineDashPattern([], 0);
     }
   });
+}
+
+export function generateVoucherPdf(data: VoucherCopyData): jsPDF {
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  drawVoucherOnDoc(doc, data);
   return doc;
+}
+
+export function appendVoucherPage(doc: jsPDF, data: VoucherCopyData) {
+  doc.addPage("a4", "landscape");
+  drawVoucherOnDoc(doc, data);
 }
