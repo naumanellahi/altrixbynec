@@ -245,17 +245,30 @@ export default function ExamPublishDialog({
           </TabsContent>
 
           <TabsContent value="student" className="space-y-3 pt-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label>Class / Section</Label>
+                <Select value={studClassId} onValueChange={(v) => { setStudClassId(v); setStudId(""); }}>
+                  <SelectTrigger><SelectValue placeholder="Pick class" /></SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {sections.map((s) => <SelectItem key={s.id} value={s.id}>{s.class_name ? s.class_name + " — " : ""}{s.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <Label>Student</Label>
-                <Select value={studId} onValueChange={setStudId}>
-                  <SelectTrigger><SelectValue placeholder="Pick student" /></SelectTrigger>
-                  <SelectContent className="max-h-72">{students.map((s) => <SelectItem key={s.id} value={s.id}>{s.first_name} {s.last_name}</SelectItem>)}</SelectContent>
+                <Select value={studId} onValueChange={setStudId} disabled={!studClassId}>
+                  <SelectTrigger><SelectValue placeholder={studClassId ? "Pick student" : "Pick class first"} /></SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {studentsInClass.length === 0 && <div className="px-2 py-3 text-sm text-muted-foreground">No students in this class.</div>}
+                    {studentsInClass.map((s) => <SelectItem key={s.id} value={s.id}>{s.first_name} {s.last_name}</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </div>
               <div>
                 <Label>Publish date/time (optional)</Label>
                 <Input type="datetime-local" value={studAt} onChange={(e) => setStudAt(e.target.value)} />
+                <p className="mt-1 text-[10px] text-muted-foreground">Leave blank for immediate. Future time = scheduled.</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
