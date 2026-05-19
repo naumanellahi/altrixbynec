@@ -284,32 +284,9 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
                           status: "in_class" | "left",
                           reason?: string | null,
                         ) => {
-                          const label = `${entry.subjectName} • ${entry.periodLabel}`;
-                          const res = await setPresenceStatus(entry.id, status, {
+                          await setPresenceStatus(entry.id, status, {
                             reason: reason ?? null,
                             startTime: entry.startTime,
-                          });
-                          const err = res?.error;
-                          const effective = res?.effectiveStatus ?? status;
-                          if (!err) {
-                            pendingRef.current.set(entry.id, {
-                              status: effective,
-                              label,
-                              ts: Date.now(),
-                            });
-                          }
-                          toast({
-                            title: err
-                              ? "Failed to update"
-                              : effective === "in_class"
-                                ? "Marked as In Class"
-                                : effective === "late"
-                                  ? "Marked as Late"
-                                  : "Marked as Left",
-                            description: err
-                              ? (err as { message?: string })?.message ?? "Try again"
-                              : label,
-                            variant: err ? "destructive" : "default",
                           });
                         };
                         const askReasonAndSet = (status: "in_class" | "left") => {
