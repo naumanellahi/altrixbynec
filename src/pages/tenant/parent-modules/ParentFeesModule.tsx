@@ -482,9 +482,28 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
             )}
           </div>
           {loading ? (
-            <p className="text-muted-foreground">Loading…</p>
+            <div className="space-y-2">
+              {[0,1,2,3].map(i => (
+                <div key={i} className="flex items-center gap-3 p-2 border rounded-md">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-20 ml-auto" />
+                  <Skeleton className="h-6 w-16" />
+                  <Skeleton className="h-8 w-24" />
+                </div>
+              ))}
+            </div>
           ) : filteredInvoices.length === 0 ? (
-            <p className="text-muted-foreground">{invoices.length === 0 ? "No invoices found." : "No invoices match your search."}</p>
+            <div className="flex flex-col items-center justify-center text-center py-10 gap-2">
+              <div className="rounded-full bg-muted p-3"><FileText className="h-6 w-6 text-muted-foreground" /></div>
+              <p className="font-medium">{invoices.length === 0 ? "No invoices yet" : "No invoices match your filters"}</p>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                {invoices.length === 0
+                  ? "When the school issues a fee voucher for " + (child.first_name || "your child") + ", it will appear here instantly."
+                  : "Try clearing the search or status filter to see more results."}
+              </p>
+            </div>
           ) : (
             <Table>
               <TableHeader><TableRow>
