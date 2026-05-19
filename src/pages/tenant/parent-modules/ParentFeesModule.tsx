@@ -329,6 +329,20 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
     }
   };
 
+  const filteredInvoices = useMemo(() => {
+    const q = invSearch.trim().toLowerCase();
+    return invoices.filter(i => {
+      if (invStatus !== "__all" && i.status !== invStatus) return false;
+      if (invFromDate && i.due_date < invFromDate) return false;
+      if (invToDate && i.due_date > invToDate) return false;
+      if (q) {
+        const hay = `${i.invoice_number} ${i.period_label || ""} ${i.status}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [invoices, invSearch, invStatus, invFromDate, invToDate]);
+
   if (!child) {
     return <div className="text-center text-muted-foreground py-12">Please select a child to view fee status.</div>;
   }
@@ -350,19 +364,6 @@ const ParentFeesModule = ({ child, schoolId }: ParentFeesModuleProps) => {
   };
   const txnBadgeVariant = (status: string): any => status === "success" ? "default" : status === "failed" ? "destructive" : "secondary";
 
-  const filteredInvoices = useMemo(() => {
-    const q = invSearch.trim().toLowerCase();
-    return invoices.filter(i => {
-      if (invStatus !== "__all" && i.status !== invStatus) return false;
-      if (invFromDate && i.due_date < invFromDate) return false;
-      if (invToDate && i.due_date > invToDate) return false;
-      if (q) {
-        const hay = `${i.invoice_number} ${i.period_label || ""} ${i.status}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      return true;
-    });
-  }, [invoices, invSearch, invStatus, invFromDate, invToDate]);
 
   return (
     <div className="space-y-6">
