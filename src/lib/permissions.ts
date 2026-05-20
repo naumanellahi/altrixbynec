@@ -54,9 +54,46 @@ const FINANCE_GOV: EduverseRole[] = [
 const anyOf = (a: EduverseRole[], roles: EduverseRole[]) => a.some((r) => roles.includes(r));
 
 /**
+ * Role inheritance map. Higher-tier roles automatically inherit the
+ * permissions of every lower-tier role listed below.
+ *   - super_admin / school_owner → every role in the system
+ *   - principal                  → vice_principal + admin + hr + accountant
+ *                                  + academic_coordinator + counselor
+ *   - vice_principal             → admin + hr + accountant
+ *                                  + academic_coordinator + counselor
+ */
+const ROLE_INHERITANCE: Partial<Record<EduverseRole, EduverseRole[]>> = {
+  super_admin: [
+    "school_owner","principal","vice_principal","school_admin","hr_manager",
+    "accountant","academic_coordinator","counselor","teacher","marketing_staff",
+    "student","parent",
+  ],
+  school_owner: [
+    "principal","vice_principal","school_admin","hr_manager","accountant",
+    "academic_coordinator","counselor","teacher","marketing_staff",
+  ],
+  principal: [
+    "vice_principal","school_admin","hr_manager","accountant",
+    "academic_coordinator","counselor",
+  ],
+  vice_principal: [
+    "school_admin","hr_manager","accountant","academic_coordinator","counselor",
+  ],
+};
+
+function expandRoles(roles: EduverseRole[]): EduverseRole[] {
+  const out = new Set<EduverseRole>(roles);
+  for (const r of roles) {
+    for (const inherited of ROLE_INHERITANCE[r] ?? []) out.add(inherited);
+  }
+  return Array.from(out);
+}
+
+/**
  * Static resolver (no hook) — usable in non-React contexts.
  */
-export function resolvePermissions(roles: EduverseRole[]): PermissionBundle {
+export function resolvePermissions(inputRoles: EduverseRole[]): PermissionBundle {
+  const roles = expandRoles(inputRoles);
   const visibleModules = NAV_CATALOG.filter((m) => m.roles.some((r) => roles.includes(r)));
 
   // The path segment after `/{slug}/{role}/`. "" = dashboard root.
