@@ -87,26 +87,53 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
         </div>
       </div>
 
-      <nav className="mt-5 space-y-0.5">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.to === `/${schoolSlug}/${role}`}
-            className="group flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-150"
-            activeClassName="bg-primary text-primary-foreground shadow-sog shadow-soft hover:bg-primary hover:text-primary-foreground"
-            onClick={() => setMobileNavOpen(false)}
-          >
-            <span className="flex items-center gap-2.5">
-              <item.icon className="h-4 w-4 shrink-0" /> {item.label}
-            </span>
-            {item.badge > 0 && (
-              <Badge variant="destructive" className="h-5 px-1.5 text-[10px] rounded-full">
-                {item.badge > 99 ? "99+" : item.badge}
-              </Badge>
-            )}
-          </NavLink>
-        ))}
+      <nav className="mt-5 space-y-3">
+        {GROUP_ORDER.map((g) => {
+          const items = grouped[g];
+          if (!items?.length) return null;
+          return (
+            <div key={g}>
+              <p className="px-2 mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                {GROUP_LABELS[g]}
+              </p>
+              <div className="space-y-0.5">
+                {items.map((item) => {
+                  const to = item.path ? `/${schoolSlug}/${role}/${item.path}` : `/${schoolSlug}/${role}`;
+                  const badge = item.key === "messages" ? unreadCount : 0;
+                  const Icon = item.icon;
+                  return (
+                    <NavLink
+                      key={item.key}
+                      to={to}
+                      end={!item.path}
+                      className="group flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-150"
+                      activeClassName="bg-primary text-primary-foreground shadow-soft hover:bg-primary hover:text-primary-foreground"
+                      onClick={() => setMobileNavOpen(false)}
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <Icon className="h-4 w-4 shrink-0" /> {item.label}
+                      </span>
+                      {badge > 0 && (
+                        <Badge variant="destructive" className="h-5 px-1.5 text-[10px] rounded-full">
+                          {badge > 99 ? "99+" : badge}
+                        </Badge>
+                      )}
+                    </NavLink>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+        <NavLink
+          to={`/${schoolSlug}/${role}?settings=1`}
+          end
+          className="group flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-150"
+          activeClassName="bg-primary text-primary-foreground shadow-soft"
+          onClick={() => setMobileNavOpen(false)}
+        >
+          <Settings className="h-4 w-4 shrink-0" /> Settings
+        </NavLink>
       </nav>
 
       <div className="mt-5 rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/10 via-accent/40 to-transparent p-4">
