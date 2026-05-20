@@ -63,6 +63,7 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
     { to: `/${schoolSlug}/${role}/complaints`, icon: ShieldAlert, label: "Complaints", show: ["principal", "vice_principal", "school_admin", "school_owner", "super_admin"].includes(role), badge: 0 },
     { to: `/${schoolSlug}/${role}/parent-notes`, icon: NotebookPen, label: "Parent Notes", show: ["principal", "vice_principal", "school_admin", "school_owner", "super_admin"].includes(role), badge: 0 },
     { to: `/${schoolSlug}/${role}/support`, icon: Headphones, label: "Support", show: ["principal", "vice_principal", "super_admin", "school_owner", "hr_manager"].includes(role), badge: 0 },
+    { to: `/${schoolSlug}/hub`, icon: Sparkles, label: "Unified Hub", show: true, badge: 0 },
     { to: `/${schoolSlug}/${role}?settings=1`, icon: Settings, label: "Settings", show: true, badge: 0 },
   ].filter(item => item.show);
 
