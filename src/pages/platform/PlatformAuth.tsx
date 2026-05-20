@@ -68,6 +68,11 @@ export default function PlatformAuth() {
         password,
       });
       if (error) return setMessage(error.message);
+      // Hard gate: only the master email may enter the platform territory.
+      if (parsedEmail.data.toLowerCase() !== MASTER_SUPER_ADMIN_EMAIL) {
+        await supabase.auth.signOut();
+        return setMessage("Access denied. Master Super Admin only.");
+      }
       rememberRecentEmail(parsedEmail.data);
       setRecentEmails(getRecentEmails());
       navigate("/super_admin");
