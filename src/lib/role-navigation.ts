@@ -46,6 +46,8 @@ export const NAV_CATALOG: NavItem[] = [
   // People
   { key: "users", label: "Staff", icon: Users, group: "people", path: "users",
     roles: ["super_admin","school_owner","principal","vice_principal","school_admin","hr_manager"] },
+  { key: "leaves", label: "Leaves", icon: FileSignature, group: "people", path: "leaves",
+    roles: ["super_admin","school_owner","principal","vice_principal","school_admin","hr_manager"] },
   { key: "admissions", label: "Admissions", icon: UserPlus, group: "people", path: "admissions",
     roles: ["super_admin","school_owner","principal","vice_principal","school_admin","academic_coordinator","marketing_staff"] },
   { key: "crm", label: "CRM", icon: KanbanSquare, group: "people", path: "crm",
@@ -70,11 +72,8 @@ export const NAV_CATALOG: NavItem[] = [
     roles: ["super_admin","school_owner","principal","vice_principal","school_admin","academic_coordinator","hr_manager","accountant","marketing_staff"] },
   { key: "complaints", label: "Complaints", icon: ShieldAlert, group: "operations", path: "complaints",
     roles: ["super_admin","school_owner","principal","vice_principal","school_admin"] },
-  // Counseling module currently only ships a counselor-facing route.
-  // Hide for other roles until cross-role counseling views exist, so the
-  // sidebar entry never lands on a missing page.
   { key: "counseling", label: "Counseling", icon: Heart, group: "operations", path: "counseling",
-    roles: ["counselor"] },
+    roles: ["super_admin","school_owner","principal","vice_principal","school_admin","academic_coordinator","counselor"] },
 
   // Communication
   { key: "messages", label: "Messages", icon: MessageSquare, group: "communication", path: "messages",
