@@ -34,6 +34,11 @@ export function useNotifications(schoolId: string | null) {
         .from("app_notifications")
         .select("id,school_id,user_id,type,title,body,entity_type,entity_id,read_at,created_at")
         .eq("school_id", schoolId!)
+        // Scope strictly to the signed-in recipient. Without this, roles like
+        // principal/owner can read other users' notifications via RLS, which
+        // makes the bell/banner keep resurfacing rows that `markAllRead`
+        // (correctly scoped to the current user) can never clear.
+        .eq("user_id", user!.id)
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
