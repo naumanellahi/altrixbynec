@@ -20,6 +20,9 @@ type StaffProfileDialogProps = {
   email: string;
   displayName: string | null;
   onUpdated?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 };
 
 export function StaffProfileDialog({
@@ -27,8 +30,16 @@ export function StaffProfileDialog({
   email,
   displayName: initialDisplayName,
   onUpdated,
+  open: controlledOpen,
+  onOpenChange,
+  hideTrigger,
 }: StaffProfileDialogProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = (v: boolean) => {
+    if (onOpenChange) onOpenChange(v);
+    else setInternalOpen(v);
+  };
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -119,12 +130,14 @@ export function StaffProfileDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-          <Pencil className="h-4 w-4" />
-          <span className="sr-only">Edit profile</span>
-        </Button>
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+            <Pencil className="h-4 w-4" />
+            <span className="sr-only">Edit profile</span>
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-display">Staff Profile</DialogTitle>
