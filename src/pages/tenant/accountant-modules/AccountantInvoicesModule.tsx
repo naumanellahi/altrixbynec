@@ -387,7 +387,7 @@ export function AccountantInvoicesModule() {
                   <TableRow key={inv.id}>
                     <TableCell className="font-medium">{inv.invoice_no}</TableCell>
                     <TableCell>{getStudentName(inv.student_id)}</TableCell>
-                    <TableCell>{inv.total.toLocaleString()}</TableCell>
+                    <TableCell>{Number(inv.total ?? 0).toLocaleString()}</TableCell>
                     <TableCell>{getStatusBadge(inv.status)}</TableCell>
                     <TableCell>{new Date(inv.issue_date).toLocaleDateString()}</TableCell>
                     <TableCell>{inv.due_date ? new Date(inv.due_date).toLocaleDateString() : "—"}</TableCell>
