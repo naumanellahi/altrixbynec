@@ -401,6 +401,51 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
         />
       )}
 
+      {/* Period Log Details Dialog */}
+      <Dialog open={!!infoLog} onOpenChange={(o) => !o && setInfoLog(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {infoLog && getStatusIcon(infoLog.log.status)}
+              <span className="capitalize">{infoLog?.log.status}</span>
+            </DialogTitle>
+            <DialogDescription>
+              {infoLog?.entry.subjectName} • {infoLog?.entry.periodLabel}
+              {infoLog?.entry.sectionLabel && ` • ${infoLog.entry.sectionLabel}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Topics Covered</p>
+              <p className="text-sm whitespace-pre-wrap">
+                {infoLog?.log.topicsCovered || <span className="italic text-muted-foreground">No topics recorded</span>}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Notes</p>
+              <p className="text-sm whitespace-pre-wrap">
+                {infoLog?.log.notes || <span className="italic text-muted-foreground">No notes</span>}
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (infoLog) {
+                  const entry = infoLog.entry;
+                  setInfoLog(null);
+                  handleOpenLog(entry);
+                }
+              }}
+            >
+              <Pencil className="h-3.5 w-3.5 mr-1.5" /> Edit
+            </Button>
+            <Button onClick={() => setInfoLog(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Reason Dialog for Late/Left */}
       <Dialog
         open={!!reasonDialog}
