@@ -10,6 +10,8 @@ interface AtRiskStudent {
   first_name: string;
   last_name: string | null;
   class_section_id: string;
+  class_name: string | null;
+  section_name: string | null;
   attendance_rate: number;
   avg_grade_percentage: number;
   recent_grade_avg: number;
