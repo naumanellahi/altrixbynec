@@ -221,29 +221,16 @@ serve(async (req) => {
         return json({ ok: false, error: "Invalid email address." }, 200, traceId);
       }
 
-      // Reject if another auth user already has this email
-      const { data: existing, error: lookupErr } = await admin
-        .from("auth.users" as any)
-        .select("id")
-        .limit(1)
-        .maybeSingle()
-        .then(() => ({ data: null, error: null }), (e: any) => ({ data: null, error: e }));
-      // Use service-role admin API to check (PostgREST cannot read auth.users by default)
-      const { data: listed, error: listErr } = await admin.auth.admin.listUsers({ page: 1, perPage: 1 });
-      // The above is just to keep types; do a real check via getUserByEmail-like flow:
-      const { data: byEmail } = await admin
-        .rpc("find_parent_user_by_email", { _school_id: school.id, _email: email })
-        .then((r: any) => r, () => ({ data: null }));
-      if (byEmail && byEmail !== targetUserId) {
-        return json({ ok: false, error: "Another account already uses this email." }, 200, traceId);
-      }
-
       const { error: updErr } = await admin.auth.admin.updateUserById(targetUserId, {
         email,
         email_confirm: true,
       });
       if (updErr) {
-        return json({ ok: false, error: updErr.message || "Failed to update email" }, 200, traceId);
+        const msg = updErr.message || "Failed to update email";
+        const friendly = /already.*registered|duplicate|exists/i.test(msg)
+          ? "Another account already uses this email."
+          : msg;
+        return json({ ok: false, error: friendly }, 200, traceId);
       }
 
       await admin.from("audit_logs").insert({
