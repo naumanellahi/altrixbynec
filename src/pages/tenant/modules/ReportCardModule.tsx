@@ -362,7 +362,8 @@ export default function ReportCardModule({ schoolId, canManage: canManageProp = 
       const { data: sessions } = await sessionsQ;
       const sessionIds = (sessions || []).map((s: any) => s.id);
       if (sessionIds.length === 0) {
-        setCard((c) => ({ ...c, attendance_percentage: null }));
+        // No sessions in this period — keep any previously known value
+        // (saved on card or computed earlier) rather than blanking it out.
         return;
       }
       const { data: entries } = await (supabase as any)
@@ -372,11 +373,13 @@ export default function ReportCardModule({ schoolId, canManage: canManageProp = 
         .in("session_id", sessionIds);
       const total = entries?.length || 0;
       if (total === 0) {
-        setCard((c) => ({ ...c, attendance_percentage: null }));
+        // Student has no entries — keep existing value instead of wiping it.
         return;
       }
       const attended = (entries || []).filter((e: any) => e.status === "present" || e.status === "late").length;
-      const pct = Math.round((attended / total) * 1000) / 10;
+      const raw = (attended / total) * 100;
+      const pct = Number.isFinite(raw) ? Math.round(raw * 10) / 10 : null;
+      if (pct == null) return;
       setCard((c) => ({ ...c, attendance_percentage: pct }));
     })();
   }, [studentId, schoolId, periodType, examId, currentPeriodRange.start, currentPeriodRange.end, card.period_start, card.period_end, JSON.stringify(enrollments), exams]);
