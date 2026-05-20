@@ -153,17 +153,16 @@ export function HrSalariesModule() {
   });
 
   const { data: staffMembers = [] } = useQuery({
-    queryKey: ["school_memberships_staff", schoolId],
+    queryKey: ["school_staff_directory", schoolId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("school_memberships")
-        .select("user_id, profiles:user_id(display_name)")
-        .eq("school_id", schoolId!);
+      const { data, error } = await supabase.rpc("get_school_user_directory", {
+        _school_id: schoolId!,
+      });
       if (error) throw error;
       return (data || []).map((m: any) => ({
         id: m.user_id,
-        full_name: m.profiles?.display_name || "Unknown",
-        email: "",
+        full_name: m.display_name || m.email || "Unknown",
+        email: m.email || "",
       })) as StaffMember[];
     },
     enabled: !!schoolId,
