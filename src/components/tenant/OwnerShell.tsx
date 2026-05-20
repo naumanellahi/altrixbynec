@@ -1,4 +1,4 @@
-import { PropsWithChildren, useState } from "react";
+import { PropsWithChildren, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ import { useTenantOptimized } from "@/hooks/useTenantOptimized";
 import { useSession } from "@/hooks/useSession";
 import { useOfflineUniversal } from "@/hooks/useOfflineUniversal";
 import { OfflineStatusIndicator } from "@/components/offline/OfflineStatusIndicator";
+import { buildMergedNav, GROUP_LABELS, GROUP_ORDER } from "@/lib/role-navigation";
 
 type Props = PropsWithChildren<{
   title: string;
@@ -82,6 +83,15 @@ export function OwnerShell({ title, subtitle, schoolSlug, children }: Props) {
     { to: `${basePath}/ai`, icon: Sparkles, label: "AI Command Center" },
     { to: `${basePath}/messages`, icon: MessageSquare, label: "Messages", badge: unreadCount },
   ];
+
+  const inheritedNav = useMemo(() => {
+    const executivePaths = new Set(["", "admissions", "finance", "support", "messages"]);
+    const { grouped } = buildMergedNav(["school_owner"]);
+    return GROUP_ORDER.map((group) => ({
+      group,
+      items: grouped[group].filter((item) => !executivePaths.has(item.path)),
+    })).filter((section) => section.items.length > 0);
+  }, []);
 
   const bottomNavItems = [
     { to: basePath, icon: LayoutGrid, label: "Overview" },
@@ -147,6 +157,33 @@ export function OwnerShell({ title, subtitle, schoolSlug, children }: Props) {
                 </Badge>
               )}
             </NavLink>
+          ))}
+
+          {inheritedNav.map(({ group, items }) => (
+            <div key={group} className="pt-4 first:pt-0">
+              <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                {GROUP_LABELS[group]}
+              </p>
+              <div className="space-y-1">
+                {items.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <NavLink
+                      key={item.key}
+                      to={`${basePath}/${item.path}`}
+                      className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+                      activeClassName="bg-primary text-primary-foreground shadow-sm"
+                      onClick={() => setMobileNavOpen(false)}
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <Icon className="h-4 w-4 shrink-0" />
+                        <span className="truncate">{item.label}</span>
+                      </span>
+                    </NavLink>
+                  );
+                })}
+              </div>
+            </div>
           ))}
         </nav>
       </ScrollArea>
