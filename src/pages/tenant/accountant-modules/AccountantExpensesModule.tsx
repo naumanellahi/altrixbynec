@@ -408,7 +408,9 @@ export function AccountantExpensesModule() {
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[400px] rounded-xl border bg-surface">
-              <Table>
+              <div className="overflow-x-auto">
+                <Table className="min-w-[760px]">
+
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
