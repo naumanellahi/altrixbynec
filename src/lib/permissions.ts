@@ -52,6 +52,7 @@ const FINANCE_GOV: EduverseRole[] = [
 ];
 
 const anyOf = (a: EduverseRole[], roles: EduverseRole[]) => a.some((r) => roles.includes(r));
+const EMPTY_FALLBACK_ROLES: EduverseRole[] = [];
 
 /**
  * Role inheritance map. Higher-tier roles automatically inherit the
@@ -146,7 +147,7 @@ export function resolvePermissions(inputRoles: EduverseRole[]): PermissionBundle
  * React hook — pulls the active user's roles from `user_roles`
  * (scoped to the current tenant) and returns the resolved bundle.
  */
-export function usePermissions(schoolId: string | null, fallbackRoles: EduverseRole[] = []): PermissionBundle {
+export function usePermissions(schoolId: string | null, fallbackRoles: EduverseRole[] = EMPTY_FALLBACK_ROLES): PermissionBundle {
   const { user } = useSession();
   const { roles, loading } = useUserRole(schoolId, user?.id ?? null);
 
