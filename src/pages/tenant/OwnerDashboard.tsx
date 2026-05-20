@@ -22,6 +22,24 @@ import { OwnerAdvisorModule } from "@/pages/tenant/owner-modules/OwnerAdvisorMod
 import { OwnerAIModule } from "@/pages/tenant/owner-modules/OwnerAIModule";
 import { MessagesModule } from "@/pages/tenant/modules/MessagesModule";
 import { RouteGuard } from "@/components/tenant/RouteGuard";
+import { UsersModule } from "@/pages/tenant/modules/UsersModule";
+import { CrmModule } from "@/pages/tenant/modules/CrmModule";
+import { AcademicModule } from "@/pages/tenant/modules/AcademicModule";
+import { AttendanceModule } from "@/pages/tenant/modules/AttendanceModule";
+import { ReportsModule } from "@/pages/tenant/modules/ReportsModule";
+import { FinanceModule } from "@/pages/tenant/modules/FinanceModule";
+import { TimetableBuilderModule } from "@/pages/tenant/modules/TimetableBuilderModule";
+import { HrLeavesModule } from "@/pages/tenant/hr-modules/HrLeavesModule";
+import NoticesModule from "@/pages/tenant/modules/NoticesModule";
+import HolidaysModule from "@/pages/tenant/modules/HolidaysModule";
+import DiaryModule from "@/pages/tenant/modules/DiaryModule";
+import ExamsModule from "@/pages/tenant/modules/ExamsModule";
+import ReportCardModule from "@/pages/tenant/modules/ReportCardModule";
+import PrincipalComplaintsModule from "@/pages/tenant/modules/PrincipalComplaintsModule";
+import PrincipalParentNotesModule from "@/pages/tenant/modules/PrincipalParentNotesModule";
+import FeesAdvancedModule from "@/pages/tenant/modules/FeesAdvancedModule";
+import FeeVouchersModule from "@/pages/tenant/modules/FeeVouchersModule";
+import { AICounselorMode } from "@/components/ai/AICounselorMode";
 
 // Cache key for owner auth
 const OWNER_AUTHZ_CACHE = "eduverse_owner_authz_cache_strict_v2";
