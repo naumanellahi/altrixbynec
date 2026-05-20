@@ -23,6 +23,7 @@ import StudentDashboard from "./pages/tenant/StudentDashboard";
 import ParentDashboard from "./pages/tenant/ParentDashboard";
 import TenantBootstrap from "./pages/tenant/TenantBootstrap";
 import OwnerDashboard from "./pages/tenant/OwnerDashboard";
+import UnifiedHub from "./pages/tenant/UnifiedHub";
 import ResetPassword from "./pages/ResetPassword";
 import { PoweredByFooter } from "./components/global/PoweredByFooter";
 
@@ -100,6 +101,7 @@ export default function App() {
             <Route path="/platform/schools" element={<Navigate to="/super_admin/schools" replace />} />
 
             <Route path="/:schoolSlug/auth" element={<TenantAuth />} />
+            <Route path="/:schoolSlug/hub" element={<UnifiedHub />} />
             <Route path="/:schoolSlug/bootstrap" element={<TenantBootstrap />} />
             <Route path="/:schoolSlug/teacher/*" element={<TeacherDashboard />} />
             <Route path="/:schoolSlug/hr/*" element={<HrDashboard />} />
