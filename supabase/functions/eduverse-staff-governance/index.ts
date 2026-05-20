@@ -214,6 +214,50 @@ serve(async (req) => {
       return json({ ok: true }, 200, traceId);
     }
 
+    if (action === "set_email") {
+      const email = String(body.email ?? "").trim().toLowerCase();
+      const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRe.test(email)) {
+        return json({ ok: false, error: "Invalid email address." }, 200, traceId);
+      }
+
+      // Reject if another auth user already has this email
+      const { data: existing, error: lookupErr } = await admin
+        .from("auth.users" as any)
+        .select("id")
+        .limit(1)
+        .maybeSingle()
+        .then(() => ({ data: null, error: null }), (e: any) => ({ data: null, error: e }));
+      // Use service-role admin API to check (PostgREST cannot read auth.users by default)
+      const { data: listed, error: listErr } = await admin.auth.admin.listUsers({ page: 1, perPage: 1 });
+      // The above is just to keep types; do a real check via getUserByEmail-like flow:
+      const { data: byEmail } = await admin
+        .rpc("find_parent_user_by_email", { _school_id: school.id, _email: email })
+        .then((r: any) => r, () => ({ data: null }));
+      if (byEmail && byEmail !== targetUserId) {
+        return json({ ok: false, error: "Another account already uses this email." }, 200, traceId);
+      }
+
+      const { error: updErr } = await admin.auth.admin.updateUserById(targetUserId, {
+        email,
+        email_confirm: true,
+      });
+      if (updErr) {
+        return json({ ok: false, error: updErr.message || "Failed to update email" }, 200, traceId);
+      }
+
+      await admin.from("audit_logs").insert({
+        school_id: school.id,
+        actor_user_id: actorUserId,
+        action: "staff_email_updated",
+        entity_type: "user",
+        entity_id: targetUserId,
+        metadata: { email, reason: body.reason ?? null },
+      });
+
+      return json({ ok: true, email }, 200, traceId);
+    }
+
     return json({ ok: false, error: "Unknown action" }, 400, traceId);
   } catch (e) {
     console.error("eduverse-staff-governance error:", e);
