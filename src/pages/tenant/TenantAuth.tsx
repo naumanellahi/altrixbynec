@@ -7,6 +7,7 @@ import { Building2, KeyRound, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { useSchoolPermissions } from "@/hooks/useSchoolPermissions";
+import { MASTER_SUPER_ADMIN_EMAIL } from "@/hooks/usePlatformSuperAdmin";
 import { type EduverseRole } from "@/lib/eduverse-roles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
