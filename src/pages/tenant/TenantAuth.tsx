@@ -7,6 +7,7 @@ import { Building2, KeyRound, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { useSchoolPermissions } from "@/hooks/useSchoolPermissions";
+import { MASTER_SUPER_ADMIN_EMAIL } from "@/hooks/usePlatformSuperAdmin";
 import { type EduverseRole } from "@/lib/eduverse-roles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,15 +88,20 @@ const TenantAuth = () => {
     if (tenant.status !== "ready") return;
     const schoolId = tenant.schoolId;
 
-    // Platform super admins go straight to platform dashboard
-    const { data: psa } = await supabase
-      .from("platform_super_admins")
-      .select("user_id")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (psa?.user_id) {
-      navigate("/super_admin");
-      return;
+    // Master Super Admin: only the single hard-coded email may enter
+    // the platform territory, regardless of platform_super_admins rows.
+    const { data: authUser } = await supabase.auth.getUser();
+    const signedInEmail = authUser.user?.email?.toLowerCase() ?? null;
+    if (signedInEmail === MASTER_SUPER_ADMIN_EMAIL) {
+      const { data: psa } = await supabase
+        .from("platform_super_admins")
+        .select("user_id")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (psa?.user_id) {
+        navigate("/super_admin");
+        return;
+      }
     }
 
     // Verify school membership

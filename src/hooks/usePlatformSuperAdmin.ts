@@ -9,8 +9,17 @@ type PlatformAuthz = {
 };
 
 /**
+ * The Master Super Admin territory is reserved for a single hard-coded
+ * platform owner. Even if extra rows exist in `platform_super_admins`,
+ * only this email is allowed past the gate.
+ */
+export const MASTER_SUPER_ADMIN_EMAIL = "naumancheema643@gmail.com";
+
+/**
  * Server-verified platform super admin check.
- * Uses RLS on platform_super_admins (user can only see their own row).
+ * Requires BOTH:
+ *   1. A row in `platform_super_admins` (RLS-scoped to the caller)
+ *   2. The session email matches the hard-coded master email
  */
 export function usePlatformSuperAdmin(userId: string | null | undefined): PlatformAuthz {
   const [state, setState] = useState<PlatformAuthz>({ loading: true, allowed: false, message: null });
@@ -25,6 +34,20 @@ export function usePlatformSuperAdmin(userId: string | null | undefined): Platfo
     setState({ loading: true, allowed: false, message: null });
 
     (async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const email = userData.user?.email?.toLowerCase() ?? null;
+
+      if (email !== MASTER_SUPER_ADMIN_EMAIL) {
+        if (!cancelled) {
+          setState({
+            loading: false,
+            allowed: false,
+            message: "Access denied. Master Super Admin only.",
+          });
+        }
+        return;
+      }
+
       const { data: psa, error } = await supabase
         .from("platform_super_admins")
         .select("user_id")
@@ -37,7 +60,11 @@ export function usePlatformSuperAdmin(userId: string | null | undefined): Platfo
         return;
       }
 
-      setState({ loading: false, allowed: !!psa?.user_id, message: psa?.user_id ? null : "Access denied. Platform Super Admin only." });
+      setState({
+        loading: false,
+        allowed: !!psa?.user_id,
+        message: psa?.user_id ? null : "Access denied. Master Super Admin only.",
+      });
     })();
 
     return () => {
@@ -47,3 +74,4 @@ export function usePlatformSuperAdmin(userId: string | null | undefined): Platfo
 
   return state;
 }
+

@@ -6,6 +6,7 @@ import { KeyRound, Mail, ShieldCheck } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
+import { MASTER_SUPER_ADMIN_EMAIL } from "@/hooks/usePlatformSuperAdmin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,6 +69,11 @@ export default function PlatformAuth() {
         password,
       });
       if (error) return setMessage(error.message);
+      // Hard gate: only the master email may enter the platform territory.
+      if (parsedEmail.data.toLowerCase() !== MASTER_SUPER_ADMIN_EMAIL) {
+        await supabase.auth.signOut();
+        return setMessage("Access denied. Master Super Admin only.");
+      }
       rememberRecentEmail(parsedEmail.data);
       setRecentEmails(getRecentEmails());
       navigate("/super_admin");
