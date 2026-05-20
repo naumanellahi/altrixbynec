@@ -56,8 +56,18 @@ export const NAV_CATALOG: NavItem[] = [
     roles: ["super_admin","school_owner","principal","vice_principal","school_admin"] },
 
   // Finance
+  { key: "fee-plans", label: "Fee Plans", icon: DollarSign, group: "finance", path: "fees",
+    roles: ["super_admin","school_owner","principal","vice_principal","accountant"] },
   { key: "fees", label: "Fees", icon: Coins, group: "finance", path: "fees-pro",
     roles: ["super_admin","school_owner","principal","vice_principal","school_admin","accountant"] },
+  { key: "invoices", label: "Invoices", icon: FileText, group: "finance", path: "invoices",
+    roles: ["super_admin","school_owner","principal","vice_principal","accountant"] },
+  { key: "payments", label: "Payments", icon: CreditCard, group: "finance", path: "payments",
+    roles: ["super_admin","school_owner","principal","vice_principal","accountant"] },
+  { key: "expenses", label: "Expenses", icon: Receipt, group: "finance", path: "expenses",
+    roles: ["super_admin","school_owner","principal","vice_principal","accountant"] },
+  { key: "payroll", label: "Payroll", icon: Wallet, group: "finance", path: "payroll",
+    roles: ["super_admin","school_owner","principal","vice_principal","accountant"] },
   { key: "fee-vouchers", label: "Fee Vouchers", icon: Receipt, group: "finance", path: "fee-vouchers",
     roles: ["super_admin","school_owner","principal","vice_principal","school_admin","accountant","hr_manager"] },
   { key: "finance", label: "Finance", icon: Wallet, group: "finance", path: "finance",
