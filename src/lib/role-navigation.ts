@@ -142,27 +142,15 @@ export function pickPrimaryRole(roles: EduverseRole[]): EduverseRole | null {
 }
 
 /**
- * Role inheritance mirror of `permissions.ts` so the sidebar built by
- * `buildMergedNav` exposes every module a higher-tier role implicitly
- * owns (e.g. school_owner sees everything; principal sees HR/finance/
- * academic_coordinator/counselor modules).
+ * Role inheritance mirror of `permissions.ts`. Only super_admin
+ * inherits every other role's modules; all other roles see only the
+ * tabs explicitly listed for their own role in NAV_CATALOG.
  */
 const NAV_INHERITANCE: Partial<Record<EduverseRole, EduverseRole[]>> = {
   super_admin: [
     "school_owner","principal","vice_principal","school_admin","hr_manager",
     "accountant","academic_coordinator","teacher","marketing_staff",
     "counselor","student","parent",
-  ],
-  school_owner: [
-    "principal","vice_principal","school_admin","hr_manager","accountant",
-    "academic_coordinator","teacher","marketing_staff","counselor","student","parent",
-  ],
-  principal: [
-    "vice_principal","school_admin","hr_manager","accountant",
-    "academic_coordinator","counselor",
-  ],
-  vice_principal: [
-    "school_admin","hr_manager","accountant","academic_coordinator","counselor",
   ],
 };
 
