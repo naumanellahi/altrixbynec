@@ -237,7 +237,7 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
                     key={entry.id}
                     className={`flex items-center justify-between rounded-lg border p-3 transition-colors ${
                       isCurrent ? "border-primary bg-primary/5" : ""
-                    } ${log ? "bg-muted/30" : ""}`}
+                    } ${log ? "border-green-500/40 bg-green-500/10 dark:bg-green-500/15" : ""}`}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
