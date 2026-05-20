@@ -6233,11 +6233,13 @@ export type Database = {
         Returns: {
           attendance_rate: number
           avg_grade_percentage: number
+          class_name: string
           class_section_id: string
           first_name: string
           last_name: string
           recent_grade_avg: number
           risk_reason: string
+          section_name: string
           student_id: string
         }[]
       }
