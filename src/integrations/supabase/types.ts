@@ -6249,6 +6249,15 @@ export type Database = {
           slug: string
         }[]
       }
+      get_school_staff_directory: {
+        Args: { _school_id: string }
+        Returns: {
+          display_name: string
+          email: string
+          school_id: string
+          user_id: string
+        }[]
+      }
       get_school_user_directory: {
         Args: { _school_id: string }
         Returns: {

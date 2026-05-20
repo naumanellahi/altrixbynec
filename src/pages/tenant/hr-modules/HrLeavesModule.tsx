@@ -40,7 +40,7 @@ export function HrLeavesModule() {
   const { data: staffDirectory = [] } = useQuery({
     queryKey: ["school_staff_directory", schoolId],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_school_user_directory", { _school_id: schoolId! });
+      const { data, error } = await supabase.rpc("get_school_staff_directory", { _school_id: schoolId! });
       if (error) throw error;
       return data || [];
     },
