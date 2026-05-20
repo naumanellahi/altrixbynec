@@ -136,7 +136,10 @@ export function HrLeavesModule() {
               <div key={req.id} className="rounded-2xl bg-accent p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">{req.user_id}</p>
+                    <p className="font-medium">{userNameById.get(req.user_id) || "Unknown user"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {leaveTypeNameById.get(req.leave_type_id) || "Leave"}
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       {req.start_date} → {req.end_date} ({req.days_count} days)
                     </p>
