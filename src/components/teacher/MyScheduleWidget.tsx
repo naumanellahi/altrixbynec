@@ -243,12 +243,22 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium truncate">{entry.subjectName}</p>
                         {log && (
-                          <span
-                            className="flex items-center gap-0.5"
-                            title={`${log.status}${log.topicsCovered ? `: ${log.topicsCovered}` : ""}`}
-                          >
-                            {getStatusIcon(log.status)}
-                          </span>
+                          <>
+                            <span
+                              className="flex items-center gap-0.5"
+                              title={`${log.status}${log.topicsCovered ? `: ${log.topicsCovered}` : ""}`}
+                            >
+                              {getStatusIcon(log.status)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setInfoLog({ entry, log })}
+                              className="text-muted-foreground hover:text-primary transition-colors"
+                              title="View details"
+                            >
+                              <Info className="h-3.5 w-3.5" />
+                            </button>
+                          </>
                         )}
                         {isCurrent && (
                           <Badge variant="default" className="text-xs px-1.5 py-0">
