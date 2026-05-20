@@ -19,6 +19,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { StaffCombobox } from "@/components/ui/staff-combobox";
 import {
   Dialog,
   DialogContent,
@@ -698,18 +699,12 @@ export function AccountantPayrollModule() {
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
                     <Label>Staff Member</Label>
-                    <Select value={formUserId} onValueChange={setFormUserId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select staff" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {staffMembers.map((staff) => (
-                          <SelectItem key={staff.id} value={staff.id}>
-                            {staff.full_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <StaffCombobox
+                      staff={staffMembers}
+                      value={formUserId}
+                      onChange={setFormUserId}
+                      placeholder="Select staff"
+                    />
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
