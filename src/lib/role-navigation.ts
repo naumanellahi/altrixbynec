@@ -123,19 +123,19 @@ export function pickPrimaryRole(roles: EduverseRole[]): EduverseRole | null {
 const NAV_INHERITANCE: Partial<Record<EduverseRole, EduverseRole[]>> = {
   super_admin: [
     "school_owner","principal","vice_principal","school_admin","hr_manager",
-    "accountant","academic_coordinator","counselor","teacher","marketing_staff",
+    "accountant","academic_coordinator","teacher","marketing_staff",
     "student","parent",
   ],
   school_owner: [
     "principal","vice_principal","school_admin","hr_manager","accountant",
-    "academic_coordinator","counselor","teacher","marketing_staff",
+    "academic_coordinator","teacher","marketing_staff",
   ],
   principal: [
     "vice_principal","school_admin","hr_manager","accountant",
-    "academic_coordinator","counselor",
+    "academic_coordinator",
   ],
   vice_principal: [
-    "school_admin","hr_manager","accountant","academic_coordinator","counselor",
+    "school_admin","hr_manager","accountant","academic_coordinator",
   ],
 };
 
