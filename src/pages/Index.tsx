@@ -129,7 +129,7 @@ const Index = () => {
       .maybeSingle();
 
     if (!membership) {
-      setMessage("Your account is not a member of this school.");
+      showError("Your account is not a member of this school.");
       await supabase.auth.signOut();
       return;
     }
@@ -144,7 +144,7 @@ const Index = () => {
     const destRole = resolveDestinationRole(roles);
 
     if (!destRole) {
-      setMessage("No role assigned to your account for this school. Contact an administrator.");
+      showError("No role assigned to your account for this school. Contact an administrator.");
       await supabase.auth.signOut();
       return;
     }
@@ -154,15 +154,18 @@ const Index = () => {
 
   const doLogin = async () => {
     setMessage(null);
-    if (!safeSlug) return setMessage("Please enter your school code.");
-    if (tenant.status === "loading") return setMessage("Verifying school code…");
-    if (tenant.status === "error") return setMessage(tenant.error || "School not found.");
-    if (tenant.status !== "ready") return setMessage("School not found.");
+    if (!safeSlug) return showError("Please enter your school code.");
+    if (tenant.status === "loading") return showInfo("Verifying school code…");
+    if (tenant.status === "error") return showError(tenant.error || "School not found.");
+    if (tenant.status !== "ready") return showError("School not found.");
 
     const parsedEmail = emailSchema.safeParse(email.trim());
     const parsedPassword = passwordSchema.safeParse(password);
-    if (!parsedEmail.success) return setMessage("Please enter a valid email.");
-    if (!parsedPassword.success) return setMessage("Password must be at least 8 characters.");
+    if (!parsedEmail.success) {
+      focusEmail();
+      return showError("Please enter a valid email.");
+    }
+    if (!parsedPassword.success) return showError("Password must be at least 8 characters.");
 
     setBusy(true);
     try {
@@ -171,7 +174,7 @@ const Index = () => {
         password,
       });
       if (error) {
-        setMessage(error.message);
+        showError(error.message);
         return;
       }
       rememberRecentEmail(parsedEmail.data);
@@ -185,17 +188,23 @@ const Index = () => {
   const doForgotPassword = async () => {
     setMessage(null);
     const parsedEmail = emailSchema.safeParse(email.trim());
-    if (!parsedEmail.success) return setMessage("Enter your email above, then try again.");
+    if (!parsedEmail.success) {
+      focusEmail();
+      return showError("Enter your email above, then try again.");
+    }
     const cooldown = getResetCooldownRemaining(parsedEmail.data);
     if (cooldown > 0) {
       setResetCooldown(cooldown);
-      return setMessage(`Please wait ${cooldown}s before requesting another reset link.`);
+      return showInfo(`Please wait ${cooldown}s before requesting another reset link.`);
     }
     setBusy(true);
     try {
       const returnTo = `/${safeSlug}/auth`;
       const result = await requestPasswordResetLink(parsedEmail.data, returnTo);
-      if (!result.ok) return setMessage(result.error || "Unable to send reset link. Please try again shortly.");
+      if (!result.ok) {
+        focusEmail();
+        return showError(result.error || "Unable to send reset link. Please try again shortly.");
+      }
       const seconds = result.cooldownSeconds || 60;
       rememberResetEmail(parsedEmail.data);
       startResetCooldown(parsedEmail.data, seconds);
@@ -204,7 +213,7 @@ const Index = () => {
         typeof result.remainingRequests === "number"
           ? ` You have ${result.remainingRequests} reset request${result.remainingRequests === 1 ? "" : "s"} left today.`
           : "";
-      setMessage(`We sent a password reset link to ${parsedEmail.data}.${remaining}`);
+      showSuccess(`We sent a password reset link to ${parsedEmail.data}. Check your inbox and spam folder.${remaining}`);
     } finally {
       setBusy(false);
     }
