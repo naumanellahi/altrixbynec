@@ -223,8 +223,20 @@ export default function OwnerDashboard() {
         <Routes>
           <Route index element={<OwnerOverviewModule schoolId={schoolId} />} />
           <Route path="academics" element={<OwnerAcademicsModule schoolId={schoolId} />} />
+          <Route path="academic" element={<AcademicModule />} />
+          <Route path="timetable" element={<TimetableBuilderModule />} />
+          <Route path="attendance" element={<AttendanceModule />} />
+          <Route path="exams" element={<ExamsModule schoolId={schoolId} canManage />} />
+          <Route path="report-cards" element={<ReportCardModule schoolId={schoolId} canManage />} />
+          <Route path="diary" element={<DiaryModule schoolId={schoolId} canManage />} />
           <Route path="admissions" element={<OwnerAdmissionsModule schoolId={schoolId} />} />
+          <Route path="users" element={<UsersModule />} />
+          <Route path="leaves" element={<HrLeavesModule />} />
+          <Route path="crm" element={<CrmModule />} />
+          <Route path="parent-notes" element={<PrincipalParentNotesModule />} />
           <Route path="finance" element={<OwnerFinanceModule schoolId={schoolId} />} />
+          <Route path="fees-pro" element={<FeesAdvancedModule />} />
+          <Route path="fee-vouchers" element={<FeeVouchersModule />} />
           <Route path="hr" element={<OwnerHrModule schoolId={schoolId} />} />
           <Route path="wellbeing" element={<OwnerWellbeingModule schoolId={schoolId} />} />
           <Route path="compliance" element={<OwnerComplianceModule schoolId={schoolId} />} />
@@ -235,6 +247,11 @@ export default function OwnerDashboard() {
           <Route path="advisor" element={<OwnerAdvisorModule schoolId={schoolId} />} />
           <Route path="ai" element={<OwnerAIModule schoolId={schoolId} />} />
           <Route path="messages" element={<MessagesModule schoolId={schoolId} />} />
+          <Route path="notices" element={<NoticesModule schoolId={schoolId} canManage />} />
+          <Route path="holidays" element={<HolidaysModule schoolId={schoolId} canManage />} />
+          <Route path="reports" element={<ReportsModule />} />
+          <Route path="complaints" element={<PrincipalComplaintsModule />} />
+          <Route path="counseling" element={<AICounselorMode schoolId={schoolId} />} />
         </Routes>
         </RouteGuard>
       )}
