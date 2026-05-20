@@ -115,12 +115,42 @@ export function pickPrimaryRole(roles: EduverseRole[]): EduverseRole | null {
 }
 
 /**
- * Merge nav items across all of the user's roles.
- * Highest-priority role wins for the routing prefix; the union of items
- * (deduped by key) is shown — so a Principal+HR sees Staff, Finance, HR,
- * Academics, etc. in one merged sidebar without duplicates.
+ * Role inheritance mirror of `permissions.ts` so the sidebar built by
+ * `buildMergedNav` exposes every module a higher-tier role implicitly
+ * owns (e.g. school_owner sees everything; principal sees HR/finance/
+ * academic_coordinator/counselor modules).
  */
-export function buildMergedNav(roles: EduverseRole[]) {
+const NAV_INHERITANCE: Partial<Record<EduverseRole, EduverseRole[]>> = {
+  super_admin: [
+    "school_owner","principal","vice_principal","school_admin","hr_manager",
+    "accountant","academic_coordinator","counselor","teacher","marketing_staff",
+    "student","parent",
+  ],
+  school_owner: [
+    "principal","vice_principal","school_admin","hr_manager","accountant",
+    "academic_coordinator","counselor","teacher","marketing_staff",
+  ],
+  principal: [
+    "vice_principal","school_admin","hr_manager","accountant",
+    "academic_coordinator","counselor",
+  ],
+  vice_principal: [
+    "school_admin","hr_manager","accountant","academic_coordinator","counselor",
+  ],
+};
+
+function expandNavRoles(roles: EduverseRole[]): EduverseRole[] {
+  const out = new Set<EduverseRole>(roles);
+  for (const r of roles) for (const i of NAV_INHERITANCE[r] ?? []) out.add(i);
+  return Array.from(out);
+}
+
+/**
+ * Merge nav items across all of the user's roles, applying role
+ * inheritance so owners/principals automatically see staff modules.
+ */
+export function buildMergedNav(inputRoles: EduverseRole[]) {
+  const roles = expandNavRoles(inputRoles);
   const set = new Set<string>();
   const items: NavItem[] = [];
   for (const item of NAV_CATALOG) {
@@ -129,7 +159,6 @@ export function buildMergedNav(roles: EduverseRole[]) {
       items.push(item);
     }
   }
-  // Group → list
   const grouped: Record<NavGroup, NavItem[]> = {
     overview: [], academics: [], people: [], finance: [],
     operations: [], communication: [], admin: [],
