@@ -243,33 +243,15 @@ export function PrincipalHome() {
     <Tabs defaultValue="overview" className="space-y-4 lg:space-y-6">
       <div className="-mx-1 overflow-x-auto no-scrollbar">
         <TabsList className="inline-flex w-max min-w-full gap-1 p-1">
-          <TabsTrigger value="overview" className="px-3 py-2 text-xs sm:px-4 sm:text-sm whitespace-nowrap">
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="teachers" className="px-3 py-2 text-xs sm:px-4 sm:text-sm whitespace-nowrap">
-            Teachers
-          </TabsTrigger>
-          <TabsTrigger value="students" className="px-3 py-2 text-xs sm:px-4 sm:text-sm whitespace-nowrap">
-            Students
-          </TabsTrigger>
-          <TabsTrigger value="leaves" className="px-3 py-2 text-xs sm:px-4 sm:text-sm whitespace-nowrap">
-            Leaves
-          </TabsTrigger>
-          <TabsTrigger value="parents" className="px-3 py-2 text-xs sm:px-4 sm:text-sm whitespace-nowrap">
-            Parents
-          </TabsTrigger>
-          <TabsTrigger value="complaints" className="px-3 py-2 text-xs sm:px-4 sm:text-sm whitespace-nowrap">
-            Complaints
-          </TabsTrigger>
-          <TabsTrigger value="parent-notes" className="px-3 py-2 text-xs sm:px-4 sm:text-sm whitespace-nowrap">
-            Parent Notes
-          </TabsTrigger>
-          <TabsTrigger value="fees" className="px-3 py-2 text-xs sm:px-4 sm:text-sm whitespace-nowrap">
-            Fees
-          </TabsTrigger>
-          <TabsTrigger value="admissions" className="px-3 py-2 text-xs sm:px-4 sm:text-sm whitespace-nowrap">
-            Admissions
-          </TabsTrigger>
+          {tabs.map((t) => (
+            <TabsTrigger
+              key={t.value}
+              value={t.value}
+              className="px-3 py-2 text-xs sm:px-4 sm:text-sm whitespace-nowrap"
+            >
+              {t.label}
+            </TabsTrigger>
+          ))}
         </TabsList>
       </div>
 
@@ -676,42 +658,58 @@ export function PrincipalHome() {
       </TabsContent>
 
       {/* Teachers Tab */}
-      <TabsContent value="teachers">
-        {schoolId && <PrincipalTeachersTab schoolId={schoolId} />}
-      </TabsContent>
+      {tabValues.has("teachers") && (
+        <TabsContent value="teachers">
+          {schoolId && <PrincipalTeachersTab schoolId={schoolId} />}
+        </TabsContent>
+      )}
 
       {/* Students Tab */}
-      <TabsContent value="students">
-        {schoolId && <PrincipalStudentsTab schoolId={schoolId} />}
-      </TabsContent>
+      {tabValues.has("students") && (
+        <TabsContent value="students">
+          {schoolId && <PrincipalStudentsTab schoolId={schoolId} />}
+        </TabsContent>
+      )}
 
       {/* Leave Requests Tab */}
-      <TabsContent value="leaves">
-        <HrLeavesModule />
-      </TabsContent>
+      {tabValues.has("leaves") && (
+        <TabsContent value="leaves">
+          <HrLeavesModule />
+        </TabsContent>
+      )}
 
       {/* Parent-Child Linking Tab */}
-      <TabsContent value="parents">
-        {schoolId && <ParentChildLinkingTab schoolId={schoolId} />}
-      </TabsContent>
+      {tabValues.has("parents") && (
+        <TabsContent value="parents">
+          {schoolId && <ParentChildLinkingTab schoolId={schoolId} />}
+        </TabsContent>
+      )}
 
       {/* Complaints Tab */}
-      <TabsContent value="complaints">
-        <PrincipalComplaintsModule />
-      </TabsContent>
+      {tabValues.has("complaints") && (
+        <TabsContent value="complaints">
+          <PrincipalComplaintsModule />
+        </TabsContent>
+      )}
 
       {/* Parent Notes Tab */}
-      <TabsContent value="parent-notes">
-        <PrincipalParentNotesModule />
-      </TabsContent>
+      {tabValues.has("parent-notes") && (
+        <TabsContent value="parent-notes">
+          <PrincipalParentNotesModule />
+        </TabsContent>
+      )}
 
-      <TabsContent value="fees">
-        <FeesAdvancedModule />
-      </TabsContent>
+      {tabValues.has("fees") && (
+        <TabsContent value="fees">
+          <FeesAdvancedModule />
+        </TabsContent>
+      )}
 
-      <TabsContent value="admissions">
-        <AdmissionsModule />
-      </TabsContent>
+      {tabValues.has("admissions") && (
+        <TabsContent value="admissions">
+          <AdmissionsModule />
+        </TabsContent>
+      )}
     </Tabs>
   );
 }
