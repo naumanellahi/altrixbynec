@@ -246,9 +246,23 @@ export default function OwnerDashboard() {
           <Route path="admissions" element={<OwnerAdmissionsModule schoolId={schoolId} />} />
           <Route path="users" element={<UsersModule />} />
           <Route path="leaves" element={<HrLeavesModule />} />
+          <Route path="salaries" element={<HrSalariesModule />} />
+          <Route path="contracts" element={<HrContractsModule />} />
+          <Route path="reviews" element={<HrReviewsModule />} />
+          <Route path="documents" element={<HrDocumentsModule />} />
           <Route path="crm" element={<CrmModule />} />
+          <Route path="leads" element={<MarketingLeadsModule />} />
+          <Route path="follow-ups" element={<MarketingFollowUpsModule />} />
+          <Route path="calls" element={<MarketingCallsModule />} />
+          <Route path="sources" element={<MarketingSourcesModule />} />
+          <Route path="campaigns" element={<MarketingCampaignsModule />} />
           <Route path="parent-notes" element={<PrincipalParentNotesModule />} />
           <Route path="finance" element={<OwnerFinanceModule schoolId={schoolId} />} />
+          <Route path="fees" element={<AccountantFeesModule />} />
+          <Route path="invoices" element={<AccountantInvoicesModule />} />
+          <Route path="payments" element={<AccountantPaymentsModule />} />
+          <Route path="expenses" element={<AccountantExpensesModule />} />
+          <Route path="payroll" element={<AccountantPayrollModule />} />
           <Route path="fees-pro" element={<FeesAdvancedModule />} />
           <Route path="fee-vouchers" element={<FeeVouchersModule />} />
           <Route path="hr" element={<OwnerHrModule schoolId={schoolId} />} />
