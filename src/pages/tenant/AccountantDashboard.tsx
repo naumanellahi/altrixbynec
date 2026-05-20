@@ -16,6 +16,7 @@ import { AccountantMessagesModule } from "@/pages/tenant/accountant-modules/Acco
 import { TimetableBuilderModule } from "@/pages/tenant/modules/TimetableBuilderModule";
 import FeesAdvancedModule from "@/pages/tenant/modules/FeesAdvancedModule";
 import AdmissionsModule from "@/pages/tenant/modules/AdmissionsModule";
+import { RouteGuard } from "@/components/tenant/RouteGuard";
 
 const AccountantDashboard = () => {
   const { schoolSlug } = useParams();
@@ -72,6 +73,10 @@ const AccountantDashboard = () => {
 
   return (
     <AccountantShell title={`${tenant.school?.name || "EDUVERSE"} • Finance`} subtitle="Accounting & Finance" schoolSlug={tenant.slug}>
+      <RouteGuard extraAllowedPaths={[
+        "fees","invoices","payments","expenses","payroll","reports","messages",
+        "timetable","fees-pro","admissions",
+      ]}>
       <Routes>
         <Route index element={<AccountantHomeModule />} />
         <Route path="fees" element={<AccountantFeesModule />} />
@@ -86,6 +91,7 @@ const AccountantDashboard = () => {
         <Route path="admissions" element={<AdmissionsModule />} />
         <Route path="*" element={<Navigate to={`/${tenant.slug}/accountant`} replace />} />
       </Routes>
+      </RouteGuard>
     </AccountantShell>
   );
 };

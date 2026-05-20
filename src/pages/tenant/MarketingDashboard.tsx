@@ -15,6 +15,7 @@ import { MarketingCampaignsModule } from "@/pages/tenant/marketing-modules/Marke
 import { MarketingReportsModule } from "@/pages/tenant/marketing-modules/MarketingReportsModule";
 import { MarketingMessagesModule } from "@/pages/tenant/marketing-modules/MarketingMessagesModule";
 import { TimetableBuilderModule } from "@/pages/tenant/modules/TimetableBuilderModule";
+import { RouteGuard } from "@/components/tenant/RouteGuard";
 
 const MarketingDashboard = () => {
   const { schoolSlug } = useParams();
@@ -69,6 +70,10 @@ const MarketingDashboard = () => {
 
   return (
     <MarketingShell title={`${tenant.school?.name || "EDUVERSE"} • Marketing`} subtitle="CRM & campaigns" schoolSlug={tenant.slug}>
+      <RouteGuard extraAllowedPaths={[
+        "leads","follow-ups","calls","sources","campaigns","reports",
+        "messages","timetable",
+      ]}>
       <Routes>
         <Route index element={<MarketingHomeModule />} />
         <Route path="leads" element={<MarketingLeadsModule />} />
@@ -81,6 +86,7 @@ const MarketingDashboard = () => {
         <Route path="timetable" element={<TimetableBuilderModule />} />
         <Route path="*" element={<Navigate to={`/${tenant.slug}/marketing`} replace />} />
       </Routes>
+      </RouteGuard>
     </MarketingShell>
   );
 };
