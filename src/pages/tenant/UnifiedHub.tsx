@@ -127,16 +127,20 @@ function HubContent({
             Quick actions
           </p>
           <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-6">
-            {quickActions.map((it) => (
-              <Link
-                key={it!.key}
-                to={it!.path ? `${base}/${it!.path}` : base}
-                className="flex items-center gap-2 rounded-2xl border border-border/50 bg-surface p-3 text-sm font-medium hover:bg-accent transition-colors"
-              >
-                <it!.icon className="h-4 w-4 text-primary" />
-                {it!.label}
-              </Link>
-            ))}
+            {quickActions.map((it) => {
+              const item = it!;
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.key}
+                  to={item.path ? `${base}/${item.path}` : base}
+                  className="flex items-center gap-2 rounded-2xl border border-border/50 bg-surface p-3 text-sm font-medium hover:bg-accent transition-colors"
+                >
+                  <Icon className="h-4 w-4 text-primary" />
+                  {item.label}
+                </Link>
+              );
+            })}
           </div>
         </section>
       )}
