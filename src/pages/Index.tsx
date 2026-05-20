@@ -1,20 +1,88 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
-import { Brain, ShieldCheck, Eye, MessageSquare, ArrowRight } from "lucide-react";
+import { Brain, ShieldCheck, Eye, MessageSquare, ArrowRight, KeyRound, Loader2 } from "lucide-react";
+import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { SpotlightBackdrop } from "@/components/visual/SpotlightBackdrop";
 import { AltrixLogo } from "@/components/AltrixLogo";
+import { supabase } from "@/integrations/supabase/client";
+import { useTenant } from "@/hooks/useTenant";
+import { MASTER_SUPER_ADMIN_EMAIL } from "@/hooks/usePlatformSuperAdmin";
+import { type EduverseRole } from "@/lib/eduverse-roles";
+import {
+  getRecentEmails,
+  getResetCooldownRemaining,
+  rememberRecentEmail,
+  rememberResetEmail,
+  requestPasswordResetLink,
+  startResetCooldown,
+} from "@/lib/password-reset";
+
+const emailSchema = z.string().email();
+const passwordSchema = z.string().min(8);
+
+const ROLE_PRIORITY: EduverseRole[] = [
+  "super_admin",
+  "school_owner",
+  "principal",
+  "vice_principal",
+  "school_admin",
+  "academic_coordinator",
+  "hr_manager",
+  "accountant",
+  "marketing_staff",
+  "counselor",
+  "teacher",
+  "parent",
+  "student",
+];
+
+const roleToPathSegment = (role: EduverseRole) => {
+  if (role === "hr_manager") return "hr";
+  if (role === "marketing_staff") return "marketing";
+  return role;
+};
+
+const resolveDestinationRole = (roles: EduverseRole[]): EduverseRole | null => {
+  for (const r of ROLE_PRIORITY) if (roles.includes(r)) return r;
+  return roles[0] ?? null;
+};
 
 const Index = () => {
-  const [schoolSlug, setSchoolSlug] = useState("beacon");
+  const params = useParams();
   const navigate = useNavigate();
   const reduce = useReducedMotion();
 
-  const safeSlug = useMemo(() => schoolSlug.trim().toLowerCase().replace(/[^a-z0-9-]/g, ""), [schoolSlug]);
+  const [schoolSlug, setSchoolSlug] = useState(params.schoolSlug || "beacon");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [resetCooldown, setResetCooldown] = useState(0);
+  const [recentEmails, setRecentEmails] = useState<string[]>(() => getRecentEmails());
+
+  const safeSlug = useMemo(
+    () => schoolSlug.trim().toLowerCase().replace(/[^a-z0-9-]/g, ""),
+    [schoolSlug],
+  );
+
+  const tenant = useTenant(safeSlug || undefined);
+
+  useEffect(() => {
+    if (!email && recentEmails.length > 0) setEmail(recentEmails[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const tick = () => setResetCooldown(email.trim() ? getResetCooldownRemaining(email) : 0);
+    tick();
+    const timer = window.setInterval(tick, 1000);
+    return () => window.clearInterval(timer);
+  }, [email]);
 
   const features = [
     { icon: Brain, title: "AI Features", desc: "Smart insights for performance and decision-making." },
@@ -22,6 +90,126 @@ const Index = () => {
     { icon: Eye, title: "Transparency", desc: "Clear visibility with real-time data." },
     { icon: MessageSquare, title: "Communication", desc: "Unified messaging across all roles." },
   ];
+
+  const routeUserAfterLogin = async (userId: string) => {
+    if (tenant.status !== "ready") {
+      setMessage("School not found. Please check the school code.");
+      await supabase.auth.signOut();
+      return;
+    }
+    const schoolId = tenant.schoolId;
+
+    const { data: authUser } = await supabase.auth.getUser();
+    const signedInEmail = authUser.user?.email?.toLowerCase() ?? null;
+    if (signedInEmail === MASTER_SUPER_ADMIN_EMAIL) {
+      const { data: psa } = await supabase
+        .from("platform_super_admins")
+        .select("user_id")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (psa?.user_id) {
+        navigate("/super_admin");
+        return;
+      }
+    }
+
+    const { data: membership } = await supabase
+      .from("school_memberships")
+      .select("id")
+      .eq("school_id", schoolId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (!membership) {
+      setMessage("Your account is not a member of this school.");
+      await supabase.auth.signOut();
+      return;
+    }
+
+    const { data: rolesData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("school_id", schoolId)
+      .eq("user_id", userId);
+
+    const roles = (rolesData || []).map((r) => r.role as EduverseRole);
+    const destRole = resolveDestinationRole(roles);
+
+    if (!destRole) {
+      setMessage("No role assigned to your account for this school. Contact an administrator.");
+      await supabase.auth.signOut();
+      return;
+    }
+
+    navigate(`/${tenant.slug}/${roleToPathSegment(destRole)}`);
+  };
+
+  const doLogin = async () => {
+    setMessage(null);
+    if (!safeSlug) return setMessage("Please enter your school code.");
+    if (tenant.status === "loading") return setMessage("Verifying school code…");
+    if (tenant.status === "error") return setMessage(tenant.error || "School not found.");
+    if (tenant.status !== "ready") return setMessage("School not found.");
+
+    const parsedEmail = emailSchema.safeParse(email.trim());
+    const parsedPassword = passwordSchema.safeParse(password);
+    if (!parsedEmail.success) return setMessage("Please enter a valid email.");
+    if (!parsedPassword.success) return setMessage("Password must be at least 8 characters.");
+
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: parsedEmail.data,
+        password,
+      });
+      if (error) {
+        setMessage(error.message);
+        return;
+      }
+      rememberRecentEmail(parsedEmail.data);
+      setRecentEmails(getRecentEmails());
+      if (data.user) await routeUserAfterLogin(data.user.id);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const doForgotPassword = async () => {
+    setMessage(null);
+    const parsedEmail = emailSchema.safeParse(email.trim());
+    if (!parsedEmail.success) return setMessage("Enter your email above, then try again.");
+    const cooldown = getResetCooldownRemaining(parsedEmail.data);
+    if (cooldown > 0) {
+      setResetCooldown(cooldown);
+      return setMessage(`Please wait ${cooldown}s before requesting another reset link.`);
+    }
+    setBusy(true);
+    try {
+      const returnTo = `/${safeSlug}/auth`;
+      const result = await requestPasswordResetLink(parsedEmail.data, returnTo);
+      if (!result.ok) return setMessage(result.error || "Unable to send reset link. Please try again shortly.");
+      const seconds = result.cooldownSeconds || 60;
+      rememberResetEmail(parsedEmail.data);
+      startResetCooldown(parsedEmail.data, seconds);
+      setResetCooldown(seconds);
+      const remaining =
+        typeof result.remainingRequests === "number"
+          ? ` You have ${result.remainingRequests} reset request${result.remainingRequests === 1 ? "" : "s"} left today.`
+          : "";
+      setMessage(`We sent a password reset link to ${parsedEmail.data}.${remaining}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const tenantBadge =
+    tenant.status === "ready"
+      ? { label: tenant.school.name, tone: "ok" as const }
+      : tenant.status === "error"
+        ? { label: "School not found", tone: "err" as const }
+        : safeSlug
+          ? { label: "Checking…", tone: "neutral" as const }
+          : null;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-hero-grid">
@@ -40,51 +228,156 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-6xl px-6 pb-16 pt-8">
-        <motion.section
-          initial={reduce ? false : { opacity: 0, y: 14 }}
-          animate={reduce ? undefined : { opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, ease: [0.2, 0.8, 0.2, 1] }}
-          className="mx-auto max-w-3xl space-y-5 text-center"
-        >
-          <AltrixLogo size="lg" className="text-5xl md:text-6xl" />
-          <h1 className={cn("font-display text-balance text-3xl font-semibold tracking-tight md:text-4xl")}>
-            The AI-Powered Operating System for Modern Schools
-          </h1>
-          <p className="mx-auto max-w-2xl text-balance text-base text-muted-foreground md:text-lg">
-            One unified platform for academics, finance, HR, communication, and AI-driven insights — built for 12 distinct roles.
-          </p>
-
-          <div className="mx-auto mt-6 max-w-xl rounded-2xl bg-surface p-4 shadow-elevated">
-            <p className="mb-3 text-sm font-medium text-foreground">Enter your School Code</p>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Input value={schoolSlug} onChange={(e) => setSchoolSlug(e.target.value)} placeholder="e.g. beacon" aria-label="School code" />
-              <Button variant="hero" size="xl" onClick={() => { if (safeSlug) navigate(`/${safeSlug}/auth`); }}>
-                Continue <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-            <p className="mt-3 text-xs text-muted-foreground">
-              Demo school: <span className="font-medium text-foreground">beacon</span>
+      <main className="relative z-10 mx-auto w-full max-w-6xl px-6 pb-16 pt-4">
+        <div className="grid items-start gap-10 lg:grid-cols-2">
+          {/* Left: brand / pitch */}
+          <motion.section
+            initial={reduce ? false : { opacity: 0, y: 14 }}
+            animate={reduce ? undefined : { opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, ease: [0.2, 0.8, 0.2, 1] }}
+            className="space-y-5 text-center lg:text-left lg:pt-6"
+          >
+            <AltrixLogo size="lg" className="text-5xl md:text-6xl" />
+            <h1 className={cn("font-display text-balance text-3xl font-semibold tracking-tight md:text-4xl")}>
+              The AI-Powered Operating System for Modern Schools
+            </h1>
+            <p className="mx-auto max-w-2xl text-balance text-base text-muted-foreground md:text-lg lg:mx-0">
+              One unified platform for academics, finance, HR, communication, and AI-driven insights — built for 12 distinct roles.
             </p>
-          </div>
-        </motion.section>
 
-        <motion.section
-          initial={reduce ? false : { opacity: 0, y: 18 }}
-          animate={reduce ? undefined : { opacity: 1, y: 0 }}
-          transition={{ delay: 0.12, duration: 0.6 }}
-          className="mt-16 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4"
-        >
-          {features.map((f) => (
-            <div key={f.title} className="rounded-2xl bg-surface p-5 shadow-elevated">
-              <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10">
-                <f.icon className="h-5 w-5 text-primary" />
-              </div>
-              <p className="mt-3 font-display font-semibold tracking-tight">{f.title}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{f.desc}</p>
+            <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {features.map((f) => (
+                <div key={f.title} className="rounded-2xl bg-surface p-4 shadow-elevated text-left">
+                  <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10">
+                    <f.icon className="h-4.5 w-4.5 text-primary" />
+                  </div>
+                  <p className="mt-2 font-display text-sm font-semibold tracking-tight">{f.title}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{f.desc}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </motion.section>
+          </motion.section>
+
+          {/* Right: combined login card */}
+          <motion.section
+            initial={reduce ? false : { opacity: 0, y: 18 }}
+            animate={reduce ? undefined : { opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.6 }}
+            className="lg:pt-6"
+          >
+            <div className="mx-auto w-full max-w-md rounded-2xl bg-surface p-6 shadow-elevated">
+              <div className="mb-5 text-center">
+                <h2 className="font-display text-2xl font-semibold tracking-tight">Sign in to your school</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Enter your school code and credentials.
+                </p>
+              </div>
+
+              <form
+                className="space-y-4"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!busy) void doLogin();
+                }}
+              >
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium" htmlFor="school-code">School Code</label>
+                  <Input
+                    id="school-code"
+                    value={schoolSlug}
+                    onChange={(e) => setSchoolSlug(e.target.value)}
+                    placeholder="e.g. beacon"
+                    aria-label="School code"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                  />
+                  {tenantBadge && (
+                    <p
+                      className={cn(
+                        "text-xs",
+                        tenantBadge.tone === "ok" && "text-primary",
+                        tenantBadge.tone === "err" && "text-destructive",
+                        tenantBadge.tone === "neutral" && "text-muted-foreground",
+                      )}
+                    >
+                      {tenantBadge.tone === "ok" ? `✓ ${tenantBadge.label}` : tenantBadge.label}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium" htmlFor="login-email">Email</label>
+                  <Input
+                    id="login-email"
+                    name="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@school.com"
+                    type="email"
+                    autoComplete="username"
+                    inputMode="email"
+                    list="saved-emails"
+                  />
+                  {recentEmails.length > 0 && (
+                    <datalist id="saved-emails">
+                      {recentEmails.map((e) => (
+                        <option key={e} value={e} />
+                      ))}
+                    </datalist>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium" htmlFor="login-password">Password</label>
+                    <button
+                      type="button"
+                      onClick={() => { if (!busy && resetCooldown <= 0) void doForgotPassword(); }}
+                      disabled={busy || resetCooldown > 0}
+                      className="text-xs text-primary hover:underline disabled:opacity-50 disabled:no-underline"
+                    >
+                      {resetCooldown > 0 ? `Resend in ${resetCooldown}s` : "Forgot password?"}
+                    </button>
+                  </div>
+                  <Input
+                    id="login-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    type="password"
+                    autoComplete="current-password"
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  variant="hero"
+                  size="xl"
+                  className="w-full"
+                  disabled={busy || tenant.status === "loading"}
+                >
+                  {busy ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in…</>
+                  ) : (
+                    <>Sign in <ArrowRight className="ml-2 h-4 w-4" /></>
+                  )}
+                </Button>
+              </form>
+
+              {message && (
+                <div className="mt-4 rounded-xl bg-accent p-3 text-sm text-accent-foreground flex items-start gap-2">
+                  <KeyRound className="h-4 w-4 mt-0.5 shrink-0 opacity-70" />
+                  <span>{message}</span>
+                </div>
+              )}
+
+              <p className="mt-5 text-center text-xs text-muted-foreground">
+                Demo school: <span className="font-medium text-foreground">beacon</span> · Accounts are created by administrators.
+              </p>
+            </div>
+          </motion.section>
+        </div>
       </main>
     </div>
   );
