@@ -407,9 +407,9 @@ export function AccountantExpensesModule() {
             </div>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[400px] rounded-xl border bg-surface">
-              <div className="overflow-x-auto">
-                <Table className="min-w-[760px]">
+            <div className="h-[400px] overflow-auto rounded-xl border bg-surface">
+              <div className="min-w-max">
+                <Table className="min-w-[900px]">
 
                 <TableHeader>
                   <TableRow>
@@ -474,7 +474,7 @@ export function AccountantExpensesModule() {
                 </TableBody>
               </Table>
               </div>
-            </ScrollArea>
+            </div>
           </CardContent>
         </Card>
 
