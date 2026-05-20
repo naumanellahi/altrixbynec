@@ -220,35 +220,37 @@ export function PrincipalHome() {
 
   return (
     <Tabs defaultValue="overview" className="space-y-4 lg:space-y-6">
-      <TabsList className="flex w-full flex-wrap gap-1 p-1 sm:gap-2">
-        <TabsTrigger value="overview" className="flex-1 px-2 py-2 text-xs sm:px-4 sm:text-sm">
-          Overview
-        </TabsTrigger>
-        <TabsTrigger value="teachers" className="flex-1 px-2 py-2 text-xs sm:px-4 sm:text-sm">
-          Teachers
-        </TabsTrigger>
-        <TabsTrigger value="students" className="flex-1 px-2 py-2 text-xs sm:px-4 sm:text-sm">
-          Students
-        </TabsTrigger>
-        <TabsTrigger value="leaves" className="flex-1 px-2 py-2 text-xs sm:px-4 sm:text-sm">
-          Leaves
-        </TabsTrigger>
-        <TabsTrigger value="parents" className="flex-1 px-2 py-2 text-xs sm:px-4 sm:text-sm">
-          Parents
-        </TabsTrigger>
-        <TabsTrigger value="complaints" className="flex-1 px-2 py-2 text-xs sm:px-4 sm:text-sm">
-          Complaints
-        </TabsTrigger>
-        <TabsTrigger value="parent-notes" className="flex-1 px-2 py-2 text-xs sm:px-4 sm:text-sm">
-          Parent Notes
-        </TabsTrigger>
-        <TabsTrigger value="fees" className="flex-1 px-2 py-2 text-xs sm:px-4 sm:text-sm">
-          Fees
-        </TabsTrigger>
-        <TabsTrigger value="admissions" className="flex-1 px-2 py-2 text-xs sm:px-4 sm:text-sm">
-          Admissions
-        </TabsTrigger>
-      </TabsList>
+      <div className="-mx-1 overflow-x-auto no-scrollbar">
+        <TabsList className="inline-flex w-max min-w-full gap-1 p-1">
+          <TabsTrigger value="overview" className="px-3 py-2 text-xs sm:px-4 sm:text-sm whitespace-nowrap">
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="teachers" className="px-3 py-2 text-xs sm:px-4 sm:text-sm whitespace-nowrap">
+            Teachers
+          </TabsTrigger>
+          <TabsTrigger value="students" className="px-3 py-2 text-xs sm:px-4 sm:text-sm whitespace-nowrap">
+            Students
+          </TabsTrigger>
+          <TabsTrigger value="leaves" className="px-3 py-2 text-xs sm:px-4 sm:text-sm whitespace-nowrap">
+            Leaves
+          </TabsTrigger>
+          <TabsTrigger value="parents" className="px-3 py-2 text-xs sm:px-4 sm:text-sm whitespace-nowrap">
+            Parents
+          </TabsTrigger>
+          <TabsTrigger value="complaints" className="px-3 py-2 text-xs sm:px-4 sm:text-sm whitespace-nowrap">
+            Complaints
+          </TabsTrigger>
+          <TabsTrigger value="parent-notes" className="px-3 py-2 text-xs sm:px-4 sm:text-sm whitespace-nowrap">
+            Parent Notes
+          </TabsTrigger>
+          <TabsTrigger value="fees" className="px-3 py-2 text-xs sm:px-4 sm:text-sm whitespace-nowrap">
+            Fees
+          </TabsTrigger>
+          <TabsTrigger value="admissions" className="px-3 py-2 text-xs sm:px-4 sm:text-sm whitespace-nowrap">
+            Admissions
+          </TabsTrigger>
+        </TabsList>
+      </div>
 
       <TabsContent value="overview" className="space-y-4 lg:space-y-6">
         {/* Live Teacher Presence */}
