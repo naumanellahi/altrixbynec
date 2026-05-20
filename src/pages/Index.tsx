@@ -246,13 +246,13 @@ const Index = () => {
       </header>
 
       <main className="relative z-10 mx-auto w-full max-w-6xl px-6 pb-16 pt-4">
-        <div className="grid items-start gap-10 lg:grid-cols-2">
-          {/* Left: brand / pitch */}
+        <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
+          {/* Title — always first */}
           <motion.section
             initial={reduce ? false : { opacity: 0, y: 14 }}
             animate={reduce ? undefined : { opacity: 1, y: 0 }}
             transition={{ duration: 0.55, ease: [0.2, 0.8, 0.2, 1] }}
-            className="space-y-5 text-center lg:text-left lg:pt-6"
+            className="order-1 space-y-5 text-center lg:col-start-1 lg:row-start-1 lg:text-left lg:pt-6"
           >
             <AltrixLogo size="lg" className="text-5xl md:text-6xl" />
             <h1 className={cn("font-display text-balance text-3xl font-semibold tracking-tight md:text-4xl")}>
@@ -261,26 +261,14 @@ const Index = () => {
             <p className="mx-auto max-w-2xl text-balance text-base text-muted-foreground md:text-lg lg:mx-0">
               One unified platform for academics, finance, HR, communication, and AI-driven insights — built for 12 distinct roles.
             </p>
-
-            <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {features.map((f) => (
-                <div key={f.title} className="rounded-2xl bg-surface p-4 shadow-elevated text-left">
-                  <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10">
-                    <f.icon className="h-4.5 w-4.5 text-primary" />
-                  </div>
-                  <p className="mt-2 font-display text-sm font-semibold tracking-tight">{f.title}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{f.desc}</p>
-                </div>
-              ))}
-            </div>
           </motion.section>
 
-          {/* Right: combined login card */}
+          {/* Login — mobile: 2nd (right after title). Desktop: right column spanning both rows */}
           <motion.section
             initial={reduce ? false : { opacity: 0, y: 18 }}
             animate={reduce ? undefined : { opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.6 }}
-            className="lg:pt-6"
+            className="order-2 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:self-start lg:pt-6"
           >
             <div className="mx-auto w-full max-w-md rounded-2xl bg-surface p-6 shadow-elevated">
               <div className="mb-5 text-center">
@@ -299,26 +287,47 @@ const Index = () => {
               >
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium" htmlFor="school-code">School Code</label>
-                  <Input
-                    id="school-code"
-                    value={schoolSlug}
-                    onChange={(e) => setSchoolSlug(e.target.value)}
-                    placeholder="e.g. beacon"
-                    aria-label="School code"
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    spellCheck={false}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="school-code"
+                      value={schoolSlug}
+                      onChange={(e) => setSchoolSlug(e.target.value)}
+                      placeholder="e.g. beacon"
+                      aria-label="School code"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      className={cn(
+                        "pr-9",
+                        tenant.status === "ready" && "border-primary/60 focus-visible:ring-primary/30",
+                        tenant.status === "error" && "border-destructive/60 focus-visible:ring-destructive/30",
+                      )}
+                    />
+                    <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
+                      {!safeSlug ? null : tenant.status === "loading" ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      ) : tenant.status === "ready" ? (
+                        <CheckCircle2 className="h-4 w-4 text-primary" />
+                      ) : tenant.status === "error" ? (
+                        <AlertCircle className="h-4 w-4 text-destructive" />
+                      ) : null}
+                    </div>
+                  </div>
                   {tenantBadge && (
                     <p
                       className={cn(
-                        "text-xs",
+                        "text-xs flex items-center gap-1",
                         tenantBadge.tone === "ok" && "text-primary",
                         tenantBadge.tone === "err" && "text-destructive",
                         tenantBadge.tone === "neutral" && "text-muted-foreground",
                       )}
                     >
-                      {tenantBadge.tone === "ok" ? `✓ ${tenantBadge.label}` : tenantBadge.label}
+                      {tenantBadge.tone === "ok" && <CheckCircle2 className="h-3 w-3" />}
+                      {tenantBadge.tone === "err" && <AlertCircle className="h-3 w-3" />}
+                      {tenantBadge.tone === "neutral" && <Loader2 className="h-3 w-3 animate-spin" />}
+                      <span>
+                        {tenantBadge.tone === "ok" ? `Verified: ${tenantBadge.label}` : tenantBadge.label}
+                      </span>
                     </p>
                   )}
                 </div>
@@ -328,6 +337,7 @@ const Index = () => {
                   <Input
                     id="login-email"
                     name="email"
+                    ref={emailInputRef}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@school.com"
@@ -372,10 +382,16 @@ const Index = () => {
                   variant="hero"
                   size="xl"
                   className="w-full"
-                  disabled={busy || tenant.status === "loading"}
+                  disabled={busy || tenant.status !== "ready"}
                 >
                   {busy ? (
                     <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in…</>
+                  ) : tenant.status === "loading" && safeSlug ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying school…</>
+                  ) : tenant.status === "error" ? (
+                    "Invalid school code"
+                  ) : !safeSlug ? (
+                    "Enter school code to continue"
                   ) : (
                     <>Sign in <ArrowRight className="ml-2 h-4 w-4" /></>
                   )}
@@ -383,15 +399,45 @@ const Index = () => {
               </form>
 
               {message && (
-                <div className="mt-4 rounded-xl bg-accent p-3 text-sm text-accent-foreground flex items-start gap-2">
-                  <KeyRound className="h-4 w-4 mt-0.5 shrink-0 opacity-70" />
-                  <span>{message}</span>
+                <div
+                  role={message.tone === "error" ? "alert" : "status"}
+                  className={cn(
+                    "mt-4 rounded-xl p-3 text-sm flex items-start gap-2 border",
+                    message.tone === "success" && "bg-primary/10 border-primary/30 text-foreground",
+                    message.tone === "error" && "bg-destructive/10 border-destructive/30 text-destructive",
+                    message.tone === "info" && "bg-accent border-border text-accent-foreground",
+                  )}
+                >
+                  {message.tone === "success" && <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0 text-primary" />}
+                  {message.tone === "error" && <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />}
+                  {message.tone === "info" && <Info className="h-4 w-4 mt-0.5 shrink-0 opacity-70" />}
+                  <span className="flex-1">{message.text}</span>
                 </div>
               )}
 
               <p className="mt-5 text-center text-xs text-muted-foreground">
                 Demo school: <span className="font-medium text-foreground">beacon</span> · Accounts are created by administrators.
               </p>
+            </div>
+          </motion.section>
+
+          {/* Features — mobile: 3rd. Desktop: left column below title */}
+          <motion.section
+            initial={reduce ? false : { opacity: 0, y: 18 }}
+            animate={reduce ? undefined : { opacity: 1, y: 0 }}
+            transition={{ delay: 0.18, duration: 0.6 }}
+            className="order-3 lg:col-start-1 lg:row-start-2"
+          >
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {features.map((f) => (
+                <div key={f.title} className="rounded-2xl bg-surface p-4 shadow-elevated text-left">
+                  <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10">
+                    <f.icon className="h-4 w-4 text-primary" />
+                  </div>
+                  <p className="mt-2 font-display text-sm font-semibold tracking-tight">{f.title}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{f.desc}</p>
+                </div>
+              ))}
             </div>
           </motion.section>
         </div>
