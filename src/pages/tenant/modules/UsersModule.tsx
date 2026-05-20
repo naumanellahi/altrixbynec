@@ -76,6 +76,7 @@ export function UsersModule() {
 
   const [govRoleByUser, setGovRoleByUser] = useState<Record<string, EduverseRole>>({});
   const [govReason, setGovReason] = useState<string>("");
+  const [profileDialogUserId, setProfileDialogUserId] = useState<string | null>(null);
   // Link-based flows removed: we set explicit passwords directly.
 
   const refresh = async () => {
