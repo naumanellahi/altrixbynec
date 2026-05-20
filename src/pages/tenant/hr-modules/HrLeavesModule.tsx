@@ -37,6 +37,41 @@ export function HrLeavesModule() {
     enabled: tenant.status === "ready" && !isOffline
   });
 
+  const { data: staffDirectory = [] } = useQuery({
+    queryKey: ["school_staff_directory", schoolId],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_school_user_directory", { _school_id: schoolId! });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!schoolId,
+  });
+
+  const { data: leaveTypes = [] } = useQuery({
+    queryKey: ["hr_leave_types", schoolId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("hr_leave_types")
+        .select("id, name")
+        .eq("school_id", schoolId!);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!schoolId,
+  });
+
+  const userNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const u of staffDirectory as any[]) map.set(u.user_id, u.display_name || u.email || "Unknown");
+    return map;
+  }, [staffDirectory]);
+
+  const leaveTypeNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const t of leaveTypes as any[]) map.set(t.id, t.name);
+    return map;
+  }, [leaveTypes]);
+
   // Use cached data when offline
   const displayRequests = useMemo(() => {
     if (isOffline || isUsingCache) {
@@ -101,7 +136,10 @@ export function HrLeavesModule() {
               <div key={req.id} className="rounded-2xl bg-accent p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">{req.user_id}</p>
+                    <p className="font-medium">{userNameById.get(req.user_id) || "Unknown user"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {leaveTypeNameById.get(req.leave_type_id) || "Leave"}
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       {req.start_date} → {req.end_date} ({req.days_count} days)
                     </p>
