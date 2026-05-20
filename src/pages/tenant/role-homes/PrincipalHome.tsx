@@ -25,6 +25,7 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
+import { usePermissions } from "@/lib/permissions";
 import { useDashboardAlerts } from "@/hooks/useDashboardAlerts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,6 +72,26 @@ export function PrincipalHome() {
   );
 
   const basePath = `/${schoolSlug}/${role}`;
+  const perms = usePermissions(schoolId);
+
+  // Permission-driven tab visibility. Tabs (and their content) only render
+  // when the resolved bundle grants the corresponding action — so a user
+  // without staff/finance/etc. permissions never sees them at all.
+  const tabs = useMemo(() => {
+    const list: { value: string; label: string; visible: boolean }[] = [
+      { value: "overview",     label: "Overview",     visible: true },
+      { value: "teachers",     label: "Teachers",     visible: perms.actions.canManageStaff },
+      { value: "students",     label: "Students",     visible: perms.actions.canManageStudents },
+      { value: "leaves",       label: "Leaves",       visible: perms.actions.canManageStaff },
+      { value: "parents",      label: "Parents",      visible: perms.actions.canManageStudents },
+      { value: "complaints",   label: "Complaints",   visible: perms.actions.canModerateComplaints },
+      { value: "parent-notes", label: "Parent Notes", visible: perms.actions.canManageStudents },
+      { value: "fees",         label: "Fees",         visible: perms.actions.canManageFinance },
+      { value: "admissions",   label: "Admissions",   visible: perms.actions.canManageAcademics || perms.actions.canWorkCrm },
+    ];
+    return list.filter((t) => t.visible);
+  }, [perms.actions]);
+  const tabValues = useMemo(() => new Set(tabs.map((t) => t.value)), [tabs]);
 
   // Real-time alerts hook
   const {
