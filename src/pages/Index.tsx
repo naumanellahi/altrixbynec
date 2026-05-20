@@ -101,7 +101,7 @@ const Index = () => {
 
   const routeUserAfterLogin = async (userId: string) => {
     if (tenant.status !== "ready") {
-      setMessage("School not found. Please check the school code.");
+      showError("School not found. Please check the school code.");
       await supabase.auth.signOut();
       return;
     }
