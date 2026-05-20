@@ -473,6 +473,7 @@ export function AccountantExpensesModule() {
                   )}
                 </TableBody>
               </Table>
+              </div>
             </ScrollArea>
           </CardContent>
         </Card>
