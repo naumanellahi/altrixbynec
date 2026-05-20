@@ -1,43 +1,60 @@
-import { PropsWithChildren, useEffect, useRef } from "react";
-import { Navigate, useLocation, useParams } from "react-router-dom";
-import { toast } from "sonner";
+import { PropsWithChildren, useMemo } from "react";
+import { useLocation, useParams } from "react-router-dom";
 import { usePermissions } from "@/lib/permissions";
 import { useTenantOptimized } from "@/hooks/useTenantOptimized";
+import { AccessDenied } from "@/components/tenant/AccessDenied";
+
+interface RouteGuardProps extends PropsWithChildren {
+  /**
+   * Path segments (relative to `/{slug}/{role}/`) that the wrapping
+   * dashboard exposes beyond the centralized NAV_CATALOG. The guard
+   * treats these as always-allowed for the current role, so role-home
+   * sub-pages (e.g. teacher "gradebook", parent "ai-insights") don't
+   * trip the catalog-based check.
+   */
+  extraAllowedPaths?: string[];
+}
 
 /**
  * Route-level access guard.
  *
- * Validates that the path segment after `/{schoolSlug}/{role}/` is allowed
- * by the current user's permission bundle. If not, redirects to the role
- * dashboard root and surfaces a toast — so manually typed URLs cannot
- * bypass the sidebar visibility rules.
+ * Validates that the first path segment after `/{schoolSlug}/{role}/`
+ * is either in the user's centralized permission bundle or in the
+ * dashboard-supplied `extraAllowedPaths` list. If neither, renders the
+ * dedicated `AccessDenied` UI (no silent redirect) so users see why.
  */
-export function RouteGuard({ children }: PropsWithChildren) {
+export function RouteGuard({ children, extraAllowedPaths }: RouteGuardProps) {
   const { schoolSlug, role } = useParams();
   const location = useLocation();
   const tenant = useTenantOptimized(schoolSlug);
   const schoolId = tenant.schoolId;
   const perms = usePermissions(schoolId);
-  const warnedRef = useRef<string | null>(null);
 
-  // Extract the path segment after `/{slug}/{role}/`
   const base = `/${schoolSlug}/${role}`;
   const remainder = location.pathname.startsWith(base)
     ? location.pathname.slice(base.length).replace(/^\/+/, "")
     : "";
   const segment = remainder.split("/")[0] ?? "";
 
-  const allowed = perms.loading ? true : perms.canAccess(segment);
+  const extraSet = useMemo(() => new Set(extraAllowedPaths ?? []), [extraAllowedPaths]);
 
-  useEffect(() => {
-    if (!perms.loading && !allowed && warnedRef.current !== segment) {
-      warnedRef.current = segment;
-      toast.error("You don't have access to that page.");
-    }
-  }, [perms.loading, allowed, segment]);
+  const allowed =
+    perms.loading || segment === "" || extraSet.has(segment) || perms.canAccess(segment);
 
-  if (!perms.loading && !allowed) {
-    return <Navigate to={base} replace />;
+  if (perms.loading) {
+    return <>{children}</>;
   }
+
+  if (!allowed) {
+    return (
+      <AccessDenied
+        attemptedPath={segment}
+        roles={perms.roles}
+        homePath={base}
+        schoolSlug={schoolSlug ?? ""}
+      />
+    );
+  }
+
   return <>{children}</>;
 }
