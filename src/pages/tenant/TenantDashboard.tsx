@@ -40,6 +40,7 @@ import FeesAdvancedModule from "@/pages/tenant/modules/FeesAdvancedModule";
 import AdmissionsModule from "@/pages/tenant/modules/AdmissionsModule";
 import FeeVouchersModule from "@/pages/tenant/modules/FeeVouchersModule";
 import { RouteGuard } from "@/components/tenant/RouteGuard";
+import { AICounselorMode } from "@/components/ai/AICounselorMode";
 
 const TenantDashboard = () => {
   const { schoolSlug, role: roleParam } = useParams();
@@ -470,6 +471,7 @@ const TenantDashboard = () => {
             <Route path="support" element={<SupportModule schoolId={tenant.schoolId} />} />
             <Route path="complaints" element={<PrincipalComplaintsModule />} />
             <Route path="parent-notes" element={<PrincipalParentNotesModule />} />
+            <Route path="counseling" element={<AICounselorMode schoolId={tenant.schoolId} />} />
             <Route path="*" element={<Navigate to={`/${tenant.slug}/${role}`} replace />} />
             </Routes>
           </RouteGuard>
