@@ -55,18 +55,32 @@ const anyOf = (a: EduverseRole[], roles: EduverseRole[]) => a.some((r) => roles.
 const EMPTY_FALLBACK_ROLES: EduverseRole[] = [];
 
 /**
- * Role inheritance map. Only the school's super_admin inherits the
- * permissions of every other role. All other roles (school_owner,
- * principal, vice_principal, school_admin, hr_manager, accountant,
- * academic_coordinator, teacher, counselor, marketing_staff, parent,
- * student) see only the tabs/modules explicitly listed for their own
- * role in NAV_CATALOG — no cross-role inheritance.
+ * Role inheritance map (VIEW access only).
+ *   - super_admin / school_owner → see every module in the system
+ *   - principal / vice_principal → see all staff modules
+ *     (school_admin + hr_manager + accountant + academic_coordinator + counselor + marketing_staff)
+ *
+ * Write/edit capability is NOT granted here — it is enforced by the
+ * server-side RLS policies and `can_manage_*` RPCs, which only the
+ * real role owners pass.
  */
 const ROLE_INHERITANCE: Partial<Record<EduverseRole, EduverseRole[]>> = {
   super_admin: [
     "school_owner","principal","vice_principal","school_admin","hr_manager",
     "accountant","academic_coordinator","teacher","marketing_staff",
     "counselor","student","parent",
+  ],
+  school_owner: [
+    "principal","vice_principal","school_admin","hr_manager","accountant",
+    "academic_coordinator","teacher","marketing_staff","counselor","student","parent",
+  ],
+  principal: [
+    "vice_principal","school_admin","hr_manager","accountant",
+    "academic_coordinator","counselor","marketing_staff",
+  ],
+  vice_principal: [
+    "school_admin","hr_manager","accountant","academic_coordinator",
+    "counselor","marketing_staff",
   ],
 };
 
