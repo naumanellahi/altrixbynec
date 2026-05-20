@@ -132,6 +132,11 @@ export function AtRiskStudentsCard({ schoolId, sectionIds }: Props) {
                   <div>
                     <p className="text-sm font-medium">
                       {student.first_name} {student.last_name}
+                      {(student.class_name || student.section_name) && (
+                        <span className="ml-2 text-xs font-normal text-muted-foreground">
+                          {[student.class_name, student.section_name].filter(Boolean).join(" • ")}
+                        </span>
+                      )}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       Attendance: {student.attendance_rate.toFixed(0)}% • 
