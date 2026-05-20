@@ -155,7 +155,7 @@ export function HrSalariesModule() {
   const { data: staffMembers = [] } = useQuery({
     queryKey: ["school_staff_directory", schoolId],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_school_user_directory", {
+      const { data, error } = await supabase.rpc("get_school_staff_directory", {
         _school_id: schoolId!,
       });
       if (error) throw error;
