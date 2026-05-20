@@ -142,15 +142,27 @@ export function pickPrimaryRole(roles: EduverseRole[]): EduverseRole | null {
 }
 
 /**
- * Role inheritance mirror of `permissions.ts`. Only super_admin
- * inherits every other role's modules; all other roles see only the
- * tabs explicitly listed for their own role in NAV_CATALOG.
+ * Sidebar inheritance mirror of permissions.ts. super_admin, school_owner,
+ * principal, and vice_principal see all staff modules in the sidebar.
+ * Actual write/edit access is still enforced server-side by RLS + RPCs.
  */
 const NAV_INHERITANCE: Partial<Record<EduverseRole, EduverseRole[]>> = {
   super_admin: [
     "school_owner","principal","vice_principal","school_admin","hr_manager",
     "accountant","academic_coordinator","teacher","marketing_staff",
     "counselor","student","parent",
+  ],
+  school_owner: [
+    "principal","vice_principal","school_admin","hr_manager","accountant",
+    "academic_coordinator","teacher","marketing_staff","counselor","student","parent",
+  ],
+  principal: [
+    "vice_principal","school_admin","hr_manager","accountant",
+    "academic_coordinator","counselor","marketing_staff",
+  ],
+  vice_principal: [
+    "school_admin","hr_manager","accountant","academic_coordinator",
+    "counselor","marketing_staff",
   ],
 };
 
