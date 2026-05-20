@@ -1,5 +1,5 @@
 import {
-  BarChart3, BookOpen, CalendarDays, Coins, GraduationCap, Headphones,
+  BarChart3, BookOpen, CalendarDays, Coins, CreditCard, DollarSign, GraduationCap, Headphones,
   KanbanSquare, LayoutGrid, Megaphone, MessageSquare, NotebookPen,
   ShieldAlert, ShieldCheck, Users, FileText, PartyPopper, UserPlus,
   Briefcase, Wallet, Receipt, FileSignature, ClipboardList, Heart,
