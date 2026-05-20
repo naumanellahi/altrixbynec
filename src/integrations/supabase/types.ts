@@ -4756,6 +4756,47 @@ export type Database = {
           },
         ]
       }
+      school_alert_settings: {
+        Row: {
+          attendance_critical_threshold: number
+          attendance_warning_threshold: number
+          created_at: string
+          id: string
+          pending_invoices_threshold: number
+          school_id: string
+          support_ticket_hours: number
+          updated_at: string
+        }
+        Insert: {
+          attendance_critical_threshold?: number
+          attendance_warning_threshold?: number
+          created_at?: string
+          id?: string
+          pending_invoices_threshold?: number
+          school_id: string
+          support_ticket_hours?: number
+          updated_at?: string
+        }
+        Update: {
+          attendance_critical_threshold?: number
+          attendance_warning_threshold?: number
+          created_at?: string
+          id?: string
+          pending_invoices_threshold?: number
+          school_id?: string
+          support_ticket_hours?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_alert_settings_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: true
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       school_branding: {
         Row: {
           accent_hue: number | null
