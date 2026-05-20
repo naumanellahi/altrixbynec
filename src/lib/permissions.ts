@@ -66,18 +66,18 @@ const ROLE_INHERITANCE: Partial<Record<EduverseRole, EduverseRole[]>> = {
   super_admin: [
     "school_owner","principal","vice_principal","school_admin","hr_manager",
     "accountant","academic_coordinator","teacher","marketing_staff",
-    "student","parent",
+    "counselor","student","parent",
   ],
   school_owner: [
     "principal","vice_principal","school_admin","hr_manager","accountant",
-    "academic_coordinator","teacher","marketing_staff",
+    "academic_coordinator","teacher","marketing_staff","counselor","student","parent",
   ],
   principal: [
     "vice_principal","school_admin","hr_manager","accountant",
-    "academic_coordinator",
+    "academic_coordinator","counselor",
   ],
   vice_principal: [
-    "school_admin","hr_manager","accountant","academic_coordinator",
+    "school_admin","hr_manager","accountant","academic_coordinator","counselor",
   ],
 };
 
