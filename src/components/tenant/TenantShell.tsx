@@ -15,6 +15,7 @@ import { useTenantOptimized } from "@/hooks/useTenantOptimized";
 import { useSession } from "@/hooks/useSession";
 import { useUserRole } from "@/hooks/useUserRole";
 import { buildMergedNav, GROUP_LABELS, GROUP_ORDER } from "@/lib/role-navigation";
+import { resolvePermissions } from "@/lib/permissions";
 
 type Props = PropsWithChildren<{
   title: string;
@@ -52,7 +53,20 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
     return Array.from(new Set<EduverseRole>([...assignedRoles, role]));
   }, [assignedRoles, role]);
 
-  const { grouped } = useMemo(() => buildMergedNav(effectiveRoles), [effectiveRoles]);
+  // Build sidebar from the centralized permission resolver so visibility
+  // stays in lockstep with route-guard access checks.
+  const { grouped } = useMemo(() => {
+    const perms = resolvePermissions(effectiveRoles);
+    // buildMergedNav already groups; rebuild from filtered modules so we
+    // honour exactly the same set the resolver allows.
+    const items = perms.visibleModules;
+    const g: Record<string, typeof items> = {
+      overview: [], academics: [], people: [], finance: [],
+      operations: [], communication: [], admin: [],
+    };
+    for (const it of items) g[it.group].push(it);
+    return { grouped: g as ReturnType<typeof buildMergedNav>["grouped"] };
+  }, [effectiveRoles]);
 
   // Mobile bottom bar — pick a handful of always-useful items.
   const bottomNavItems = [
