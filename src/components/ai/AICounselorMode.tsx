@@ -42,7 +42,7 @@ import {
 import { toast } from "sonner";
 
 interface Props {
-  schoolId: string;
+  schoolId: string | null;
 }
 
 const PRIORITY_CONFIG = {

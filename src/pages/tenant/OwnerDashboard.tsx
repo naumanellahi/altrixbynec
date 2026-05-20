@@ -22,6 +22,38 @@ import { OwnerAdvisorModule } from "@/pages/tenant/owner-modules/OwnerAdvisorMod
 import { OwnerAIModule } from "@/pages/tenant/owner-modules/OwnerAIModule";
 import { MessagesModule } from "@/pages/tenant/modules/MessagesModule";
 import { RouteGuard } from "@/components/tenant/RouteGuard";
+import { UsersModule } from "@/pages/tenant/modules/UsersModule";
+import { CrmModule } from "@/pages/tenant/modules/CrmModule";
+import { AcademicModule } from "@/pages/tenant/modules/AcademicModule";
+import { AttendanceModule } from "@/pages/tenant/modules/AttendanceModule";
+import { ReportsModule } from "@/pages/tenant/modules/ReportsModule";
+import { FinanceModule } from "@/pages/tenant/modules/FinanceModule";
+import { TimetableBuilderModule } from "@/pages/tenant/modules/TimetableBuilderModule";
+import { HrLeavesModule } from "@/pages/tenant/hr-modules/HrLeavesModule";
+import { HrSalariesModule } from "@/pages/tenant/hr-modules/HrSalariesModule";
+import { HrContractsModule } from "@/pages/tenant/hr-modules/HrContractsModule";
+import { HrReviewsModule } from "@/pages/tenant/hr-modules/HrReviewsModule";
+import { HrDocumentsModule } from "@/pages/tenant/hr-modules/HrDocumentsModule";
+import { MarketingLeadsModule } from "@/pages/tenant/marketing-modules/MarketingLeadsModule";
+import { MarketingFollowUpsModule } from "@/pages/tenant/marketing-modules/MarketingFollowUpsModule";
+import { MarketingCallsModule } from "@/pages/tenant/marketing-modules/MarketingCallsModule";
+import { MarketingSourcesModule } from "@/pages/tenant/marketing-modules/MarketingSourcesModule";
+import { MarketingCampaignsModule } from "@/pages/tenant/marketing-modules/MarketingCampaignsModule";
+import { AccountantFeesModule } from "@/pages/tenant/accountant-modules/AccountantFeesModule";
+import { AccountantInvoicesModule } from "@/pages/tenant/accountant-modules/AccountantInvoicesModule";
+import { AccountantPaymentsModule } from "@/pages/tenant/accountant-modules/AccountantPaymentsModule";
+import { AccountantExpensesModule } from "@/pages/tenant/accountant-modules/AccountantExpensesModule";
+import { AccountantPayrollModule } from "@/pages/tenant/accountant-modules/AccountantPayrollModule";
+import NoticesModule from "@/pages/tenant/modules/NoticesModule";
+import HolidaysModule from "@/pages/tenant/modules/HolidaysModule";
+import DiaryModule from "@/pages/tenant/modules/DiaryModule";
+import ExamsModule from "@/pages/tenant/modules/ExamsModule";
+import ReportCardModule from "@/pages/tenant/modules/ReportCardModule";
+import PrincipalComplaintsModule from "@/pages/tenant/modules/PrincipalComplaintsModule";
+import PrincipalParentNotesModule from "@/pages/tenant/modules/PrincipalParentNotesModule";
+import FeesAdvancedModule from "@/pages/tenant/modules/FeesAdvancedModule";
+import FeeVouchersModule from "@/pages/tenant/modules/FeeVouchersModule";
+import { AICounselorMode } from "@/components/ai/AICounselorMode";
 
 // Cache key for owner auth
 const OWNER_AUTHZ_CACHE = "eduverse_owner_authz_cache_strict_v2";
@@ -205,8 +237,34 @@ export default function OwnerDashboard() {
         <Routes>
           <Route index element={<OwnerOverviewModule schoolId={schoolId} />} />
           <Route path="academics" element={<OwnerAcademicsModule schoolId={schoolId} />} />
+          <Route path="academic" element={<AcademicModule />} />
+          <Route path="timetable" element={<TimetableBuilderModule />} />
+          <Route path="attendance" element={<AttendanceModule />} />
+          <Route path="exams" element={<ExamsModule schoolId={schoolId} canManage />} />
+          <Route path="report-cards" element={<ReportCardModule schoolId={schoolId} canManage />} />
+          <Route path="diary" element={<DiaryModule schoolId={schoolId} canManage />} />
           <Route path="admissions" element={<OwnerAdmissionsModule schoolId={schoolId} />} />
+          <Route path="users" element={<UsersModule />} />
+          <Route path="leaves" element={<HrLeavesModule />} />
+          <Route path="salaries" element={<HrSalariesModule />} />
+          <Route path="contracts" element={<HrContractsModule />} />
+          <Route path="reviews" element={<HrReviewsModule />} />
+          <Route path="documents" element={<HrDocumentsModule />} />
+          <Route path="crm" element={<CrmModule />} />
+          <Route path="leads" element={<MarketingLeadsModule />} />
+          <Route path="follow-ups" element={<MarketingFollowUpsModule />} />
+          <Route path="calls" element={<MarketingCallsModule />} />
+          <Route path="sources" element={<MarketingSourcesModule />} />
+          <Route path="campaigns" element={<MarketingCampaignsModule />} />
+          <Route path="parent-notes" element={<PrincipalParentNotesModule />} />
           <Route path="finance" element={<OwnerFinanceModule schoolId={schoolId} />} />
+          <Route path="fees" element={<AccountantFeesModule />} />
+          <Route path="invoices" element={<AccountantInvoicesModule />} />
+          <Route path="payments" element={<AccountantPaymentsModule />} />
+          <Route path="expenses" element={<AccountantExpensesModule />} />
+          <Route path="payroll" element={<AccountantPayrollModule />} />
+          <Route path="fees-pro" element={<FeesAdvancedModule />} />
+          <Route path="fee-vouchers" element={<FeeVouchersModule />} />
           <Route path="hr" element={<OwnerHrModule schoolId={schoolId} />} />
           <Route path="wellbeing" element={<OwnerWellbeingModule schoolId={schoolId} />} />
           <Route path="compliance" element={<OwnerComplianceModule schoolId={schoolId} />} />
@@ -217,6 +275,11 @@ export default function OwnerDashboard() {
           <Route path="advisor" element={<OwnerAdvisorModule schoolId={schoolId} />} />
           <Route path="ai" element={<OwnerAIModule schoolId={schoolId} />} />
           <Route path="messages" element={<MessagesModule schoolId={schoolId} />} />
+          <Route path="notices" element={<NoticesModule schoolId={schoolId} canManage />} />
+          <Route path="holidays" element={<HolidaysModule schoolId={schoolId} canManage />} />
+          <Route path="reports" element={<ReportsModule />} />
+          <Route path="complaints" element={<PrincipalComplaintsModule />} />
+          <Route path="counseling" element={<AICounselorMode schoolId={schoolId} />} />
         </Routes>
         </RouteGuard>
       )}

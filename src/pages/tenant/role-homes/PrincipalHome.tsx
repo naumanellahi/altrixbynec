@@ -26,6 +26,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { usePermissions } from "@/lib/permissions";
+import { isEduverseRole } from "@/lib/eduverse-roles";
 import { useDashboardAlerts } from "@/hooks/useDashboardAlerts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -72,7 +73,8 @@ export function PrincipalHome() {
   );
 
   const basePath = `/${schoolSlug}/${role}`;
-  const perms = usePermissions(schoolId);
+  const fallbackRoles = useMemo(() => (isEduverseRole(role) ? [role] : []), [role]);
+  const perms = usePermissions(schoolId, fallbackRoles);
 
   // Permission-driven tab visibility. Tabs (and their content) only render
   // when the resolved bundle grants the corresponding action — so a user

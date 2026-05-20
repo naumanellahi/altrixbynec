@@ -3,6 +3,7 @@ import { useLocation, useParams } from "react-router-dom";
 import { usePermissions } from "@/lib/permissions";
 import { useTenantOptimized } from "@/hooks/useTenantOptimized";
 import { AccessDenied } from "@/components/tenant/AccessDenied";
+import { isEduverseRole } from "@/lib/eduverse-roles";
 
 interface RouteGuardProps extends PropsWithChildren {
   /**
@@ -28,7 +29,8 @@ export function RouteGuard({ children, extraAllowedPaths }: RouteGuardProps) {
   const location = useLocation();
   const tenant = useTenantOptimized(schoolSlug);
   const schoolId = tenant.schoolId;
-  const perms = usePermissions(schoolId);
+  const fallbackRoles = useMemo(() => (isEduverseRole(role) ? [role] : []), [role]);
+  const perms = usePermissions(schoolId, fallbackRoles);
 
   const base = `/${schoolSlug}/${role}`;
   const remainder = location.pathname.startsWith(base)

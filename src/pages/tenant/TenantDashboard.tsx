@@ -29,6 +29,20 @@ import { DirectoryModule } from "@/pages/tenant/modules/DirectoryModule";
 import { TimetableBuilderModule } from "@/pages/tenant/modules/TimetableBuilderModule";
 import { MessagesModule } from "@/pages/tenant/modules/MessagesModule";
 import { HrLeavesModule } from "@/pages/tenant/hr-modules/HrLeavesModule";
+import { HrSalariesModule } from "@/pages/tenant/hr-modules/HrSalariesModule";
+import { HrContractsModule } from "@/pages/tenant/hr-modules/HrContractsModule";
+import { HrReviewsModule } from "@/pages/tenant/hr-modules/HrReviewsModule";
+import { HrDocumentsModule } from "@/pages/tenant/hr-modules/HrDocumentsModule";
+import { MarketingLeadsModule } from "@/pages/tenant/marketing-modules/MarketingLeadsModule";
+import { MarketingFollowUpsModule } from "@/pages/tenant/marketing-modules/MarketingFollowUpsModule";
+import { MarketingCallsModule } from "@/pages/tenant/marketing-modules/MarketingCallsModule";
+import { MarketingSourcesModule } from "@/pages/tenant/marketing-modules/MarketingSourcesModule";
+import { MarketingCampaignsModule } from "@/pages/tenant/marketing-modules/MarketingCampaignsModule";
+import { AccountantFeesModule } from "@/pages/tenant/accountant-modules/AccountantFeesModule";
+import { AccountantInvoicesModule } from "@/pages/tenant/accountant-modules/AccountantInvoicesModule";
+import { AccountantPaymentsModule } from "@/pages/tenant/accountant-modules/AccountantPaymentsModule";
+import { AccountantExpensesModule } from "@/pages/tenant/accountant-modules/AccountantExpensesModule";
+import { AccountantPayrollModule } from "@/pages/tenant/accountant-modules/AccountantPayrollModule";
 import NoticesModule from "@/pages/tenant/modules/NoticesModule";
 import HolidaysModule from "@/pages/tenant/modules/HolidaysModule";
 import DiaryModule from "@/pages/tenant/modules/DiaryModule";
@@ -40,6 +54,7 @@ import FeesAdvancedModule from "@/pages/tenant/modules/FeesAdvancedModule";
 import AdmissionsModule from "@/pages/tenant/modules/AdmissionsModule";
 import FeeVouchersModule from "@/pages/tenant/modules/FeeVouchersModule";
 import { RouteGuard } from "@/components/tenant/RouteGuard";
+import { AICounselorMode } from "@/components/ai/AICounselorMode";
 
 const TenantDashboard = () => {
   const { schoolSlug, role: roleParam } = useParams();
@@ -453,15 +468,29 @@ const TenantDashboard = () => {
             <Route path="users" element={<UsersModule />} />
             <Route path="directory" element={<DirectoryModule />} />
             <Route path="crm" element={<CrmModule />} />
+            <Route path="leads" element={<MarketingLeadsModule />} />
+            <Route path="follow-ups" element={<MarketingFollowUpsModule />} />
+            <Route path="calls" element={<MarketingCallsModule />} />
+            <Route path="sources" element={<MarketingSourcesModule />} />
+            <Route path="campaigns" element={<MarketingCampaignsModule />} />
             <Route path="academic" element={<AcademicModule />} />
             <Route path="timetable" element={<TimetableBuilderModule />} />
             <Route path="attendance" element={<AttendanceModule />} />
             <Route path="finance" element={<FinanceModule />} />
+            <Route path="fees" element={<AccountantFeesModule />} />
+            <Route path="invoices" element={<AccountantInvoicesModule />} />
+            <Route path="payments" element={<AccountantPaymentsModule />} />
+            <Route path="expenses" element={<AccountantExpensesModule />} />
+            <Route path="payroll" element={<AccountantPayrollModule />} />
             <Route path="fees-pro" element={<FeesAdvancedModule />} />
             <Route path="fee-vouchers" element={<FeeVouchersModule />} />
             <Route path="admissions" element={<AdmissionsModule />} />
             <Route path="reports" element={<ReportsModule />} />
             <Route path="leaves" element={<HrLeavesModule />} />
+            <Route path="salaries" element={<HrSalariesModule />} />
+            <Route path="contracts" element={<HrContractsModule />} />
+            <Route path="reviews" element={<HrReviewsModule />} />
+            <Route path="documents" element={<HrDocumentsModule />} />
             <Route path="notices" element={<NoticesModule schoolId={tenant.schoolId} canManage={true} />} />
             <Route path="holidays" element={<HolidaysModule schoolId={tenant.schoolId} canManage={["principal","vice_principal","school_admin","academic_coordinator","hr_manager","school_owner","super_admin"].includes(role || "")} />} />
             <Route path="diary" element={<DiaryModule schoolId={tenant.schoolId} canManage={["teacher","principal","vice_principal","school_admin","academic_coordinator"].includes(role || "")} />} />
@@ -470,6 +499,7 @@ const TenantDashboard = () => {
             <Route path="support" element={<SupportModule schoolId={tenant.schoolId} />} />
             <Route path="complaints" element={<PrincipalComplaintsModule />} />
             <Route path="parent-notes" element={<PrincipalParentNotesModule />} />
+            <Route path="counseling" element={<AICounselorMode schoolId={tenant.schoolId} />} />
             <Route path="*" element={<Navigate to={`/${tenant.slug}/${role}`} replace />} />
             </Routes>
           </RouteGuard>

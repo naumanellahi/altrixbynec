@@ -1,8 +1,8 @@
 import {
-  BarChart3, BookOpen, CalendarDays, Coins, GraduationCap, Headphones,
+  BarChart3, BookOpen, CalendarDays, Coins, CreditCard, DollarSign, GraduationCap, Headphones,
   KanbanSquare, LayoutGrid, Megaphone, MessageSquare, NotebookPen,
   ShieldAlert, ShieldCheck, Users, FileText, PartyPopper, UserPlus,
-  Briefcase, Wallet, Receipt, FileSignature, ClipboardList, Heart,
+  Briefcase, Wallet, Receipt, FileSignature, ClipboardList, Heart, PhoneCall, Target,
 } from "lucide-react";
 import type { EduverseRole } from "@/lib/eduverse-roles";
 
@@ -46,16 +46,46 @@ export const NAV_CATALOG: NavItem[] = [
   // People
   { key: "users", label: "Staff", icon: Users, group: "people", path: "users",
     roles: ["super_admin","school_owner","principal","vice_principal","school_admin","hr_manager"] },
+  { key: "leaves", label: "Leaves", icon: FileSignature, group: "people", path: "leaves",
+    roles: ["super_admin","school_owner","principal","vice_principal","school_admin","hr_manager"] },
+  { key: "salaries", label: "Salaries", icon: Wallet, group: "people", path: "salaries",
+    roles: ["super_admin","school_owner","principal","vice_principal","school_admin","hr_manager"] },
+  { key: "contracts", label: "Contracts", icon: FileSignature, group: "people", path: "contracts",
+    roles: ["super_admin","school_owner","principal","vice_principal","school_admin","hr_manager"] },
+  { key: "reviews", label: "Performance Reviews", icon: ShieldCheck, group: "people", path: "reviews",
+    roles: ["super_admin","school_owner","principal","vice_principal","school_admin","hr_manager"] },
+  { key: "documents", label: "Documents", icon: Briefcase, group: "people", path: "documents",
+    roles: ["super_admin","school_owner","principal","vice_principal","school_admin","hr_manager"] },
   { key: "admissions", label: "Admissions", icon: UserPlus, group: "people", path: "admissions",
     roles: ["super_admin","school_owner","principal","vice_principal","school_admin","academic_coordinator","marketing_staff"] },
   { key: "crm", label: "CRM", icon: KanbanSquare, group: "people", path: "crm",
+    roles: ["super_admin","school_owner","principal","vice_principal","school_admin","marketing_staff"] },
+  { key: "leads", label: "Leads", icon: Users, group: "people", path: "leads",
+    roles: ["super_admin","school_owner","principal","vice_principal","school_admin","marketing_staff","counselor"] },
+  { key: "follow-ups", label: "Follow-ups", icon: ClipboardList, group: "people", path: "follow-ups",
+    roles: ["super_admin","school_owner","principal","vice_principal","school_admin","marketing_staff","counselor"] },
+  { key: "calls", label: "Call Logs", icon: PhoneCall, group: "people", path: "calls",
+    roles: ["super_admin","school_owner","principal","vice_principal","school_admin","marketing_staff","counselor"] },
+  { key: "sources", label: "Lead Sources", icon: Target, group: "people", path: "sources",
+    roles: ["super_admin","school_owner","principal","vice_principal","school_admin","marketing_staff","counselor"] },
+  { key: "campaigns", label: "Campaigns", icon: Megaphone, group: "people", path: "campaigns",
     roles: ["super_admin","school_owner","principal","vice_principal","school_admin","marketing_staff"] },
   { key: "parent-notes", label: "Parent Notes", icon: NotebookPen, group: "people", path: "parent-notes",
     roles: ["super_admin","school_owner","principal","vice_principal","school_admin"] },
 
   // Finance
+  { key: "fee-plans", label: "Fee Plans", icon: DollarSign, group: "finance", path: "fees",
+    roles: ["super_admin","school_owner","principal","vice_principal","accountant"] },
   { key: "fees", label: "Fees", icon: Coins, group: "finance", path: "fees-pro",
     roles: ["super_admin","school_owner","principal","vice_principal","school_admin","accountant"] },
+  { key: "invoices", label: "Invoices", icon: FileText, group: "finance", path: "invoices",
+    roles: ["super_admin","school_owner","principal","vice_principal","accountant"] },
+  { key: "payments", label: "Payments", icon: CreditCard, group: "finance", path: "payments",
+    roles: ["super_admin","school_owner","principal","vice_principal","accountant"] },
+  { key: "expenses", label: "Expenses", icon: Receipt, group: "finance", path: "expenses",
+    roles: ["super_admin","school_owner","principal","vice_principal","accountant"] },
+  { key: "payroll", label: "Payroll", icon: Wallet, group: "finance", path: "payroll",
+    roles: ["super_admin","school_owner","principal","vice_principal","accountant"] },
   { key: "fee-vouchers", label: "Fee Vouchers", icon: Receipt, group: "finance", path: "fee-vouchers",
     roles: ["super_admin","school_owner","principal","vice_principal","school_admin","accountant","hr_manager"] },
   { key: "finance", label: "Finance", icon: Wallet, group: "finance", path: "finance",
@@ -70,11 +100,8 @@ export const NAV_CATALOG: NavItem[] = [
     roles: ["super_admin","school_owner","principal","vice_principal","school_admin","academic_coordinator","hr_manager","accountant","marketing_staff"] },
   { key: "complaints", label: "Complaints", icon: ShieldAlert, group: "operations", path: "complaints",
     roles: ["super_admin","school_owner","principal","vice_principal","school_admin"] },
-  // Counseling module currently only ships a counselor-facing route.
-  // Hide for other roles until cross-role counseling views exist, so the
-  // sidebar entry never lands on a missing page.
   { key: "counseling", label: "Counseling", icon: Heart, group: "operations", path: "counseling",
-    roles: ["counselor"] },
+    roles: ["super_admin","school_owner","principal","vice_principal","school_admin","academic_coordinator","counselor"] },
 
   // Communication
   { key: "messages", label: "Messages", icon: MessageSquare, group: "communication", path: "messages",
@@ -124,18 +151,18 @@ const NAV_INHERITANCE: Partial<Record<EduverseRole, EduverseRole[]>> = {
   super_admin: [
     "school_owner","principal","vice_principal","school_admin","hr_manager",
     "accountant","academic_coordinator","teacher","marketing_staff",
-    "student","parent",
+    "counselor","student","parent",
   ],
   school_owner: [
     "principal","vice_principal","school_admin","hr_manager","accountant",
-    "academic_coordinator","teacher","marketing_staff",
+    "academic_coordinator","teacher","marketing_staff","counselor","student","parent",
   ],
   principal: [
     "vice_principal","school_admin","hr_manager","accountant",
-    "academic_coordinator",
+    "academic_coordinator","counselor",
   ],
   vice_principal: [
-    "school_admin","hr_manager","accountant","academic_coordinator",
+    "school_admin","hr_manager","accountant","academic_coordinator","counselor",
   ],
 };
 

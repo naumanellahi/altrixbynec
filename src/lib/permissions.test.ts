@@ -74,15 +74,27 @@ describe("resolvePermissions / RouteGuard logic", () => {
     expect(p.canAccess("users")).toBe(true);
   });
 
-  it("principal: full governance but counseling stays counselor-only", () => {
+  it("principal: full governance including inherited counselor modules", () => {
     const p = resolvePermissions(["principal"]);
     expect(p.canAccess("complaints")).toBe(true);
     expect(p.canAccess("parent-notes")).toBe(true);
     expect(p.canAccess("users")).toBe(true);
     expect(p.canAccess("fees-pro")).toBe(true);
-    // Counseling module currently only routes for counselor role.
-    expect(p.canAccess("counseling")).toBe(false);
+    expect(p.canAccess("leaves")).toBe(true);
+    expect(p.canAccess("counseling")).toBe(true);
     expect(p.actions.canModerateComplaints).toBe(true);
+  });
+
+  it("school_owner: inherits every tenant workspace module", () => {
+    const p = resolvePermissions(["school_owner"]);
+    for (const path of [
+      "users", "leaves", "academic", "timetable", "attendance", "exams",
+      "report-cards", "diary", "fees-pro", "fee-vouchers", "finance",
+      "admissions", "crm", "reports", "complaints", "parent-notes",
+      "counseling", "messages", "notices", "holidays", "support",
+    ]) {
+      expect(p.canAccess(path)).toBe(true);
+    }
   });
 
   it("multi-role (principal + accountant): union of permissions", () => {
