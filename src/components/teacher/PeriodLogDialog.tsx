@@ -61,7 +61,7 @@ export function PeriodLogDialog({
       school_id: schoolId,
       teacher_user_id: user.user.id,
       timetable_entry_id: entry.id,
-      logged_at: new Date().toISOString(),
+      logged_at: new Date().toISOString().slice(0, 10),
       status,
       notes: notes.trim() || null,
       topic_covered: topicsCovered.trim() || null,
