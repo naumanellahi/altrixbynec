@@ -31,6 +31,7 @@ interface PeriodLogDialogProps {
     notes: string | null;
     topics_covered: string | null;
   } | null;
+  } | null;
   onSaved: () => void;
 }
 
