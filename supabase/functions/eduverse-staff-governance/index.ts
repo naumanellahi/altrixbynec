@@ -13,13 +13,15 @@ const corsHeaders = {
 type GovernanceAction =
   | "deactivate" // remove all roles for user in a school
   | "set_roles" // replace roles for user in a school
-  | "set_password";
+  | "set_password"
+  | "set_email"; // update auth email for user
 
 type GovernanceRequest = {
   schoolSlug: string;
   targetUserId: string;
   roles?: string[]; // required for set_roles
   password?: string; // required for set_password
+  email?: string; // required for set_email
   reason?: string;
 };
 
