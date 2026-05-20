@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
-import { Brain, ShieldCheck, Eye, MessageSquare, ArrowRight, KeyRound, Loader2, CheckCircle2, AlertCircle, Info } from "lucide-react";
+import { Brain, ShieldCheck, Eye, MessageSquare, ArrowRight, Loader2, CheckCircle2, AlertCircle, Info } from "lucide-react";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
