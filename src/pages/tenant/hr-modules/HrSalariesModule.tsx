@@ -482,18 +482,13 @@ export function HrSalariesModule() {
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
                       <Label>Staff Member</Label>
-                      <Select value={formUserId} onValueChange={setFormUserId} disabled={!!editingRecord}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select staff member" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {staffMembers.map((staff) => (
-                            <SelectItem key={staff.id} value={staff.id}>
-                              {staff.full_name} ({staff.email})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <StaffCombobox
+                        staff={staffMembers}
+                        value={formUserId}
+                        onChange={setFormUserId}
+                        disabled={!!editingRecord}
+                        placeholder="Select staff member"
+                      />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
