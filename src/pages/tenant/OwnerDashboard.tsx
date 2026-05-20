@@ -21,6 +21,7 @@ import { OwnerSupportModule } from "@/pages/tenant/owner-modules/OwnerSupportMod
 import { OwnerAdvisorModule } from "@/pages/tenant/owner-modules/OwnerAdvisorModule";
 import { OwnerAIModule } from "@/pages/tenant/owner-modules/OwnerAIModule";
 import { MessagesModule } from "@/pages/tenant/modules/MessagesModule";
+import { RouteGuard } from "@/components/tenant/RouteGuard";
 
 // Cache key for owner auth
 const OWNER_AUTHZ_CACHE = "eduverse_owner_authz_cache_strict_v2";
@@ -197,6 +198,10 @@ export default function OwnerDashboard() {
           <p className="mt-3 text-sm text-muted-foreground">Verifying executive access…</p>
         </div>
       ) : (
+        <RouteGuard extraAllowedPaths={[
+          "academics","admissions","finance","hr","wellbeing","compliance",
+          "campuses","brand","security","support","advisor","ai","messages",
+        ]}>
         <Routes>
           <Route index element={<OwnerOverviewModule schoolId={schoolId} />} />
           <Route path="academics" element={<OwnerAcademicsModule schoolId={schoolId} />} />
@@ -213,6 +218,7 @@ export default function OwnerDashboard() {
           <Route path="ai" element={<OwnerAIModule schoolId={schoolId} />} />
           <Route path="messages" element={<MessagesModule schoolId={schoolId} />} />
         </Routes>
+        </RouteGuard>
       )}
     </OwnerShell>
   );

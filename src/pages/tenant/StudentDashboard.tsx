@@ -22,6 +22,7 @@ import HolidaysModule from "@/pages/tenant/modules/HolidaysModule";
 import DiaryModule from "@/pages/tenant/modules/DiaryModule";
 import ExamsModule from "@/pages/tenant/modules/ExamsModule";
 import ReportCardModule from "@/pages/tenant/modules/ReportCardModule";
+import { RouteGuard } from "@/components/tenant/RouteGuard";
 
 // Cache key for student auth
 const STUDENT_AUTHZ_CACHE = "eduverse_student_authz_cache";
@@ -208,6 +209,11 @@ const StudentDashboard = () => {
 
   return (
     <StudentShell title={title} subtitle="Read-only student portal" schoolSlug={tenant.slug}>
+      <RouteGuard extraAllowedPaths={[
+        "attendance","grades","timetable","assignments","certificates",
+        "ai-insights","messages","support","notices","holidays","diary",
+        "exams","report-card","complaints",
+      ]}>
       <Routes>
         <Route index element={<StudentHomeModule myStudent={myStudent} />} />
         <Route path="attendance" element={<StudentAttendanceModule myStudent={myStudent} schoolId={schoolId} />} />
@@ -226,6 +232,7 @@ const StudentDashboard = () => {
         <Route path="complaints" element={<StudentComplaintsModule schoolId={schoolId} />} />
         <Route path="*" element={<Navigate to={`/${tenant.slug}/student`} replace />} />
       </Routes>
+      </RouteGuard>
     </StudentShell>
   );
 };

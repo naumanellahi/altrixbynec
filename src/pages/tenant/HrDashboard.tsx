@@ -18,6 +18,7 @@ import { HrMessagesModule } from "@/pages/tenant/hr-modules/HrMessagesModule";
 import { TimetableBuilderModule } from "@/pages/tenant/modules/TimetableBuilderModule";
 import NoticesModule from "@/pages/tenant/modules/NoticesModule";
 import HolidaysModule from "@/pages/tenant/modules/HolidaysModule";
+import { RouteGuard } from "@/components/tenant/RouteGuard";
 
 const HrDashboard = () => {
   const { schoolSlug } = useParams();
@@ -74,6 +75,10 @@ const HrDashboard = () => {
 
   return (
     <HrShell title={`${tenant.school?.name || "AltRix"} • HR`} subtitle="Human Resources" schoolSlug={tenant.slug}>
+      <RouteGuard extraAllowedPaths={[
+        "users","leaves","attendance","salaries","contracts","reviews","documents",
+        "support","messages","timetable","notices","holidays",
+      ]}>
       <Routes>
         <Route index element={<HrHomeModule />} />
         <Route path="users" element={<HrUsersModule />} />
@@ -90,6 +95,7 @@ const HrDashboard = () => {
         <Route path="holidays" element={<HolidaysModule schoolId={schoolId} canManage={true} />} />
         <Route path="*" element={<Navigate to={`/${tenant.slug}/hr`} replace />} />
       </Routes>
+      </RouteGuard>
     </HrShell>
   );
 };

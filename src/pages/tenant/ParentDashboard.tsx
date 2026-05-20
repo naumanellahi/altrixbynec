@@ -23,6 +23,7 @@ import HolidaysModule from "./modules/HolidaysModule";
 import DiaryModule from "./modules/DiaryModule";
 import ExamsModule from "./modules/ExamsModule";
 import ReportCardModule from "./modules/ReportCardModule";
+import { RouteGuard } from "@/components/tenant/RouteGuard";
 
 // Cache key for parent auth
 const PARENT_AUTHZ_CACHE = "eduverse_parent_authz_cache";
@@ -295,6 +296,11 @@ const ParentDashboard = () => {
         onSelectChild={handleSelectChild}
         onLogout={handleLogout}
       >
+        <RouteGuard extraAllowedPaths={[
+          "ai-insights","attendance","grades","fees","messages","timetable",
+          "notifications","support","behavior","notices","holidays","diary",
+          "exams","report-card","complaints",
+        ]}>
         <Routes>
           <Route index element={<ParentHomeModule child={selectedChild} schoolId={schoolId} />} />
           <Route path="ai-insights" element={<ParentAIModule child={selectedChild} schoolId={schoolId} />} />
@@ -314,6 +320,7 @@ const ParentDashboard = () => {
           <Route path="complaints" element={<ParentComplaintsModule child={selectedChild} schoolId={schoolId} />} />
           <Route path="*" element={<Navigate to="" replace />} />
         </Routes>
+        </RouteGuard>
     </ParentShell>
   );
 };
