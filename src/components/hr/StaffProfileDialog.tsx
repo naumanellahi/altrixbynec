@@ -20,6 +20,9 @@ type StaffProfileDialogProps = {
   email: string;
   displayName: string | null;
   onUpdated?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 };
 
 export function StaffProfileDialog({
@@ -27,8 +30,16 @@ export function StaffProfileDialog({
   email,
   displayName: initialDisplayName,
   onUpdated,
+  open: controlledOpen,
+  onOpenChange,
+  hideTrigger,
 }: StaffProfileDialogProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = (v: boolean) => {
+    if (onOpenChange) onOpenChange(v);
+    else setInternalOpen(v);
+  };
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
