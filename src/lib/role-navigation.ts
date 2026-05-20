@@ -70,8 +70,11 @@ export const NAV_CATALOG: NavItem[] = [
     roles: ["super_admin","school_owner","principal","vice_principal","school_admin","academic_coordinator","hr_manager","accountant","marketing_staff"] },
   { key: "complaints", label: "Complaints", icon: ShieldAlert, group: "operations", path: "complaints",
     roles: ["super_admin","school_owner","principal","vice_principal","school_admin"] },
+  // Counseling module currently only ships a counselor-facing route.
+  // Hide for other roles until cross-role counseling views exist, so the
+  // sidebar entry never lands on a missing page.
   { key: "counseling", label: "Counseling", icon: Heart, group: "operations", path: "counseling",
-    roles: ["counselor","principal","vice_principal","school_admin","super_admin","school_owner"] },
+    roles: ["counselor"] },
 
   // Communication
   { key: "messages", label: "Messages", icon: MessageSquare, group: "communication", path: "messages",
