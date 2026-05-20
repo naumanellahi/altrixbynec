@@ -100,7 +100,7 @@ export default function App() {
             <Route path="/platform/directory" element={<Navigate to="/super_admin/directory" replace />} />
             <Route path="/platform/schools" element={<Navigate to="/super_admin/schools" replace />} />
 
-            <Route path="/:schoolSlug/auth" element={<TenantAuth />} />
+            <Route path="/:schoolSlug/auth" element={<Index />} />
             <Route path="/:schoolSlug/hub" element={<UnifiedHub />} />
             <Route path="/:schoolSlug/bootstrap" element={<TenantBootstrap />} />
             <Route path="/:schoolSlug/teacher/*" element={<TeacherDashboard />} />
