@@ -134,6 +134,12 @@ const TeacherDashboard = () => {
 
         {/* Routes - show if OK or checking (with cached auth) */}
         {authzState !== "denied" && (
+          <RouteGuard extraAllowedPaths={[
+            "students","attendance","homework","assignments","behavior","gradebook",
+            "progress","lesson-plans","reports","report-cards","exams","diary",
+            "notices","holidays","timetable","leaves","ai-insights","messages",
+            "admin-inbox","complaints","parent-notes","presence-history",
+          ]}>
           <Routes>
             <Route index element={<TeacherHome />} />
             <Route path="students" element={<TeacherStudentsModule />} />
@@ -160,6 +166,7 @@ const TeacherDashboard = () => {
             <Route path="presence-history" element={<TeacherPresenceHistoryModule />} />
             <Route path="*" element={<Navigate to={`/${tenant.slug}/teacher`} replace />} />
           </Routes>
+          </RouteGuard>
         )}
       </div>
     </TeacherShell>
