@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarDays, Check, ChevronRight, Clock, Coffee, DoorOpen, LogIn, Pencil, Wifi, WifiOff, X } from "lucide-react";
+import { CalendarDays, Check, ChevronRight, Clock, Coffee, DoorOpen, Info, LogIn, Pencil, Wifi, WifiOff, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -69,6 +69,7 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
     onSubmit: (reason: string | null) => Promise<void> | void;
   } | null>(null);
   const [reasonText, setReasonText] = useState("");
+  const [infoLog, setInfoLog] = useState<{ entry: ScheduleEntry; log: PeriodLog } | null>(null);
 
   const todayDayOfWeek = new Date().getDay();
   const isToday = selectedDay === todayDayOfWeek;
@@ -242,12 +243,22 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium truncate">{entry.subjectName}</p>
                         {log && (
-                          <span
-                            className="flex items-center gap-0.5"
-                            title={`${log.status}${log.topicsCovered ? `: ${log.topicsCovered}` : ""}`}
-                          >
-                            {getStatusIcon(log.status)}
-                          </span>
+                          <>
+                            <span
+                              className="flex items-center gap-0.5"
+                              title={`${log.status}${log.topicsCovered ? `: ${log.topicsCovered}` : ""}`}
+                            >
+                              {getStatusIcon(log.status)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setInfoLog({ entry, log })}
+                              className="text-muted-foreground hover:text-primary transition-colors"
+                              title="View details"
+                            >
+                              <Info className="h-3.5 w-3.5" />
+                            </button>
+                          </>
                         )}
                         {isCurrent && (
                           <Badge variant="default" className="text-xs px-1.5 py-0">
@@ -389,6 +400,51 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
           onSaved={handleLogSaved}
         />
       )}
+
+      {/* Period Log Details Dialog */}
+      <Dialog open={!!infoLog} onOpenChange={(o) => !o && setInfoLog(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {infoLog && getStatusIcon(infoLog.log.status)}
+              <span className="capitalize">{infoLog?.log.status}</span>
+            </DialogTitle>
+            <DialogDescription>
+              {infoLog?.entry.subjectName} • {infoLog?.entry.periodLabel}
+              {infoLog?.entry.sectionLabel && ` • ${infoLog.entry.sectionLabel}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Topics Covered</p>
+              <p className="text-sm whitespace-pre-wrap">
+                {infoLog?.log.topicsCovered || <span className="italic text-muted-foreground">No topics recorded</span>}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Notes</p>
+              <p className="text-sm whitespace-pre-wrap">
+                {infoLog?.log.notes || <span className="italic text-muted-foreground">No notes</span>}
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (infoLog) {
+                  const entry = infoLog.entry;
+                  setInfoLog(null);
+                  handleOpenLog(entry);
+                }
+              }}
+            >
+              <Pencil className="h-3.5 w-3.5 mr-1.5" /> Edit
+            </Button>
+            <Button onClick={() => setInfoLog(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Reason Dialog for Late/Left */}
       <Dialog
