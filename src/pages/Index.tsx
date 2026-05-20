@@ -61,9 +61,17 @@ const Index = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ text: string; tone: "success" | "error" | "info" } | null>(null);
   const [resetCooldown, setResetCooldown] = useState(0);
   const [recentEmails, setRecentEmails] = useState<string[]>(() => getRecentEmails());
+  const emailInputRef = useRef<HTMLInputElement>(null);
+
+  const focusEmail = () => {
+    requestAnimationFrame(() => emailInputRef.current?.focus());
+  };
+  const showError = (text: string) => setMessage({ text, tone: "error" });
+  const showSuccess = (text: string) => setMessage({ text, tone: "success" });
+  const showInfo = (text: string) => setMessage({ text, tone: "info" });
 
   const safeSlug = useMemo(
     () => schoolSlug.trim().toLowerCase().replace(/[^a-z0-9-]/g, ""),
