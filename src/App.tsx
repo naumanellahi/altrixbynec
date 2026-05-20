@@ -13,7 +13,7 @@ import PlatformDirectoryPage from "./pages/platform/PlatformDirectoryPage";
 import PlatformSchoolsPage from "./pages/platform/PlatformSchoolsPage";
 import PlatformUpdatePassword from "./pages/platform/PlatformUpdatePassword";
 import PlatformRecoverMaster from "./pages/platform/PlatformRecoverMaster";
-import TenantAuth from "./pages/tenant/TenantAuth";
+
 import TenantDashboard from "./pages/tenant/TenantDashboard";
 import TeacherDashboard from "./pages/tenant/TeacherDashboard";
 import HrDashboard from "./pages/tenant/HrDashboard";
@@ -100,7 +100,7 @@ export default function App() {
             <Route path="/platform/directory" element={<Navigate to="/super_admin/directory" replace />} />
             <Route path="/platform/schools" element={<Navigate to="/super_admin/schools" replace />} />
 
-            <Route path="/:schoolSlug/auth" element={<TenantAuth />} />
+            <Route path="/:schoolSlug/auth" element={<Index />} />
             <Route path="/:schoolSlug/hub" element={<UnifiedHub />} />
             <Route path="/:schoolSlug/bootstrap" element={<TenantBootstrap />} />
             <Route path="/:schoolSlug/teacher/*" element={<TeacherDashboard />} />
