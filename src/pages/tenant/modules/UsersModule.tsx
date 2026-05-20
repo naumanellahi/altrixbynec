@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Download, FileUp, KeyRound, Trash2, UserMinus, UserPlus, Phone } from "lucide-react";
+import { Download, FileUp, KeyRound, Mail, Trash2, UserMinus, UserPlus, Phone } from "lucide-react";
 import { StaffProfileDialog } from "@/components/hr/StaffProfileDialog";
 
 import { supabase } from "@/integrations/supabase/client";
