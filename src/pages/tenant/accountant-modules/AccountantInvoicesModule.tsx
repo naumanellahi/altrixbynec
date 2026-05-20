@@ -387,7 +387,7 @@ export function AccountantInvoicesModule() {
                   <TableRow key={inv.id}>
                     <TableCell className="font-medium">{inv.invoice_no}</TableCell>
                     <TableCell>{getStudentName(inv.student_id)}</TableCell>
-                    <TableCell>{inv.total.toLocaleString()}</TableCell>
+                    <TableCell>{Number(inv.total ?? 0).toLocaleString()}</TableCell>
                     <TableCell>{getStatusBadge(inv.status)}</TableCell>
                     <TableCell>{new Date(inv.issue_date).toLocaleDateString()}</TableCell>
                     <TableCell>{inv.due_date ? new Date(inv.due_date).toLocaleDateString() : "—"}</TableCell>
@@ -476,19 +476,19 @@ export function AccountantInvoicesModule() {
               <div className="rounded-lg border p-4 space-y-2">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span>{selectedInvoice.subtotal.toLocaleString()}</span>
+                  <span>{Number(selectedInvoice.subtotal ?? 0).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Discount</span>
-                  <span>-{selectedInvoice.discount_total.toLocaleString()}</span>
+                  <span>-{Number(selectedInvoice.discount_total ?? 0).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Late Fee</span>
-                  <span>+{selectedInvoice.late_fee_total.toLocaleString()}</span>
+                  <span>+{Number(selectedInvoice.late_fee_total ?? 0).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between border-t pt-2 font-semibold">
                   <span>Total</span>
-                  <span>{selectedInvoice.total.toLocaleString()}</span>
+                  <span>{Number(selectedInvoice.total ?? 0).toLocaleString()}</span>
                 </div>
               </div>
               {selectedInvoice.notes && (
