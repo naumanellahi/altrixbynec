@@ -312,8 +312,16 @@ export default function ReportCardModule({ schoolId, canManage: canManageProp = 
       });
 
       setResults(map);
-      if (loadedCard) setCard((prev) => ({ ...loadedCard, attendance_percentage: prev.attendance_percentage ?? loadedCard.attendance_percentage }));
-      else setCard((prev) => ({ total_marks: 0, max_total: 0, percentage: 0, gpa: 0, overall_grade: "", teacher_remarks: "", principal_remarks: "", attendance_percentage: prev.attendance_percentage ?? null, is_published: false }));
+      // Safely merge attendance_percentage: prefer the live-computed value already
+      // in state; fall back to the saved value on the loaded card. Never let a
+      // null/undefined from either side wipe out a known good number.
+      const safeAttendance = (a: unknown, b: unknown): number | null => {
+        const na = typeof a === "number" && !Number.isNaN(a) ? a : null;
+        const nb = typeof b === "number" && !Number.isNaN(b) ? b : null;
+        return na ?? nb;
+      };
+      if (loadedCard) setCard((prev) => ({ ...loadedCard, attendance_percentage: safeAttendance(prev.attendance_percentage, loadedCard.attendance_percentage) }));
+      else setCard((prev) => ({ total_marks: 0, max_total: 0, percentage: 0, gpa: 0, overall_grade: "", teacher_remarks: "", principal_remarks: "", attendance_percentage: safeAttendance(prev.attendance_percentage, null), is_published: false }));
       setStudentInfo(info.data);
 
       // If we opened a saved card, sync the period selector for display
