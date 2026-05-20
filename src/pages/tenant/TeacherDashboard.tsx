@@ -34,6 +34,7 @@ import HolidaysModule from "@/pages/tenant/modules/HolidaysModule";
 import DiaryModule from "@/pages/tenant/modules/DiaryModule";
 import ExamsModule from "@/pages/tenant/modules/ExamsModule";
 import ReportCardModule from "@/pages/tenant/modules/ReportCardModule";
+import { RouteGuard } from "@/components/tenant/RouteGuard";
 
 const TeacherDashboard = () => {
   const { schoolSlug } = useParams();
