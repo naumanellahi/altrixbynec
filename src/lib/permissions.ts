@@ -146,12 +146,13 @@ export function resolvePermissions(inputRoles: EduverseRole[]): PermissionBundle
  * React hook — pulls the active user's roles from `user_roles`
  * (scoped to the current tenant) and returns the resolved bundle.
  */
-export function usePermissions(schoolId: string | null): PermissionBundle {
+export function usePermissions(schoolId: string | null, fallbackRoles: EduverseRole[] = []): PermissionBundle {
   const { user } = useSession();
   const { roles, loading } = useUserRole(schoolId, user?.id ?? null);
 
   return useMemo(() => {
-    const bundle = resolvePermissions(roles);
+    const effectiveRoles = Array.from(new Set<EduverseRole>([...roles, ...fallbackRoles]));
+    const bundle = resolvePermissions(effectiveRoles);
     return { ...bundle, loading };
-  }, [roles, loading]);
+  }, [roles, fallbackRoles, loading]);
 }
