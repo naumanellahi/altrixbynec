@@ -69,6 +69,7 @@ export function MyScheduleWidget({ schoolId, schoolSlug }: MyScheduleWidgetProps
     onSubmit: (reason: string | null) => Promise<void> | void;
   } | null>(null);
   const [reasonText, setReasonText] = useState("");
+  const [infoLog, setInfoLog] = useState<{ entry: ScheduleEntry; log: PeriodLog } | null>(null);
 
   const todayDayOfWeek = new Date().getDay();
   const isToday = selectedDay === todayDayOfWeek;
