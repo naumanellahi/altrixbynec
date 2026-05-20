@@ -39,6 +39,7 @@ import PrincipalParentNotesModule from "@/pages/tenant/modules/PrincipalParentNo
 import FeesAdvancedModule from "@/pages/tenant/modules/FeesAdvancedModule";
 import AdmissionsModule from "@/pages/tenant/modules/AdmissionsModule";
 import FeeVouchersModule from "@/pages/tenant/modules/FeeVouchersModule";
+import { RouteGuard } from "@/components/tenant/RouteGuard";
 
 const TenantDashboard = () => {
   const { schoolSlug, role: roleParam } = useParams();
@@ -438,7 +439,8 @@ const TenantDashboard = () => {
         </div>
 
         {authzState !== "denied" && (
-          <Routes>
+          <RouteGuard>
+            <Routes>
             <Route index element={
               role === "principal" ? <PrincipalHome /> : 
               role === "vice_principal" ? <VicePrincipalHome /> : 
@@ -469,7 +471,8 @@ const TenantDashboard = () => {
             <Route path="complaints" element={<PrincipalComplaintsModule />} />
             <Route path="parent-notes" element={<PrincipalParentNotesModule />} />
             <Route path="*" element={<Navigate to={`/${tenant.slug}/${role}`} replace />} />
-          </Routes>
+            </Routes>
+          </RouteGuard>
         )}
       </div>
     </TenantShell>
