@@ -1,7 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Download, FileUp, KeyRound, Mail, Trash2, UserMinus, UserPlus, Phone } from "lucide-react";
+import { Download, FileUp, KeyRound, Mail, Trash2, UserMinus, UserPlus, Phone, Pencil, UserCog } from "lucide-react";
 import { StaffProfileDialog } from "@/components/hr/StaffProfileDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
