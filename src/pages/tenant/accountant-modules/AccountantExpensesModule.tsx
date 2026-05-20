@@ -474,7 +474,7 @@ export function AccountantExpensesModule() {
                 </TableBody>
               </Table>
               </div>
-            </ScrollArea>
+            </div>
           </CardContent>
         </Card>
 
