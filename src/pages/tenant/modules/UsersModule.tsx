@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Download, FileUp, KeyRound, Trash2, UserMinus, UserPlus, Phone } from "lucide-react";
+import { Download, FileUp, KeyRound, Mail, Trash2, UserMinus, UserPlus, Phone } from "lucide-react";
 import { StaffProfileDialog } from "@/components/hr/StaffProfileDialog";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -687,6 +687,39 @@ export function UsersModule() {
                             disabled={busy}
                           >
                             <KeyRound className="mr-2 h-4 w-4" /> Set password
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              const next = window.prompt(`Update email for ${r.email}:`, r.email);
+                              if (!next) return;
+                              const trimmed = next.trim().toLowerCase();
+                              if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+                                return toast.error("Invalid email address");
+                              }
+                              if (trimmed === r.email.toLowerCase()) return;
+                              try {
+                                setBusy(true);
+                                await governanceInvoke({
+                                  action: "set_email",
+                                  schoolSlug: tenant.slug,
+                                  targetUserId: r.user_id,
+                                  email: trimmed,
+                                  reason: govReason.trim() || undefined,
+                                });
+                                toast.success("Email updated");
+                                await refresh();
+                              } catch (e) {
+                                toast.error((e as Error).message);
+                              } finally {
+                                setBusy(false);
+                              }
+                            }}
+                            disabled={busy}
+                          >
+                            <Mail className="mr-2 h-4 w-4" /> Set email
                           </Button>
 
                           <Button

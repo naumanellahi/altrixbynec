@@ -13,13 +13,15 @@ const corsHeaders = {
 type GovernanceAction =
   | "deactivate" // remove all roles for user in a school
   | "set_roles" // replace roles for user in a school
-  | "set_password";
+  | "set_password"
+  | "set_email"; // update auth email for user
 
 type GovernanceRequest = {
   schoolSlug: string;
   targetUserId: string;
   roles?: string[]; // required for set_roles
   password?: string; // required for set_password
+  email?: string; // required for set_email
   reason?: string;
 };
 
@@ -210,6 +212,37 @@ serve(async (req) => {
       });
 
       return json({ ok: true }, 200, traceId);
+    }
+
+    if (action === "set_email") {
+      const email = String(body.email ?? "").trim().toLowerCase();
+      const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRe.test(email)) {
+        return json({ ok: false, error: "Invalid email address." }, 200, traceId);
+      }
+
+      const { error: updErr } = await admin.auth.admin.updateUserById(targetUserId, {
+        email,
+        email_confirm: true,
+      });
+      if (updErr) {
+        const msg = updErr.message || "Failed to update email";
+        const friendly = /already.*registered|duplicate|exists/i.test(msg)
+          ? "Another account already uses this email."
+          : msg;
+        return json({ ok: false, error: friendly }, 200, traceId);
+      }
+
+      await admin.from("audit_logs").insert({
+        school_id: school.id,
+        actor_user_id: actorUserId,
+        action: "staff_email_updated",
+        entity_type: "user",
+        entity_id: targetUserId,
+        metadata: { email, reason: body.reason ?? null },
+      });
+
+      return json({ ok: true, email }, 200, traceId);
     }
 
     return json({ ok: false, error: "Unknown action" }, 400, traceId);
