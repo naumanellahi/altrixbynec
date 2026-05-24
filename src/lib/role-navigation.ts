@@ -84,6 +84,12 @@ export const NAV_CATALOG: NavItem[] = [
     roles: ["super_admin","school_owner","principal","vice_principal","accountant"] },
   { key: "payroll", label: "Payroll", icon: Wallet, group: "finance", path: "payroll",
     roles: ["super_admin","school_owner","principal","vice_principal","accountant"] },
+  { key: "ledger", label: "Cash Ledger", icon: BookOpen, group: "finance", path: "ledger",
+    roles: ["super_admin","school_owner","principal","vice_principal","accountant"] },
+  { key: "vendors", label: "Vendors", icon: Briefcase, group: "finance", path: "vendors",
+    roles: ["super_admin","school_owner","principal","vice_principal","accountant"] },
+  { key: "tax", label: "Tax Center", icon: Receipt, group: "finance", path: "tax",
+    roles: ["super_admin","school_owner","principal","vice_principal","accountant"] },
   { key: "finance", label: "Finance", icon: Wallet, group: "finance", path: "finance",
     roles: ["super_admin","school_owner","principal","vice_principal","accountant"] },
 
