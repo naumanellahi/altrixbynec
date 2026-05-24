@@ -12,6 +12,9 @@ import { AccountantExpensesModule } from "@/pages/tenant/accountant-modules/Acco
 import { AccountantPayrollModule } from "@/pages/tenant/accountant-modules/AccountantPayrollModule";
 import { AccountantReportsModule } from "@/pages/tenant/accountant-modules/AccountantReportsModule";
 import { AccountantMessagesModule } from "@/pages/tenant/accountant-modules/AccountantMessagesModule";
+import { AccountantLedgerModule } from "@/pages/tenant/accountant-modules/AccountantLedgerModule";
+import { AccountantVendorsModule } from "@/pages/tenant/accountant-modules/AccountantVendorsModule";
+import { AccountantTaxModule } from "@/pages/tenant/accountant-modules/AccountantTaxModule";
 import FeesUnifiedModule from "@/pages/tenant/modules/FeesUnifiedModule";
 import { RouteGuard } from "@/components/tenant/RouteGuard";
 import { ModuleErrorBoundary } from "@/components/tenant/ModuleErrorBoundary";
