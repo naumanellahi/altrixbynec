@@ -449,6 +449,7 @@ export function AccountantPaymentsModule() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="max-h-[420px] overflow-auto rounded-xl border bg-surface">
