@@ -354,7 +354,8 @@ export function AccountantReportsModule() {
           </Button>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[300px] rounded-xl border bg-surface">
+          <div className="max-h-[360px] overflow-auto rounded-xl border bg-surface">
+            <div className="min-w-[600px]">
             <Table>
               <TableHeader>
                 <TableRow>
