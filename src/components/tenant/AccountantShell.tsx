@@ -45,16 +45,14 @@ export function AccountantShell({ title, subtitle, schoolSlug, children }: Props
   const navItems = [
     { to: basePath, icon: LayoutGrid, label: "Dashboard", end: true, badge: 0 },
     { to: `${basePath}/fees`, icon: DollarSign, label: "Fee Plans", badge: 0 },
+    { to: `${basePath}/fees-pro`, icon: DollarSign, label: "Fees (Advanced)", badge: 0 },
+    { to: `${basePath}/fee-vouchers`, icon: Receipt, label: "Fee Vouchers", badge: 0 },
     { to: `${basePath}/invoices`, icon: FileText, label: "Invoices", badge: 0 },
     { to: `${basePath}/payments`, icon: CreditCard, label: "Payments", badge: 0 },
     { to: `${basePath}/expenses`, icon: TrendingUp, label: "Expenses", badge: 0 },
     { to: `${basePath}/payroll`, icon: Coins, label: "Payroll", badge: 0 },
     { to: `${basePath}/reports`, icon: BarChart3, label: "Reports", badge: 0 },
     { to: `${basePath}/messages`, icon: MessageSquare, label: "Messages", badge: unreadCount },
-    { to: `${basePath}/timetable`, icon: CalendarDays, label: "Timetable Builder", badge: 0 },
-    { to: `${basePath}/fees-pro`, icon: DollarSign, label: "Fees (Advanced)", badge: 0 },
-    { to: `${basePath}/fee-vouchers`, icon: FileText, label: "Fee Vouchers", badge: 0 },
-    { to: `${basePath}/admissions`, icon: FileText, label: "Admissions", badge: 0 },
   ];
 
   const bottomNavItems = [
