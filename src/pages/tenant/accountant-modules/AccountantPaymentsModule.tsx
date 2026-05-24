@@ -428,7 +428,8 @@ export function AccountantPaymentsModule() {
             </Dialog>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[350px] rounded-xl border bg-surface">
+            <div className="max-h-[420px] overflow-auto rounded-xl border bg-surface">
+              <div className="min-w-[900px]">
               <Table>
                 <TableHeader>
                   <TableRow>
