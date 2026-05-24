@@ -403,10 +403,11 @@ export function generateBulkPayslipsHTML(payslips: PayslipData[]): string {
   <meta charset="UTF-8">
   <title>Bulk Payslips</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+    html, body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f5f5f5; padding: 20px; color: #1a1a2e; }
     .payslip { max-width: 800px; margin: 0 auto 40px; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden; }
-    .header { background: linear-gradient(135deg, #007fff 0%, #0066cc 100%); color: white; padding: 25px; text-align: center; }
+    .header { background: linear-gradient(135deg, #007fff 0%, #0066cc 100%); color: white; padding: 25px; text-align: center; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     .header h1 { font-size: 24px; margin-bottom: 4px; }
     .header p { opacity: 0.9; font-size: 13px; }
     .period-badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 6px 16px; border-radius: 16px; margin-top: 12px; font-weight: 500; font-size: 13px; }
