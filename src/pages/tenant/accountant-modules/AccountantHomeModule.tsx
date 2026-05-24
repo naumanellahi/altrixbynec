@@ -601,22 +601,22 @@ export function AccountantHomeModule() {
 
         <TabsContent value="overview" className="space-y-6">
           {/* Financial Health Score + Quick Stats */}
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
+          <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,260px)_minmax(0,1fr)]">
             {/* Health Score Card */}
             <MotionCard 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="shadow-elevated bg-gradient-to-br from-background to-muted/30"
+              className="shadow-elevated bg-gradient-to-br from-background to-muted/30 min-w-0"
             >
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <Shield className="h-5 w-5 text-primary" />
-                  Financial Health
+                  <Shield className="h-5 w-5 text-primary shrink-0" />
+                  <span className="truncate">Financial Health</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-center">
-                  <div className="relative h-[140px] w-[140px]">
+                  <div className="relative h-[120px] w-[120px] sm:h-[140px] sm:w-[140px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <RadialBarChart
                         cx="50%"
@@ -643,19 +643,19 @@ export function AccountantHomeModule() {
                   </div>
                 </div>
                 <div className="mt-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Collection Rate</span>
-                    <span className="font-medium">{stats.collectionRate.toFixed(1)}%</span>
+                  <div className="flex justify-between gap-2 text-sm">
+                    <span className="text-muted-foreground truncate">Collection Rate</span>
+                    <span className="font-medium shrink-0">{stats.collectionRate.toFixed(1)}%</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Profit Margin</span>
-                    <span className={`font-medium ${stats.profitMargin >= 0 ? "text-primary" : "text-destructive"}`}>
+                  <div className="flex justify-between gap-2 text-sm">
+                    <span className="text-muted-foreground truncate">Profit Margin</span>
+                    <span className={`font-medium shrink-0 ${stats.profitMargin >= 0 ? "text-primary" : "text-destructive"}`}>
                       {stats.profitMargin.toFixed(1)}%
                     </span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Overdue Rate</span>
-                    <span className={`font-medium ${stats.overdueInvoices === 0 ? "text-primary" : "text-destructive"}`}>
+                  <div className="flex justify-between gap-2 text-sm">
+                    <span className="text-muted-foreground truncate">Overdue Rate</span>
+                    <span className={`font-medium shrink-0 ${stats.overdueInvoices === 0 ? "text-primary" : "text-destructive"}`}>
                       {invoices.length > 0 ? ((stats.overdueInvoices / invoices.length) * 100).toFixed(1) : 0}%
                     </span>
                   </div>
@@ -664,26 +664,26 @@ export function AccountantHomeModule() {
             </MotionCard>
 
             {/* Key Metrics Grid */}
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 min-w-0">
+            <div className="grid auto-rows-fr grid-cols-2 gap-3 min-w-0 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
               <MotionCard 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="shadow-elevated hover:shadow-lg transition-shadow"
+                className="shadow-elevated hover:shadow-lg transition-shadow min-w-0"
               >
-                <CardContent className="pt-4">
-                  <div className="flex items-center justify-between">
-                    <div className="rounded-lg bg-primary/10 p-2">
+                <CardContent className="flex h-full flex-col gap-2 p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="rounded-lg bg-primary/10 p-2 shrink-0">
                       <TrendingUp className="h-4 w-4 text-primary" />
                     </div>
                     {stats.revenueGrowth !== 0 && (
-                      <div className={`flex items-center text-xs ${stats.revenueGrowth > 0 ? "text-primary" : "text-destructive"}`}>
+                      <div className={`flex items-center gap-0.5 text-xs whitespace-nowrap ${stats.revenueGrowth > 0 ? "text-primary" : "text-destructive"}`}>
                         {stats.revenueGrowth > 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
                         {Math.abs(stats.revenueGrowth).toFixed(1)}%
                       </div>
                     )}
                   </div>
-                  <p className="mt-3 text-xl md:text-2xl font-bold tracking-tight truncate" title={stats.totalRevenue.toLocaleString()}>{stats.totalRevenue.toLocaleString()}</p>
+                  <p className="text-lg sm:text-xl font-bold tracking-tight truncate" title={stats.totalRevenue.toLocaleString()}>{formatCompact(stats.totalRevenue)}</p>
                   <p className="text-xs text-muted-foreground truncate">Total Revenue</p>
                 </CardContent>
               </MotionCard>
@@ -692,21 +692,21 @@ export function AccountantHomeModule() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15 }}
-                className="shadow-elevated hover:shadow-lg transition-shadow"
+                className="shadow-elevated hover:shadow-lg transition-shadow min-w-0"
               >
-                <CardContent className="pt-4">
-                  <div className="flex items-center justify-between">
-                    <div className="rounded-lg bg-destructive/10 p-2">
+                <CardContent className="flex h-full flex-col gap-2 p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="rounded-lg bg-destructive/10 p-2 shrink-0">
                       <TrendingDown className="h-4 w-4 text-destructive" />
                     </div>
                     {stats.expenseGrowth !== 0 && (
-                      <div className={`flex items-center text-xs ${stats.expenseGrowth > 0 ? "text-destructive" : "text-primary"}`}>
+                      <div className={`flex items-center gap-0.5 text-xs whitespace-nowrap ${stats.expenseGrowth > 0 ? "text-destructive" : "text-primary"}`}>
                         {stats.expenseGrowth > 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
                         {Math.abs(stats.expenseGrowth).toFixed(1)}%
                       </div>
                     )}
                   </div>
-                  <p className="mt-3 text-xl md:text-2xl font-bold tracking-tight text-destructive truncate" title={stats.totalExpenses.toLocaleString()}>{stats.totalExpenses.toLocaleString()}</p>
+                  <p className="text-lg sm:text-xl font-bold tracking-tight text-destructive truncate" title={stats.totalExpenses.toLocaleString()}>{formatCompact(stats.totalExpenses)}</p>
                   <p className="text-xs text-muted-foreground truncate">Total Expenses</p>
                 </CardContent>
               </MotionCard>
@@ -715,15 +715,15 @@ export function AccountantHomeModule() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="shadow-elevated hover:shadow-lg transition-shadow"
+                className="shadow-elevated hover:shadow-lg transition-shadow min-w-0"
               >
-                <CardContent className="pt-4">
+                <CardContent className="flex h-full flex-col gap-2 p-4">
                   <div className="rounded-lg bg-chart-3/10 p-2 w-fit">
                     <Coins className="h-4 w-4 text-chart-3" />
                   </div>
-                  <p className="mt-3 text-xl md:text-2xl font-bold tracking-tight truncate" title={stats.monthlyPayroll.toLocaleString()}>{stats.monthlyPayroll.toLocaleString()}</p>
+                  <p className="text-lg sm:text-xl font-bold tracking-tight truncate" title={stats.monthlyPayroll.toLocaleString()}>{formatCompact(stats.monthlyPayroll)}</p>
                   <p className="text-xs text-muted-foreground truncate">Monthly Payroll</p>
-                  <p className="text-xs text-muted-foreground/70 truncate">{stats.activeEmployees} employees</p>
+                  <p className="text-[11px] text-muted-foreground/70 truncate">{stats.activeEmployees} employees</p>
                 </CardContent>
               </MotionCard>
 
@@ -731,20 +731,21 @@ export function AccountantHomeModule() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.25 }}
-                className="shadow-elevated hover:shadow-lg transition-shadow"
+                className="shadow-elevated hover:shadow-lg transition-shadow min-w-0"
               >
-                <CardContent className="pt-4">
+                <CardContent className="flex h-full flex-col gap-2 p-4">
                   <div className="rounded-lg bg-chart-4/10 p-2 w-fit">
                     <PiggyBank className="h-4 w-4 text-chart-4" />
                   </div>
-                  <p className={`mt-3 text-xl md:text-2xl font-bold tracking-tight truncate ${stats.netProfit >= 0 ? "text-primary" : "text-destructive"}`} title={stats.netProfit.toLocaleString()}>
-                    {stats.netProfit >= 0 ? "+" : ""}{stats.netProfit.toLocaleString()}
+                  <p className={`text-lg sm:text-xl font-bold tracking-tight truncate ${stats.netProfit >= 0 ? "text-primary" : "text-destructive"}`} title={stats.netProfit.toLocaleString()}>
+                    {stats.netProfit >= 0 ? "+" : ""}{formatCompact(stats.netProfit)}
                   </p>
                   <p className="text-xs text-muted-foreground truncate">Net Profit</p>
                 </CardContent>
               </MotionCard>
             </div>
           </div>
+
 
           {/* Quick Actions */}
           <Card className="shadow-elevated overflow-hidden">
