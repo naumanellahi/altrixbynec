@@ -1075,7 +1075,7 @@ export function AccountantPayrollModule() {
                     </TableBody>
                   </Table>
                 </div>
-              </ScrollArea>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
