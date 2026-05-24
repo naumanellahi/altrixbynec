@@ -480,7 +480,8 @@ export function AccountantPaymentsModule() {
                   )}
                 </TableBody>
               </Table>
-            </ScrollArea>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
