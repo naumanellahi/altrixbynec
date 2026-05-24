@@ -447,15 +447,45 @@ export function generateBulkPayslipsHTML(payslips: PayslipData[]): string {
   `;
 }
 
+function getSchoolBrandHex(): { primary: string; dark: string } {
+  try {
+    const hsl = getComputedStyle(document.documentElement).getPropertyValue('--brand').trim();
+    const m = hsl.match(/(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%/);
+    if (!m) return { primary: '#007fff', dark: '#0066cc' };
+    const h = parseFloat(m[1]); const s = parseFloat(m[2]) / 100; const l = parseFloat(m[3]) / 100;
+    const toHex = (ll: number) => {
+      const c = (1 - Math.abs(2 * ll - 1)) * s;
+      const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+      const mm = ll - c / 2;
+      let r = 0, g = 0, b = 0;
+      if (h < 60) [r, g, b] = [c, x, 0];
+      else if (h < 120) [r, g, b] = [x, c, 0];
+      else if (h < 180) [r, g, b] = [0, c, x];
+      else if (h < 240) [r, g, b] = [0, x, c];
+      else if (h < 300) [r, g, b] = [x, 0, c];
+      else [r, g, b] = [c, 0, x];
+      const f = (v: number) => Math.round((v + mm) * 255).toString(16).padStart(2, '0');
+      return `#${f(r)}${f(g)}${f(b)}`;
+    };
+    return { primary: toHex(l), dark: toHex(Math.max(0, l - 0.08)) };
+  } catch { return { primary: '#007fff', dark: '#0066cc' }; }
+}
+
+function applyBrandToHtml(html: string): string {
+  const { primary, dark } = getSchoolBrandHex();
+  return html.replace(/#007fff/g, primary).replace(/#0066cc/g, dark);
+}
+
 export function openBulkPayslipsPDF(payslips: PayslipData[]) {
-  const html = generateBulkPayslipsHTML(payslips);
+  const html = applyBrandToHtml(generateBulkPayslipsHTML(payslips));
   const printWindow = window.open('', '_blank');
   if (printWindow) {
     printWindow.document.write(html);
     printWindow.document.close();
     setTimeout(() => {
+      printWindow.focus();
       printWindow.print();
-    }, 300);
+    }, 400);
   }
 }
 
