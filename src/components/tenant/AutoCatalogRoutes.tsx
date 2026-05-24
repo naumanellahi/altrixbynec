@@ -30,12 +30,12 @@ interface Props {
   exclude?: string[];
 }
 
-export function AutoCatalogRoutes({ roles, ctx, exclude }: Props) {
+export function createCatalogRouteElements({ roles, ctx, exclude }: Props) {
   const { roles: expanded, allowedPaths } = resolvePermissions(roles);
   const skip = new Set(exclude ?? []);
   const seen = new Set<string>();
 
-  const elements = NAV_CATALOG.flatMap((item) => {
+  return NAV_CATALOG.flatMap((item) => {
     if (!item.path) return [];                         // dashboard root
     if (skip.has(item.path) || seen.has(item.path)) return [];
     if (!allowedPaths.has(item.path)) return [];       // role not permitted
@@ -58,6 +58,8 @@ export function AutoCatalogRoutes({ roles, ctx, exclude }: Props) {
       />,
     ];
   });
+}
 
-  return <Fragment>{elements}</Fragment>;
+export function AutoCatalogRoutes(props: Props) {
+  return <Fragment>{createCatalogRouteElements(props)}</Fragment>;
 }

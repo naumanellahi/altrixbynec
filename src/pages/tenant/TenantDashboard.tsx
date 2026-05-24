@@ -59,7 +59,7 @@ import FeesAdvancedModule from "@/pages/tenant/modules/FeesAdvancedModule";
 import AdmissionsModule from "@/pages/tenant/modules/AdmissionsModule";
 import FeeVouchersModule from "@/pages/tenant/modules/FeeVouchersModule";
 import { RouteGuard } from "@/components/tenant/RouteGuard";
-import { AutoCatalogRoutes } from "@/components/tenant/AutoCatalogRoutes";
+import { createCatalogRouteElements } from "@/components/tenant/AutoCatalogRoutes";
 import { AICounselorMode } from "@/components/ai/AICounselorMode";
 
 const TenantDashboard = () => {
@@ -510,18 +510,18 @@ const TenantDashboard = () => {
             <Route path="complaints" element={<PrincipalComplaintsModule />} />
             <Route path="parent-notes" element={<PrincipalParentNotesModule />} />
             <Route path="counseling" element={<AICounselorMode schoolId={tenant.schoolId} />} />
-            <AutoCatalogRoutes
-              roles={role ? [role] : []}
-              ctx={{ schoolId: tenant.schoolId, schoolSlug: tenant.slug, role }}
-              exclude={[
+            {createCatalogRouteElements({
+              roles: role ? [role] : [],
+              ctx: { schoolId: tenant.schoolId, schoolSlug: tenant.slug, role },
+              exclude: [
                 "admin","presence-debug","schools","messages","users","directory","crm",
                 "leads","follow-ups","calls","sources","campaigns","academic","timetable",
                 "attendance","finance","fees","fees-pro","fee-vouchers","invoices","payments",
                 "expenses","payroll","ledger","vendors","tax","admissions","reports","leaves",
                 "salaries","contracts","reviews","documents","notices","holidays","diary",
                 "exams","report-cards","support","complaints","parent-notes","counseling",
-              ]}
-            />
+              ],
+            })}
             <Route path="*" element={<Navigate to={`/${tenant.slug}/${role}`} replace />} />
             </Routes>
           </RouteGuard>
