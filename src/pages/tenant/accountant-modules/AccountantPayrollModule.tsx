@@ -929,7 +929,7 @@ export function AccountantPayrollModule() {
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              <ScrollArea className="max-h-[520px]">
+              <div className="max-h-[520px] overflow-auto">
                 <div className="min-w-[760px]">
                   <Table>
                     <TableHeader>
