@@ -636,6 +636,7 @@ function GenerateVoucherDialog({
   const [failCount, setFailCount] = useState(0);
   const [results, setResults] = useState<Array<{ studentId: string; name: string; status: "success" | "error"; error?: string; invoiceId?: string }>>([]);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewData, setPreviewData] = useState<VoucherCopyData | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const previewSeqRef = useRef(0);
 
@@ -891,6 +892,7 @@ function GenerateVoucherDialog({
   useEffect(() => {
     if (!open || !schoolId || !feePlanId) {
       setPreviewUrl((u) => { if (u) URL.revokeObjectURL(u); return null; });
+      setPreviewData(null);
       return;
     }
     const previewStudent =
@@ -899,6 +901,7 @@ function GenerateVoucherDialog({
         : targetStudents[0];
     if (!previewStudent) {
       setPreviewUrl((u) => { if (u) URL.revokeObjectURL(u); return null; });
+      setPreviewData(null);
       return;
     }
     const seq = ++previewSeqRef.current;
@@ -927,8 +930,11 @@ function GenerateVoucherDialog({
           if (prev) URL.revokeObjectURL(prev);
           return url;
         });
+        setPreviewData(data);
       } catch (e) {
         console.error("preview failed", e);
+        toast.error("Voucher preview could not be generated");
+        setPreviewData(null);
       } finally {
         if (seq === previewSeqRef.current) setPreviewLoading(false);
       }
@@ -1332,22 +1338,14 @@ function GenerateVoucherDialog({
             )}
 
             <div className="flex-1 bg-background overflow-hidden flex flex-col">
-              {previewUrl ? (
+              {previewData ? (
                 <>
                   <div className="flex items-center justify-between gap-2 border-b px-3 py-2 bg-muted/30">
                     <span className="text-xs text-muted-foreground truncate">
-                      Live preview · if it doesn't render inline, use the buttons →
+                      Live in-app preview · PDF embedding removed to avoid Chrome blocking
                     </span>
                     <div className="flex items-center gap-1">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.open(previewUrl, "_blank", "noopener,noreferrer")}
-                      >
-                        <Eye className="mr-1 h-3.5 w-3.5" /> Open
-                      </Button>
-                      <Button
+                      {previewUrl && <Button
                         type="button"
                         variant="outline"
                         size="sm"
@@ -1359,29 +1357,18 @@ function GenerateVoucherDialog({
                         }}
                       >
                         <Download className="mr-1 h-3.5 w-3.5" /> Download
-                      </Button>
+                      </Button>}
                     </div>
                   </div>
-                  <object
-                    data={previewUrl}
-                    type="application/pdf"
-                    className="w-full flex-1 min-h-[280px]"
-                    aria-label="Voucher preview"
-                  >
-                    <div className="h-full flex flex-col items-center justify-center gap-2 p-6 text-center text-xs text-muted-foreground">
-                      <p>
-                        Inline PDF preview is blocked in this embedded view. Use{" "}
-                        <strong>Open</strong> or <strong>Download</strong> above to view the
-                        voucher.
-                      </p>
-                    </div>
-                  </object>
+                  <ScrollArea className="flex-1 min-h-[280px]">
+                    <VoucherHtmlPreview data={previewData} />
+                  </ScrollArea>
                 </>
               ) : (
                 <div className="h-full min-h-[300px] flex items-center justify-center text-xs text-muted-foreground p-6 text-center">
                   {feePlanId
-                    ? "Pick a class & student (or section) to see the live PDF preview."
-                    : "Pick a fee plan to see a live PDF preview."}
+                    ? "Pick a class & student (or section) to see the live voucher preview."
+                    : "Pick a fee plan to see a live voucher preview."}
                 </div>
               )}
             </div>
@@ -1403,5 +1390,107 @@ function GenerateVoucherDialog({
       </DialogContent>
     </Dialog>
 
+  );
+}
+
+function VoucherHtmlPreview({ data }: { data: VoucherCopyData }) {
+  const accent = data.accentHsl ?? { h: 210, s: 100, l: 50 };
+  const currency = data.currency || "PKR";
+  const money = (n: number) => `${currency} ${Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  const studentMeta = [
+    data.student.className ? `Class ${data.student.className}${data.student.sectionName ? `-${data.student.sectionName}` : ""}` : null,
+    data.student.rollNumber ? `Roll ${data.student.rollNumber}` : null,
+    data.student.studentCode ? `ID ${data.student.studentCode}` : null,
+  ].filter(Boolean).join(" · ");
+  const bankLines = [
+    data.bank?.bankName ? ["Bank", `${data.bank.bankName}${data.bank.branch ? ` — ${data.bank.branch}` : ""}`] : null,
+    data.bank?.accountTitle ? ["Title", data.bank.accountTitle] : null,
+    data.bank?.accountNumber ? ["A/C #", data.bank.accountNumber] : null,
+    data.bank?.iban ? ["IBAN", data.bank.iban] : null,
+  ].filter(Boolean) as string[][];
+
+  const Copy = ({ label }: { label: string }) => (
+    <div className="min-h-[600px] rounded-md border bg-card shadow-sm overflow-hidden flex flex-col">
+      <div
+        className="p-4 text-primary-foreground"
+        style={{ background: `linear-gradient(135deg, hsl(${accent.h} ${accent.s}% ${Math.max(accent.l - 14, 12)}%), hsl(${accent.h} ${accent.s}% ${accent.l}%))` }}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="font-display text-base font-semibold truncate">{data.school.name}</h3>
+            {data.school.motto && <p className="text-[11px] opacity-90 truncate">{data.school.motto}</p>}
+            <p className="mt-1 text-[10px] opacity-90 line-clamp-2">
+              {[data.school.address, data.school.phone, data.school.email, data.school.website].filter(Boolean).join(" · ")}
+            </p>
+          </div>
+          <Badge variant="secondary" className="shrink-0 text-[10px]">{label}</Badge>
+        </div>
+        <div className="mt-3 text-[11px] font-semibold tracking-normal">OFFICIAL FEE VOUCHER</div>
+      </div>
+
+      <div className="p-4 space-y-3 flex-1">
+        <div className="grid grid-cols-3 gap-2 rounded-md bg-muted p-2 text-xs">
+          <div className="min-w-0"><p className="text-[10px] text-muted-foreground">Voucher #</p><p className="font-semibold truncate">{data.invoiceNumber}</p></div>
+          <div className="min-w-0"><p className="text-[10px] text-muted-foreground">Issue</p><p className="font-semibold truncate">{data.issueDate}</p></div>
+          <div className="min-w-0"><p className="text-[10px] text-muted-foreground">Due</p><p className="font-semibold truncate">{data.dueDate}</p></div>
+        </div>
+
+        <div className="rounded-md border p-3 text-xs">
+          <p className="text-[10px] font-semibold text-muted-foreground">STUDENT</p>
+          <p className="text-sm font-semibold truncate" title={data.student.name}>{data.student.name}</p>
+          {studentMeta && <p className="text-[11px] text-muted-foreground truncate" title={studentMeta}>{studentMeta}</p>}
+          <div className="mt-2 grid grid-cols-[64px_1fr] gap-y-1 text-[11px]">
+            <span className="text-muted-foreground">Parent</span><span className="truncate">{data.student.parentName ?? "—"}{data.student.parentPhone ? ` · ${data.student.parentPhone}` : ""}</span>
+            <span className="text-muted-foreground">Period</span><span className="truncate">{data.periodLabel ?? "—"}</span>
+          </div>
+        </div>
+
+        <div className="rounded-md border overflow-hidden text-xs">
+          <div className="grid grid-cols-[1fr_96px] bg-primary text-primary-foreground px-3 py-2 font-semibold">
+            <span>Description</span><span className="text-right">Amount</span>
+          </div>
+          {data.items.map((item, index) => (
+            <div key={`${item.label}-${index}`} className="grid grid-cols-[1fr_96px] px-3 py-2 border-t">
+              <span className="truncate" title={item.label}>{item.label}</span><span className="text-right font-medium">{money(item.amount)}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-1 text-xs">
+          <div className="flex justify-between gap-3"><span className="text-muted-foreground">Subtotal</span><span className="font-medium">{money(data.subtotal)}</span></div>
+          {data.baseDiscount > 0 && <div className="flex justify-between gap-3"><span className="text-muted-foreground">Base discount</span><span className="font-medium">-{money(data.baseDiscount)}</span></div>}
+          {data.meritDiscount > 0 && <div className="flex justify-between gap-3"><span className="text-muted-foreground truncate">Merit discount{data.meritReason ? ` (${data.meritReason})` : ""}</span><span className="font-medium shrink-0">-{money(data.meritDiscount)}</span></div>}
+          {data.siblingDiscount > 0 && <div className="flex justify-between gap-3"><span className="text-muted-foreground">Sibling discount</span><span className="font-medium">-{money(data.siblingDiscount)}</span></div>}
+          <div className="mt-2 flex justify-between gap-3 rounded-md bg-primary px-3 py-2 text-primary-foreground font-semibold">
+            <span>Total payable</span><span>{money(data.total)}</span>
+          </div>
+        </div>
+
+        {bankLines.length > 0 && (
+          <div className="rounded-md bg-muted p-3 text-[11px]">
+            <p className="mb-1 font-semibold">Pay at bank</p>
+            {bankLines.map(([k, v]) => <div key={k} className="grid grid-cols-[52px_1fr] gap-2"><span className="text-muted-foreground">{k}</span><span className="truncate" title={v}>{v}</span></div>)}
+          </div>
+        )}
+      </div>
+
+      <div className="border-t p-3 text-[10px] text-muted-foreground">
+        <div className="grid grid-cols-2 gap-4 pb-3">
+          <div className="border-t pt-1">Authorised Signature</div>
+          <div className="border-t pt-1">Received By / Bank Stamp</div>
+        </div>
+        <p className="line-clamp-2">{data.footerNote || "Please pay before due date. A late fee may apply for overdue payments."}</p>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="p-4 min-w-[920px] bg-muted/40">
+      <div className="grid grid-cols-3 gap-3">
+        <Copy label="Student Copy" />
+        <Copy label="Bank Copy" />
+        <Copy label="Office Copy" />
+      </div>
+    </div>
   );
 }
