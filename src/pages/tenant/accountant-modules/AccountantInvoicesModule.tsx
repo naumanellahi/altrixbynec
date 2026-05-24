@@ -444,7 +444,8 @@ export function AccountantInvoicesModule() {
                 )}
               </TableBody>
             </Table>
-          </ScrollArea>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
