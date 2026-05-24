@@ -88,16 +88,16 @@ export default function FeeVouchersModule() {
   return (
     <div className="space-y-6">
       <Card className="shadow-elevated">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
             <CardTitle className="font-display text-xl flex items-center gap-2">
-              <Receipt className="h-5 w-5" /> Fee Vouchers
+              <Receipt className="h-5 w-5 shrink-0" /> Fee Vouchers
             </CardTitle>
             <p className="text-sm text-muted-foreground">
               Generate professional fee vouchers for individuals or entire classes. Parents are notified automatically.
             </p>
           </div>
-          <Button variant="hero" onClick={() => setDialogOpen(true)}>
+          <Button variant="hero" onClick={() => setDialogOpen(true)} className="shrink-0">
             <Plus className="mr-2 h-4 w-4" /> Generate Voucher
           </Button>
         </CardHeader>
