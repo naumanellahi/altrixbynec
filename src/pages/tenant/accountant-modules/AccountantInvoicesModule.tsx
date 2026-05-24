@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, FileText, Eye, Trash2, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Plus, FileText, Eye, Trash2, CheckCircle, XCircle, Clock, Download } from "lucide-react";
+import { exportToCSV } from "@/lib/csv";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
