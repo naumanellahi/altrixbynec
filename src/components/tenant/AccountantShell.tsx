@@ -1,9 +1,9 @@
-import { PropsWithChildren, useState } from "react";
+import { PropsWithChildren, useMemo, useState } from "react";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Coins, FileText, CreditCard, TrendingUp, BarChart3, LayoutGrid, DollarSign, Receipt, LogOut, Sparkles, MessageSquare, Menu, BookOpen, Building2, Percent } from "lucide-react";
+import { LayoutGrid, LogOut, Sparkles, MessageSquare, Menu, FileText, CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GlobalCommandPalette } from "@/components/global/GlobalCommandPalette";
 import { NotificationsBell } from "@/components/global/NotificationsBell";
@@ -12,6 +12,7 @@ import { useTenantOptimized } from "@/hooks/useTenantOptimized";
 import { useSession } from "@/hooks/useSession";
 import { useOfflineUniversal } from "@/hooks/useOfflineUniversal";
 import { OfflineStatusIndicator } from "@/components/offline/OfflineStatusIndicator";
+import { NAV_CATALOG } from "@/lib/role-navigation";
 
 type Props = PropsWithChildren<{
   title: string;
@@ -22,13 +23,11 @@ type Props = PropsWithChildren<{
 export function AccountantShell({ title, subtitle, schoolSlug, children }: Props) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { user } = useSession();
-  
-  // Use optimized tenant hook that caches and applies branding automatically
+
   const tenant = useTenantOptimized(schoolSlug);
   const schoolId = tenant.schoolId;
   const { unreadCount } = useUnreadMessagesOptimized(schoolId, user?.id ?? null);
 
-  // Offline support
   const offline = useOfflineUniversal({
     schoolId,
     userId: user?.id ?? null,
@@ -42,19 +41,21 @@ export function AccountantShell({ title, subtitle, schoolSlug, children }: Props
 
   const basePath = `/${schoolSlug}/accountant`;
 
-  const navItems = [
-    { to: basePath, icon: LayoutGrid, label: "Dashboard", end: true, badge: 0 },
-    { to: `${basePath}/fees`, icon: DollarSign, label: "Fees Center", badge: 0 },
-    { to: `${basePath}/invoices`, icon: FileText, label: "Invoices", badge: 0 },
-    { to: `${basePath}/payments`, icon: CreditCard, label: "Payments", badge: 0 },
-    { to: `${basePath}/expenses`, icon: TrendingUp, label: "Expenses", badge: 0 },
-    { to: `${basePath}/payroll`, icon: Coins, label: "Payroll", badge: 0 },
-    { to: `${basePath}/ledger`, icon: BookOpen, label: "Cash Ledger", badge: 0 },
-    { to: `${basePath}/vendors`, icon: Building2, label: "Vendors", badge: 0 },
-    { to: `${basePath}/tax`, icon: Percent, label: "Tax Center", badge: 0 },
-    { to: `${basePath}/reports`, icon: BarChart3, label: "Reports", badge: 0 },
-    { to: `${basePath}/messages`, icon: MessageSquare, label: "Messages", badge: unreadCount },
-  ];
+  // Auto-derive sidebar from the central NAV_CATALOG so any new module
+  // tagged for "accountant" appears here automatically.
+  const navItems = useMemo(() => {
+    const allowedGroups = new Set(["overview", "finance", "operations", "communication"]);
+    const hidden = new Set(["finance", "notices", "holidays", "complaints", "counseling", "support"]);
+    return NAV_CATALOG
+      .filter((m) => m.roles.includes("accountant") && allowedGroups.has(m.group) && !hidden.has(m.key))
+      .map((m) => ({
+        to: m.path ? `${basePath}/${m.path}` : basePath,
+        icon: m.icon,
+        label: m.label,
+        end: !m.path,
+        badge: m.key === "messages" ? unreadCount : 0,
+      }));
+  }, [basePath, unreadCount]);
 
   const bottomNavItems = [
     { to: basePath, icon: LayoutGrid, label: "Home", end: true },
