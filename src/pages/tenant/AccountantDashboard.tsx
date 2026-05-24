@@ -13,9 +13,8 @@ import { AccountantExpensesModule } from "@/pages/tenant/accountant-modules/Acco
 import { AccountantPayrollModule } from "@/pages/tenant/accountant-modules/AccountantPayrollModule";
 import { AccountantReportsModule } from "@/pages/tenant/accountant-modules/AccountantReportsModule";
 import { AccountantMessagesModule } from "@/pages/tenant/accountant-modules/AccountantMessagesModule";
-import { TimetableBuilderModule } from "@/pages/tenant/modules/TimetableBuilderModule";
 import FeesAdvancedModule from "@/pages/tenant/modules/FeesAdvancedModule";
-import AdmissionsModule from "@/pages/tenant/modules/AdmissionsModule";
+import FeeVouchersModule from "@/pages/tenant/modules/FeeVouchersModule";
 import { RouteGuard } from "@/components/tenant/RouteGuard";
 
 const AccountantDashboard = () => {
