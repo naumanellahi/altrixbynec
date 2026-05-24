@@ -286,7 +286,31 @@ export function AccountantInvoicesModule() {
             <CardTitle className="font-display text-xl">Invoices</CardTitle>
             <p className="text-sm text-muted-foreground">Generate and manage student invoices</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (!filteredInvoices.length) return;
+                exportToCSV(
+                  filteredInvoices.map((inv) => ({
+                    invoice_no: inv.invoice_no,
+                    student: getStudentName(inv.student_id),
+                    subtotal: inv.subtotal,
+                    discount: inv.discount_total,
+                    late_fee: inv.late_fee_total,
+                    total: inv.total,
+                    status: inv.status,
+                    issue_date: inv.issue_date,
+                    due_date: inv.due_date || "",
+                    notes: inv.notes || "",
+                  })),
+                  `invoices-${new Date().toISOString().slice(0, 10)}`,
+                );
+              }}
+            >
+              <Download className="mr-2 h-4 w-4" /> Export CSV
+            </Button>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue />
