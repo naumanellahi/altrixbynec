@@ -169,65 +169,78 @@ export function AccountantReportsModule() {
     }));
   }, [invoices]);
 
-  const handleExport = (type: string) => {
-    // Simple CSV export
-    let csv = "";
-    let filename = "";
+  const plRows = [
+    { category: "Revenue (Fee Collections)", amount: totalRevenue },
+    ...expenseByCategory.map((c) => ({ category: `Expense • ${c.name}`, amount: -c.value })),
+    { category: "Payroll", amount: -totalPayroll },
+    { category: "Net Profit / Loss", amount: netProfit },
+  ];
+  const cashflowRows = trendData.map((d) => ({ date: d.date, revenue: d.revenue, expenses: d.expenses }));
+  const expenseRows = expenseByCategory.map((c) => ({ category: c.name, amount: c.value }));
 
-    switch (type) {
-      case "pl":
-        csv = "Category,Amount\n";
-        csv += `Revenue,${totalRevenue}\n`;
-        csv += `Expenses,${totalExpenses}\n`;
-        csv += `Payroll,${totalPayroll}\n`;
-        csv += `Net Profit,${netProfit}\n`;
-        filename = `profit_loss_${period}.csv`;
-        break;
-      case "expenses":
-        csv = "Category,Amount\n";
-        expenseByCategory.forEach((e) => {
-          csv += `${e.name},${e.value}\n`;
-        });
-        filename = `expenses_${period}.csv`;
-        break;
-      case "cashflow":
-        csv = "Date,Revenue,Expenses\n";
-        trendData.forEach((d) => {
-          csv += `${d.date},${d.revenue},${d.expenses}\n`;
-        });
-        filename = `cashflow_${period}.csv`;
-        break;
-    }
+  const periodLabel = period === "month" ? "This Month" : period === "quarter" ? "This Quarter" : "This Year";
+  const summary = [
+    { label: "Revenue", value: totalRevenue.toLocaleString() },
+    { label: "Expenses", value: totalExpenses.toLocaleString() },
+    { label: "Payroll", value: totalPayroll.toLocaleString() },
+    { label: "Net Profit", value: netProfit.toLocaleString() },
+  ];
 
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
+  const printAll = () => {
+    const extra = `
+      <h3 style="margin:18px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.05em">Cash flow trend</h3>
+      ${cashflowRows.length ? `<table><thead><tr><th>Date</th><th>Revenue</th><th>Expenses</th></tr></thead><tbody>${cashflowRows.map((r) => `<tr><td>${r.date}</td><td>${r.revenue.toLocaleString()}</td><td>${r.expenses.toLocaleString()}</td></tr>`).join("")}</tbody></table>` : "<p style='color:#6b7280;font-size:11px'>No cash flow data.</p>"}
+      <h3 style="margin:18px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.05em">Expense breakdown</h3>
+      ${expenseRows.length ? `<table><thead><tr><th>Category</th><th>Amount</th></tr></thead><tbody>${expenseRows.map((r) => `<tr><td>${r.category}</td><td>${r.amount.toLocaleString()}</td></tr>`).join("")}</tbody></table>` : "<p style='color:#6b7280;font-size:11px'>No expense data.</p>"}
+      <h3 style="margin:18px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.05em">Profit & Loss</h3>
+    `;
+    printReport({
+      title: "Consolidated Financial Report",
+      subtitle: `${periodLabel} • ${startDate.toLocaleDateString()} – ${endDate.toLocaleDateString()}`,
+      summary,
+      extraHtml: extra,
+      rows: plRows,
+      schoolName: tenant.status === "ready" ? tenant.school?.name ?? tenant.slug : undefined,
+    });
   };
 
   return (
     <div className="space-y-6">
       {/* Period Selector */}
       <Card className="shadow-elevated">
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle className="font-display text-xl">Financial Reports</CardTitle>
-            <p className="text-sm text-muted-foreground">View P&L, expense breakdown, and cash flow</p>
+            <p className="text-sm text-muted-foreground">P&L, expense breakdown and cash flow — exportable, printable, ready for board packs.</p>
           </div>
-          <Select value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
-            <SelectTrigger className="w-[140px]">
-              <Calendar className="mr-2 h-4 w-4" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="month">This Month</SelectItem>
-              <SelectItem value="quarter">This Quarter</SelectItem>
-              <SelectItem value="year">This Year</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
+              <SelectTrigger className="w-[140px]">
+                <Calendar className="mr-2 h-4 w-4" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="month">This Month</SelectItem>
+                <SelectItem value="quarter">This Quarter</SelectItem>
+                <SelectItem value="year">This Year</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" onClick={printAll} className="gap-2">
+              <Printer className="h-4 w-4" /> Print all
+            </Button>
+            <ReportExportMenu
+              baseName={`financial-report-${period}`}
+              label="Export all"
+              variant="hero"
+              rows={plRows}
+              print={{
+                title: "Consolidated Financial Report",
+                subtitle: `${periodLabel}`,
+                summary,
+                schoolName: tenant.status === "ready" ? tenant.school?.name ?? tenant.slug : undefined,
+              }}
+            />
+          </div>
         </CardHeader>
       </Card>
 
