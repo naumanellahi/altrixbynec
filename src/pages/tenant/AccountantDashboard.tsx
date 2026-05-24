@@ -16,6 +16,8 @@ import { AccountantMessagesModule } from "@/pages/tenant/accountant-modules/Acco
 import FeesAdvancedModule from "@/pages/tenant/modules/FeesAdvancedModule";
 import FeeVouchersModule from "@/pages/tenant/modules/FeeVouchersModule";
 import { RouteGuard } from "@/components/tenant/RouteGuard";
+import { ModuleErrorBoundary } from "@/components/tenant/ModuleErrorBoundary";
+import { useFinanceRealtime } from "@/hooks/useFinanceRealtime";
 
 const AccountantDashboard = () => {
   const { schoolSlug } = useParams();
