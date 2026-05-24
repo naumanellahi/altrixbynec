@@ -6214,10 +6214,13 @@ export type Database = {
         Returns: boolean
       }
       can_manage_finance: { Args: { _school_id: string }; Returns: boolean }
+      can_manage_hr: { Args: { _school_id: string }; Returns: boolean }
       can_manage_jazzcash: { Args: { _school_id: string }; Returns: boolean }
       can_manage_staff: { Args: { _school_id: string }; Returns: boolean }
       can_manage_students: { Args: { _school_id: string }; Returns: boolean }
       can_publish_results: { Args: { _school_id: string }; Returns: boolean }
+      can_view_counseling: { Args: { _school_id: string }; Returns: boolean }
+      can_view_crm: { Args: { _school_id: string }; Returns: boolean }
       can_view_fees: { Args: { _school_id: string }; Returns: boolean }
       can_work_crm: { Args: { _school_id: string }; Returns: boolean }
       check_exam_subject_conflicts: {
@@ -6331,6 +6334,7 @@ export type Database = {
         Returns: boolean
       }
       is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_school_admin: { Args: { _school_id: string }; Returns: boolean }
       is_school_member: {
         Args: { _school_id: string; _user_id: string }
         Returns: boolean
