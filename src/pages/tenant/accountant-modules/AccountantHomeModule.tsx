@@ -1092,9 +1092,9 @@ export function AccountantHomeModule() {
             </CardContent>
           </Card>
 
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-2 min-w-0">
             {/* Expense Breakdown */}
-            <Card className="shadow-elevated">
+            <Card className="shadow-elevated overflow-hidden min-w-0">
               <CardHeader>
                 <CardTitle className="text-lg">Expense Breakdown</CardTitle>
               </CardHeader>
