@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BarChart3, TrendingUp, TrendingDown, FileText, Download, Calendar, DollarSign } from "lucide-react";
+import { BarChart3, TrendingUp, TrendingDown, FileText, Calendar, DollarSign, Printer } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -10,8 +10,9 @@ import { useTenant } from "@/hooks/useTenant";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ReportExportMenu } from "@/components/accountant/ReportExportMenu";
+import { printReport } from "@/lib/report-export";
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--destructive))", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899"];
 
