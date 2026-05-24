@@ -490,7 +490,7 @@ export function openBulkPayslipsPDF(payslips: PayslipData[]) {
 }
 
 export function downloadBulkPayslipsHTML(payslips: PayslipData[], periodStart: string, periodEnd: string) {
-  const html = generateBulkPayslipsHTML(payslips);
+  const html = applyBrandToHtml(generateBulkPayslipsHTML(payslips));
   const blob = new Blob([html], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
