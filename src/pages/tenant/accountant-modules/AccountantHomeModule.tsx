@@ -664,7 +664,7 @@ export function AccountantHomeModule() {
             </MotionCard>
 
             {/* Key Metrics Grid */}
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 min-w-0">
               <MotionCard 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
