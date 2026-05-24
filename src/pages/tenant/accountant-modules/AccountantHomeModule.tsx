@@ -1047,7 +1047,7 @@ export function AccountantHomeModule() {
 
         <TabsContent value="analytics" className="space-y-6">
           {/* Monthly Comparison Chart */}
-          <Card className="shadow-elevated">
+          <Card className="shadow-elevated overflow-hidden">
             <CardHeader>
               <CardTitle className="text-lg">6-Month Revenue vs Expenses</CardTitle>
             </CardHeader>
