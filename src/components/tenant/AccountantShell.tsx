@@ -49,6 +49,9 @@ export function AccountantShell({ title, subtitle, schoolSlug, children }: Props
     { to: `${basePath}/payments`, icon: CreditCard, label: "Payments", badge: 0 },
     { to: `${basePath}/expenses`, icon: TrendingUp, label: "Expenses", badge: 0 },
     { to: `${basePath}/payroll`, icon: Coins, label: "Payroll", badge: 0 },
+    { to: `${basePath}/ledger`, icon: BookOpen, label: "Cash Ledger", badge: 0 },
+    { to: `${basePath}/vendors`, icon: Building2, label: "Vendors", badge: 0 },
+    { to: `${basePath}/tax`, icon: Percent, label: "Tax Center", badge: 0 },
     { to: `${basePath}/reports`, icon: BarChart3, label: "Reports", badge: 0 },
     { to: `${basePath}/messages`, icon: MessageSquare, label: "Messages", badge: unreadCount },
   ];
