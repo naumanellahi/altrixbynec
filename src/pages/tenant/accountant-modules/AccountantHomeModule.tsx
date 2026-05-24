@@ -737,10 +737,10 @@ export function AccountantHomeModule() {
                   <div className="rounded-lg bg-chart-4/10 p-2 w-fit">
                     <PiggyBank className="h-4 w-4 text-chart-4" />
                   </div>
-                  <p className={`mt-3 text-2xl font-bold tracking-tight ${stats.netProfit >= 0 ? "text-primary" : "text-destructive"}`}>
+                  <p className={`mt-3 text-xl md:text-2xl font-bold tracking-tight truncate ${stats.netProfit >= 0 ? "text-primary" : "text-destructive"}`} title={stats.netProfit.toLocaleString()}>
                     {stats.netProfit >= 0 ? "+" : ""}{stats.netProfit.toLocaleString()}
                   </p>
-                  <p className="text-xs text-muted-foreground">Net Profit</p>
+                  <p className="text-xs text-muted-foreground truncate">Net Profit</p>
                 </CardContent>
               </MotionCard>
             </div>
