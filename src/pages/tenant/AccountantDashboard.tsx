@@ -81,9 +81,9 @@ const AccountantDashboard = () => {
       ]}>
       <Routes>
         <Route index element={<ModuleErrorBoundary name="Dashboard"><AccountantHomeModule /></ModuleErrorBoundary>} />
-        <Route path="fees" element={<ModuleErrorBoundary name="Fee Plans"><AccountantFeesModule /></ModuleErrorBoundary>} />
-        <Route path="fees-pro" element={<ModuleErrorBoundary name="Fees (Advanced)"><FeesAdvancedModule /></ModuleErrorBoundary>} />
-        <Route path="fee-vouchers" element={<ModuleErrorBoundary name="Fee Vouchers"><FeeVouchersModule /></ModuleErrorBoundary>} />
+        <Route path="fees" element={<ModuleErrorBoundary name="Fees Center"><FeesUnifiedModule /></ModuleErrorBoundary>} />
+        <Route path="fees-pro" element={<Navigate to={`/${tenant.slug}/accountant/fees?tab=advanced`} replace />} />
+        <Route path="fee-vouchers" element={<Navigate to={`/${tenant.slug}/accountant/fees?tab=vouchers`} replace />} />
         <Route path="invoices" element={<ModuleErrorBoundary name="Invoices"><AccountantInvoicesModule /></ModuleErrorBoundary>} />
         <Route path="payments" element={<ModuleErrorBoundary name="Payments"><AccountantPaymentsModule /></ModuleErrorBoundary>} />
         <Route path="expenses" element={<ModuleErrorBoundary name="Expenses"><AccountantExpensesModule /></ModuleErrorBoundary>} />
