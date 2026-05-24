@@ -1,8 +1,8 @@
 import { useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, CreditCard, Trash2, Receipt, Download } from "lucide-react";
-import { exportToCSV } from "@/lib/csv";
+import { Plus, CreditCard, Trash2, Receipt } from "lucide-react";
+import { ReportExportMenu } from "@/components/accountant/ReportExportMenu";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
@@ -342,27 +342,32 @@ export function AccountantPaymentsModule() {
               <p className="text-sm text-muted-foreground">Record and track fee payments</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (!payments.length) return;
-                  exportToCSV(
-                    payments.map((p) => ({
-                      date: p.paid_at,
-                      invoice: getInvoiceDisplay(p.invoice_id),
-                      student: getStudentName(p.student_id),
-                      amount: p.amount,
-                      method: getMethodName(p.method_id),
-                      reference: p.reference || "",
-                      notes: p.notes || "",
-                    })),
-                    `payments-${new Date().toISOString().slice(0, 10)}`,
-                  );
-                }}
-              >
-                <Download className="mr-2 h-4 w-4" /> Export CSV
-              </Button>
+              {(() => {
+                const exportRows = payments.map((p) => ({
+                  date: p.paid_at,
+                  invoice: getInvoiceDisplay(p.invoice_id),
+                  student: getStudentName(p.student_id),
+                  amount: p.amount,
+                  method: getMethodName(p.method_id),
+                  reference: p.reference || "",
+                  notes: p.notes || "",
+                }));
+                const total = payments.reduce((s, p) => s + (p.amount || 0), 0);
+                return (
+                  <ReportExportMenu
+                    baseName="payments"
+                    rows={exportRows}
+                    print={{
+                      title: "Payments Report",
+                      subtitle: `Generated ${new Date().toLocaleDateString()}`,
+                      summary: [
+                        { label: "Payments", value: payments.length },
+                        { label: "Total collected", value: total.toLocaleString() },
+                      ],
+                    }}
+                  />
+                );
+              })()}
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="hero" onClick={resetForm}>
