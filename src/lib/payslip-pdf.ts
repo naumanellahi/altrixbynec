@@ -52,12 +52,19 @@ export function generatePayslipHTML(data: PayslipData): string {
       padding: 20px;
       color: #1a1a2e;
     }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f6f8fb;
+      padding: 24px;
+      color: #0f172a;
+    }
     .payslip {
-      max-width: 800px;
+      max-width: 820px;
       margin: 0 auto;
       background: white;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      border-radius: 28px;
+      box-shadow: 0 18px 50px -22px rgba(15,23,42,0.20);
+      border: 1px solid #eef2f7;
       overflow: hidden;
     }
     .header {
