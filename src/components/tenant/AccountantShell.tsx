@@ -3,7 +3,7 @@ import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Coins, FileText, CreditCard, TrendingUp, BarChart3, LayoutGrid, DollarSign, CalendarDays, LogOut, Sparkles, MessageSquare, Menu } from "lucide-react";
+import { Coins, FileText, CreditCard, TrendingUp, BarChart3, LayoutGrid, DollarSign, Receipt, LogOut, Sparkles, MessageSquare, Menu } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GlobalCommandPalette } from "@/components/global/GlobalCommandPalette";
 import { NotificationsBell } from "@/components/global/NotificationsBell";
@@ -45,16 +45,14 @@ export function AccountantShell({ title, subtitle, schoolSlug, children }: Props
   const navItems = [
     { to: basePath, icon: LayoutGrid, label: "Dashboard", end: true, badge: 0 },
     { to: `${basePath}/fees`, icon: DollarSign, label: "Fee Plans", badge: 0 },
+    { to: `${basePath}/fees-pro`, icon: DollarSign, label: "Fees (Advanced)", badge: 0 },
+    { to: `${basePath}/fee-vouchers`, icon: Receipt, label: "Fee Vouchers", badge: 0 },
     { to: `${basePath}/invoices`, icon: FileText, label: "Invoices", badge: 0 },
     { to: `${basePath}/payments`, icon: CreditCard, label: "Payments", badge: 0 },
     { to: `${basePath}/expenses`, icon: TrendingUp, label: "Expenses", badge: 0 },
     { to: `${basePath}/payroll`, icon: Coins, label: "Payroll", badge: 0 },
     { to: `${basePath}/reports`, icon: BarChart3, label: "Reports", badge: 0 },
     { to: `${basePath}/messages`, icon: MessageSquare, label: "Messages", badge: unreadCount },
-    { to: `${basePath}/timetable`, icon: CalendarDays, label: "Timetable Builder", badge: 0 },
-    { to: `${basePath}/fees-pro`, icon: DollarSign, label: "Fees (Advanced)", badge: 0 },
-    { to: `${basePath}/fee-vouchers`, icon: FileText, label: "Fee Vouchers", badge: 0 },
-    { to: `${basePath}/admissions`, icon: FileText, label: "Admissions", badge: 0 },
   ];
 
   const bottomNavItems = [

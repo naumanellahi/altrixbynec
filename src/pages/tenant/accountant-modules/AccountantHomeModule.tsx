@@ -683,8 +683,8 @@ export function AccountantHomeModule() {
                       </div>
                     )}
                   </div>
-                  <p className="mt-3 text-2xl font-bold tracking-tight">{stats.totalRevenue.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">Total Revenue</p>
+                  <p className="mt-3 text-xl md:text-2xl font-bold tracking-tight truncate" title={stats.totalRevenue.toLocaleString()}>{stats.totalRevenue.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground truncate">Total Revenue</p>
                 </CardContent>
               </MotionCard>
 
@@ -706,8 +706,8 @@ export function AccountantHomeModule() {
                       </div>
                     )}
                   </div>
-                  <p className="mt-3 text-2xl font-bold tracking-tight text-destructive">{stats.totalExpenses.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">Total Expenses</p>
+                  <p className="mt-3 text-xl md:text-2xl font-bold tracking-tight text-destructive truncate" title={stats.totalExpenses.toLocaleString()}>{stats.totalExpenses.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground truncate">Total Expenses</p>
                 </CardContent>
               </MotionCard>
 
@@ -721,9 +721,9 @@ export function AccountantHomeModule() {
                   <div className="rounded-lg bg-chart-3/10 p-2 w-fit">
                     <Coins className="h-4 w-4 text-chart-3" />
                   </div>
-                  <p className="mt-3 text-2xl font-bold tracking-tight">{stats.monthlyPayroll.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">Monthly Payroll</p>
-                  <p className="text-xs text-muted-foreground/70">{stats.activeEmployees} employees</p>
+                  <p className="mt-3 text-xl md:text-2xl font-bold tracking-tight truncate" title={stats.monthlyPayroll.toLocaleString()}>{stats.monthlyPayroll.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground truncate">Monthly Payroll</p>
+                  <p className="text-xs text-muted-foreground/70 truncate">{stats.activeEmployees} employees</p>
                 </CardContent>
               </MotionCard>
 
@@ -737,10 +737,10 @@ export function AccountantHomeModule() {
                   <div className="rounded-lg bg-chart-4/10 p-2 w-fit">
                     <PiggyBank className="h-4 w-4 text-chart-4" />
                   </div>
-                  <p className={`mt-3 text-2xl font-bold tracking-tight ${stats.netProfit >= 0 ? "text-primary" : "text-destructive"}`}>
+                  <p className={`mt-3 text-xl md:text-2xl font-bold tracking-tight truncate ${stats.netProfit >= 0 ? "text-primary" : "text-destructive"}`} title={stats.netProfit.toLocaleString()}>
                     {stats.netProfit >= 0 ? "+" : ""}{stats.netProfit.toLocaleString()}
                   </p>
-                  <p className="text-xs text-muted-foreground">Net Profit</p>
+                  <p className="text-xs text-muted-foreground truncate">Net Profit</p>
                 </CardContent>
               </MotionCard>
             </div>

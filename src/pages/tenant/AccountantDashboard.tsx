@@ -13,9 +13,8 @@ import { AccountantExpensesModule } from "@/pages/tenant/accountant-modules/Acco
 import { AccountantPayrollModule } from "@/pages/tenant/accountant-modules/AccountantPayrollModule";
 import { AccountantReportsModule } from "@/pages/tenant/accountant-modules/AccountantReportsModule";
 import { AccountantMessagesModule } from "@/pages/tenant/accountant-modules/AccountantMessagesModule";
-import { TimetableBuilderModule } from "@/pages/tenant/modules/TimetableBuilderModule";
 import FeesAdvancedModule from "@/pages/tenant/modules/FeesAdvancedModule";
-import AdmissionsModule from "@/pages/tenant/modules/AdmissionsModule";
+import FeeVouchersModule from "@/pages/tenant/modules/FeeVouchersModule";
 import { RouteGuard } from "@/components/tenant/RouteGuard";
 
 const AccountantDashboard = () => {
@@ -75,20 +74,19 @@ const AccountantDashboard = () => {
     <AccountantShell title={`${tenant.school?.name || "EDUVERSE"} • Finance`} subtitle="Accounting & Finance" schoolSlug={tenant.slug}>
       <RouteGuard extraAllowedPaths={[
         "fees","invoices","payments","expenses","payroll","reports","messages",
-        "timetable","fees-pro","admissions",
+        "fees-pro","fee-vouchers",
       ]}>
       <Routes>
         <Route index element={<AccountantHomeModule />} />
         <Route path="fees" element={<AccountantFeesModule />} />
+        <Route path="fees-pro" element={<FeesAdvancedModule />} />
+        <Route path="fee-vouchers" element={<FeeVouchersModule />} />
         <Route path="invoices" element={<AccountantInvoicesModule />} />
         <Route path="payments" element={<AccountantPaymentsModule />} />
         <Route path="expenses" element={<AccountantExpensesModule />} />
         <Route path="payroll" element={<AccountantPayrollModule />} />
         <Route path="reports" element={<AccountantReportsModule />} />
         <Route path="messages" element={<AccountantMessagesModule />} />
-        <Route path="timetable" element={<TimetableBuilderModule />} />
-        <Route path="fees-pro" element={<FeesAdvancedModule />} />
-        <Route path="admissions" element={<AdmissionsModule />} />
         <Route path="*" element={<Navigate to={`/${tenant.slug}/accountant`} replace />} />
       </Routes>
       </RouteGuard>
