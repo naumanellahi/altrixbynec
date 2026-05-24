@@ -818,9 +818,9 @@ export function AccountantHomeModule() {
             </div>
           )}
 
-          <div className="grid gap-6 lg:grid-cols-5">
+          <div className="grid gap-6 lg:grid-cols-5 min-w-0">
             {/* Cash Flow Chart */}
-            <Card className="shadow-elevated lg:col-span-3">
+            <Card className="shadow-elevated lg:col-span-3 min-w-0 overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <div>
                   <CardTitle className="text-base font-semibold">Cash Flow (Last 30 Days)</CardTitle>
