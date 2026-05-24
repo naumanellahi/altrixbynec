@@ -1153,14 +1153,69 @@ export function AccountantPayrollModule() {
                               <SelectItem value="all">
                                 All active staff ({activeSalaries.length})
                               </SelectItem>
-                              <SelectItem
-                                value="selected"
-                                disabled={selectedActiveSalaries.length === 0}
-                              >
-                                Selected staff ({selectedActiveSalaries.length})
+                              <SelectItem value="selected">
+                                Pick staff ({selectedActiveSalaries.length} selected)
                               </SelectItem>
                             </SelectContent>
                           </Select>
+                          {prScope === "selected" && (
+                            <div className="mt-2 space-y-2">
+                              {activeSalaries.length === 0 ? (
+                                <p className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+                                  No active salary records yet. Add a salary in the Salaries tab first.
+                                </p>
+                              ) : (
+                                <>
+                                  <div className="flex items-center justify-between text-xs">
+                                    <button
+                                      type="button"
+                                      className="text-primary hover:underline"
+                                      onClick={() =>
+                                        setSelectedUserIds(
+                                          new Set(activeSalaries.map((s) => s.user_id)),
+                                        )
+                                      }
+                                    >
+                                      Select all
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="text-muted-foreground hover:underline"
+                                      onClick={() => setSelectedUserIds(new Set())}
+                                    >
+                                      Clear
+                                    </button>
+                                  </div>
+                                  <div className="max-h-44 space-y-1 overflow-y-auto rounded-md border p-2">
+                                    {activeSalaries.map((s) => {
+                                      const checked = selectedUserIds.has(s.user_id);
+                                      const net =
+                                        s.base_salary + s.allowances - s.deductions;
+                                      return (
+                                        <label
+                                          key={s.id}
+                                          className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-muted/50"
+                                        >
+                                          <Checkbox
+                                            checked={checked}
+                                            onCheckedChange={() =>
+                                              toggleSelect(s.user_id)
+                                            }
+                                          />
+                                          <span className="flex-1 truncate">
+                                            {getStaffName(s.user_id)}
+                                          </span>
+                                          <span className="text-xs text-muted-foreground">
+                                            {fmt(net, s.currency)}
+                                          </span>
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          )}
                         </div>
                         <div className="rounded-lg border bg-muted/30 p-3">
                           <p className="mb-2 text-sm font-medium">
