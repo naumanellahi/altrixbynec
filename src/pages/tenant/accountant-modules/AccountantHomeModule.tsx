@@ -75,6 +75,15 @@ const COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2))", "hsl(var(--chart-3
 
 const MotionCard = motion(Card);
 
+const compactFormatter = new Intl.NumberFormat("en", {
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+const formatCompact = (n: number) => {
+  const sign = n < 0 ? "-" : "";
+  return sign + compactFormatter.format(Math.abs(n));
+};
+
 export function AccountantHomeModule() {
   const { schoolSlug } = useParams();
   const navigate = useNavigate();
