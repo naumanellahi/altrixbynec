@@ -706,8 +706,8 @@ export function AccountantHomeModule() {
                       </div>
                     )}
                   </div>
-                  <p className="mt-3 text-2xl font-bold tracking-tight text-destructive">{stats.totalExpenses.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">Total Expenses</p>
+                  <p className="mt-3 text-xl md:text-2xl font-bold tracking-tight text-destructive truncate" title={stats.totalExpenses.toLocaleString()}>{stats.totalExpenses.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground truncate">Total Expenses</p>
                 </CardContent>
               </MotionCard>
 
