@@ -192,12 +192,16 @@ export function generatePayslipHTML(data: PayslipData): string {
       body {
         background: white;
         padding: 0;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
       .payslip {
         box-shadow: none;
         border-radius: 0;
       }
+      .header, .totals { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     }
+    @page { size: A4; margin: 10mm; }
   </style>
 </head>
 <body>
