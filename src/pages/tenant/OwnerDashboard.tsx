@@ -53,6 +53,7 @@ import PrincipalComplaintsModule from "@/pages/tenant/modules/PrincipalComplaint
 import PrincipalParentNotesModule from "@/pages/tenant/modules/PrincipalParentNotesModule";
 import FeesAdvancedModule from "@/pages/tenant/modules/FeesAdvancedModule";
 import FeeVouchersModule from "@/pages/tenant/modules/FeeVouchersModule";
+import FeesUnifiedModule from "@/pages/tenant/modules/FeesUnifiedModule";
 import { AICounselorMode } from "@/components/ai/AICounselorMode";
 
 // Cache key for owner auth
