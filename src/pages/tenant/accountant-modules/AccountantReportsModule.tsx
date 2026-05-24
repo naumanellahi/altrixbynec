@@ -291,9 +291,11 @@ export function AccountantReportsModule() {
         <Card className="shadow-elevated">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">Cash Flow Trend</CardTitle>
-            <Button variant="outline" size="sm" onClick={() => handleExport("cashflow")}>
-              <Download className="mr-2 h-4 w-4" /> Export
-            </Button>
+            <ReportExportMenu
+              baseName={`cashflow-${period}`}
+              rows={cashflowRows}
+              print={{ title: "Cash Flow Trend", subtitle: periodLabel, summary }}
+            />
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
@@ -329,9 +331,11 @@ export function AccountantReportsModule() {
         <Card className="shadow-elevated">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">Expense Breakdown</CardTitle>
-            <Button variant="outline" size="sm" onClick={() => handleExport("expenses")}>
-              <Download className="mr-2 h-4 w-4" /> Export
-            </Button>
+            <ReportExportMenu
+              baseName={`expense-breakdown-${period}`}
+              rows={expenseRows}
+              print={{ title: "Expense Breakdown", subtitle: periodLabel, summary }}
+            />
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
@@ -363,9 +367,11 @@ export function AccountantReportsModule() {
       <Card className="shadow-elevated">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">Profit & Loss Statement</CardTitle>
-          <Button variant="outline" size="sm" onClick={() => handleExport("pl")}>
-            <Download className="mr-2 h-4 w-4" /> Export CSV
-          </Button>
+            <ReportExportMenu
+              baseName={`profit-loss-${period}`}
+              rows={plRows}
+              print={{ title: "Profit & Loss Statement", subtitle: periodLabel, summary }}
+            />
         </CardHeader>
         <CardContent>
           <div className="max-h-[360px] overflow-auto rounded-xl border bg-surface">
