@@ -200,7 +200,7 @@ export function AccountantReportsModule() {
       summary,
       extraHtml: extra,
       rows: plRows,
-      schoolName: tenant.status === "ready" ? tenant.school?.name ?? tenant.slug : undefined,
+      schoolName: tenant.status === "ready" ? tenant.school?.name ?? schoolSlug : undefined,
     });
   };
 
@@ -237,7 +237,7 @@ export function AccountantReportsModule() {
                 title: "Consolidated Financial Report",
                 subtitle: `${periodLabel}`,
                 summary,
-                schoolName: tenant.status === "ready" ? tenant.school?.name ?? tenant.slug : undefined,
+                schoolName: tenant.status === "ready" ? tenant.school?.name ?? schoolSlug : undefined,
               }}
             />
           </div>
