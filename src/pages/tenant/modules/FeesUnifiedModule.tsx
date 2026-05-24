@@ -48,15 +48,15 @@ export default function FeesUnifiedModule() {
         <TabsList className="grid w-full grid-cols-3 sm:inline-grid sm:w-auto">
           <TabsTrigger value="plans" className="gap-1.5">
             <DollarSign className="h-4 w-4" />
-            <span className="hidden xs:inline sm:inline">Plans</span>
+            <span className="hidden sm:inline">Plans</span>
           </TabsTrigger>
           <TabsTrigger value="advanced" className="gap-1.5">
             <Sparkles className="h-4 w-4" />
-            <span className="hidden xs:inline sm:inline">Advanced</span>
+            <span className="hidden sm:inline">Advanced</span>
           </TabsTrigger>
           <TabsTrigger value="vouchers" className="gap-1.5">
             <Receipt className="h-4 w-4" />
-            <span className="hidden xs:inline sm:inline">Vouchers</span>
+            <span className="hidden sm:inline">Vouchers</span>
           </TabsTrigger>
         </TabsList>
 
