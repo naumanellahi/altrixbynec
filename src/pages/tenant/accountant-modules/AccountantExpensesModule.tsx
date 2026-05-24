@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, TrendingDown, Trash2, Edit, Filter, WifiOff, RefreshCw } from "lucide-react";
+import { Plus, TrendingDown, Trash2, Edit, Filter, WifiOff, RefreshCw, Download } from "lucide-react";
+import { exportToCSV } from "@/lib/csv";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
