@@ -294,7 +294,28 @@ export function AccountantExpensesModule() {
               <CardTitle className="font-display text-xl">Expenses</CardTitle>
               <p className="text-sm text-muted-foreground">Track and manage all expenses</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (!filteredExpenses.length) return;
+                  exportToCSV(
+                    filteredExpenses.map((e) => ({
+                      date: e.expense_date,
+                      description: e.description,
+                      category: formatCategory(e.category),
+                      amount: e.amount,
+                      vendor: e.vendor || "",
+                      reference: e.reference || "",
+                      method: getMethodName(e.payment_method_id),
+                    })),
+                    `expenses-${new Date().toISOString().slice(0, 10)}`,
+                  );
+                }}
+              >
+                <Download className="mr-2 h-4 w-4" /> Export CSV
+              </Button>
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger className="w-[160px]">
                   <Filter className="mr-2 h-4 w-4" />
