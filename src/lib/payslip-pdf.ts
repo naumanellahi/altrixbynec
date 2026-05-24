@@ -41,7 +41,11 @@ export function generatePayslipHTML(data: PayslipData): string {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
     }
+    html, body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: #f5f5f5;
