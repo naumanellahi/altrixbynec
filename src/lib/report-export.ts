@@ -225,28 +225,30 @@ export function printReport(opts: PrintOptions) {
   @media print{ body{padding:10mm;background:#fff} .no-print{display:none} .sheet{box-shadow:none;border:none;border-radius:18px} }
   @page{size:A4;margin:10mm}
 </style></head><body>
-  <div class="brand-bar"></div>
-  <div class="brand">
-    <div class="brand-left">
-      <div class="mono">${escapeHtml(mono)}</div>
-      <div>
-        <div class="school">${escapeHtml(schoolName)}</div>
-        <h1>${escapeHtml(title)}</h1>
+  <div class="sheet">
+    <div class="brand-bar"></div>
+    <div class="brand">
+      <div class="brand-left">
+        <div class="mono">${escapeHtml(mono)}</div>
+        <div>
+          <div class="school">${escapeHtml(schoolName)}</div>
+          <h1>${escapeHtml(title)}</h1>
+        </div>
+      </div>
+      <div class="meta">
+        <strong>Generated</strong>
+        <div>${escapeHtml(generated)}</div>
+        ${contactLine ? `<div style="margin-top:4px">${escapeHtml(contactLine)}</div>` : ""}
       </div>
     </div>
-    <div class="meta">
-      <strong>Generated</strong>
-      <div>${escapeHtml(generated)}</div>
-      ${contactLine ? `<div style="margin-top:4px">${escapeHtml(contactLine)}</div>` : ""}
+    ${subtitle ? `<h2 class="subtitle">${escapeHtml(subtitle)}</h2>` : ""}
+    ${summaryHtml}
+    ${extraHtml ?? ""}
+    ${table}
+    <div class="footer">
+      <span class="brand-mark">${escapeHtml(schoolName)}</span>
+      <span>${rows.length} record${rows.length === 1 ? "" : "s"} • Page <span class="pg"></span></span>
     </div>
-  </div>
-  ${subtitle ? `<h2 class="subtitle">${escapeHtml(subtitle)}</h2>` : ""}
-  ${summaryHtml}
-  ${extraHtml ?? ""}
-  ${table}
-  <div class="footer">
-    <span class="brand-mark">${escapeHtml(schoolName)}</span>
-    <span>${rows.length} record${rows.length === 1 ? "" : "s"} • Page <span class="pg"></span></span>
   </div>
   <script>window.onload=function(){setTimeout(function(){window.print()},250)};window.onafterprint=function(){window.close()};</script>
 </body></html>`;
