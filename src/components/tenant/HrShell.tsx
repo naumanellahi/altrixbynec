@@ -48,7 +48,7 @@ export function HrShell({ title, subtitle, schoolSlug, children }: Props) {
     { to: `${basePath}/leaves`, icon: Calendar, label: "Leave Management", badge: 0 },
     { to: `${basePath}/attendance`, icon: ClipboardList, label: "Staff Attendance", badge: 0 },
     { to: `${basePath}/salaries`, icon: Coins, label: "Salaries", badge: 0 },
-    { to: `${basePath}/fee-vouchers`, icon: FileText, label: "Fee Vouchers", badge: 0 },
+    { to: `${basePath}/fees?tab=vouchers`, icon: FileText, label: "Fee Vouchers", badge: 0 },
     { to: `${basePath}/contracts`, icon: FileText, label: "Contracts", badge: 0 },
     { to: `${basePath}/reviews`, icon: Star, label: "Performance Reviews", badge: 0 },
     { to: `${basePath}/documents`, icon: Briefcase, label: "Documents", badge: 0 },
