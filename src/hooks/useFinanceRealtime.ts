@@ -6,42 +6,97 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 /**
  * Subscribes to every finance-related table for the given school and
  * invalidates the matching react-query caches so every accountant tab
- * stays in sync with the database in realtime.
+ * (Home, Invoices, Payments, Expenses, Payroll, Fees, Vouchers,
+ * Ledger, Vendors, Tax, Reports) stays in sync with the database in
+ * realtime — lists, totals, KPIs, and charts all refresh automatically.
+ *
+ * We use predicate-based invalidation so any query whose key starts
+ * with a known finance prefix gets refreshed without needing to keep
+ * a per-table key map in sync.
  */
-const FINANCE_TABLES: Array<{ table: string; keys: string[] }> = [
-  { table: "fee_invoices", keys: ["fee_invoices", "proof_invoices", "accountant_invoices", "voucher_invoices", "accountant_home"] },
-  { table: "fee_payments", keys: ["fee_payments", "accountant_payments", "accountant_home"] },
-  { table: "fee_payment_proofs", keys: ["fee_payment_proofs", "accountant_home"] },
-  { table: "fee_plans", keys: ["fee_plans", "accountant_home"] },
-  { table: "fee_plan_items", keys: ["fee_plan_items"] },
-  { table: "fee_plan_installments", keys: ["fee_plan_installments"] },
-  { table: "fee_voucher_batches", keys: ["fee_voucher_batches", "accountant_home"] },
-  { table: "fee_voucher_deliveries", keys: ["fee_voucher_deliveries"] },
-  { table: "expenses", keys: ["expenses", "accountant_expenses", "accountant_home"] },
-  { table: "payroll_runs", keys: ["payroll_runs", "accountant_payroll", "accountant_home"] },
-  { table: "payroll_items", keys: ["payroll_items", "accountant_payroll"] },
+const FINANCE_TABLES = [
+  // Core finance tables used by the accountant modules
+  "finance_invoices",
+  "finance_payments",
+  "finance_expenses",
+  "finance_payment_methods",
+  // Fee-engine tables
+  "fee_invoices",
+  "fee_invoice_items",
+  "fee_payments",
+  "fee_payment_proofs",
+  "fee_plans",
+  "fee_plan_items",
+  "fee_plan_installments",
+  "fee_voucher_batches",
+  "fee_voucher_deliveries",
+  "fee_settings",
+  "student_fee_assignments",
+  // Payroll / HR-linked finance
+  "hr_pay_runs",
+  "hr_salary_records",
+  "hr_payroll_items",
+  "hr_staff_salaries",
+] as const;
+
+/**
+ * Any query whose first key segment starts with one of these prefixes
+ * is considered finance-related and will be invalidated on a realtime
+ * change. Keep this list in lockstep with queryKey usage across the
+ * accountant modules.
+ */
+const FINANCE_KEY_PREFIXES = [
+  "finance_",
+  "fee_",
+  "hr_pay_",
+  "hr_salary_",
+  "accountant_",
+  "ledger_",
+  "vendor_",
+  "tax_",
+  "proof_",
+  "voucher_",
+  "payroll_",
+  "dashboard_kpi_",
 ];
+
+function isFinanceKey(key: unknown): boolean {
+  if (!Array.isArray(key) || key.length === 0) return false;
+  const head = key[0];
+  if (typeof head !== "string") return false;
+  return FINANCE_KEY_PREFIXES.some((p) => head.startsWith(p));
+}
 
 export function useFinanceRealtime(schoolId: string | null) {
   const qc = useQueryClient();
+
   useEffect(() => {
     if (!schoolId) return;
+
+    let pending = false;
+    const invalidateAll = () => {
+      if (pending) return;
+      pending = true;
+      // Debounce burst events into a single invalidation pass.
+      setTimeout(() => {
+        pending = false;
+        qc.invalidateQueries({ predicate: (q) => isFinanceKey(q.queryKey) });
+      }, 150);
+    };
+
     const channels: RealtimeChannel[] = [];
-    for (const { table, keys } of FINANCE_TABLES) {
+    for (const table of FINANCE_TABLES) {
       const ch = supabase
         .channel(`finance-rt-${table}-${schoolId}`)
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table, filter: `school_id=eq.${schoolId}` },
-          () => {
-            keys.forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
-            // Also invalidate the school-scoped variant if present
-            keys.forEach((k) => qc.invalidateQueries({ queryKey: [k, schoolId] }));
-          },
+          invalidateAll,
         )
         .subscribe();
       channels.push(ch);
     }
+
     return () => {
       channels.forEach((c) => supabase.removeChannel(c));
     };
