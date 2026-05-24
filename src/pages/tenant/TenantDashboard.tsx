@@ -39,7 +39,7 @@ import { MarketingCallsModule } from "@/pages/tenant/marketing-modules/Marketing
 import { MarketingSourcesModule } from "@/pages/tenant/marketing-modules/MarketingSourcesModule";
 import { MarketingCampaignsModule } from "@/pages/tenant/marketing-modules/MarketingCampaignsModule";
 import { AccountantFeesModule } from "@/pages/tenant/accountant-modules/AccountantFeesModule";
-// ... keep existing code
+import FeesUnifiedModule from "@/pages/tenant/modules/FeesUnifiedModule";
 
 import { AccountantInvoicesModule } from "@/pages/tenant/accountant-modules/AccountantInvoicesModule";
 import { AccountantPaymentsModule } from "@/pages/tenant/accountant-modules/AccountantPaymentsModule";
