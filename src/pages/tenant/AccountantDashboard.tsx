@@ -46,6 +46,9 @@ const AccountantDashboard = () => {
     enabled: !!schoolId && !!user && authzState === 'ok',
   });
 
+  // Keep every finance tab in realtime sync
+  useFinanceRealtime(schoolId);
+
   // Don't show loading if we have cached user
   if (loading && !user) {
     return (
