@@ -283,20 +283,20 @@ export function generatePayslipHTML(data: PayslipData): string {
 }
 
 export function openPayslipPDF(data: PayslipData) {
-  const html = generatePayslipHTML(data);
+  const html = applyBrandToHtml(generatePayslipHTML(data));
   const printWindow = window.open('', '_blank');
   if (printWindow) {
     printWindow.document.write(html);
     printWindow.document.close();
-    // Auto-trigger print dialog after a short delay
     setTimeout(() => {
+      printWindow.focus();
       printWindow.print();
-    }, 250);
+    }, 300);
   }
 }
 
 export function downloadPayslipPDF(data: PayslipData) {
-  const html = generatePayslipHTML(data);
+  const html = applyBrandToHtml(generatePayslipHTML(data));
   const blob = new Blob([html], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
