@@ -12,6 +12,9 @@ import { AccountantExpensesModule } from "@/pages/tenant/accountant-modules/Acco
 import { AccountantPayrollModule } from "@/pages/tenant/accountant-modules/AccountantPayrollModule";
 import { AccountantReportsModule } from "@/pages/tenant/accountant-modules/AccountantReportsModule";
 import { AccountantMessagesModule } from "@/pages/tenant/accountant-modules/AccountantMessagesModule";
+import { AccountantLedgerModule } from "@/pages/tenant/accountant-modules/AccountantLedgerModule";
+import { AccountantVendorsModule } from "@/pages/tenant/accountant-modules/AccountantVendorsModule";
+import { AccountantTaxModule } from "@/pages/tenant/accountant-modules/AccountantTaxModule";
 import FeesUnifiedModule from "@/pages/tenant/modules/FeesUnifiedModule";
 import { RouteGuard } from "@/components/tenant/RouteGuard";
 import { ModuleErrorBoundary } from "@/components/tenant/ModuleErrorBoundary";
@@ -77,7 +80,7 @@ const AccountantDashboard = () => {
     <AccountantShell title={`${tenant.school?.name || "EDUVERSE"} • Finance`} subtitle="Accounting & Finance" schoolSlug={tenant.slug}>
       <RouteGuard extraAllowedPaths={[
         "fees","invoices","payments","expenses","payroll","reports","messages",
-        "fees-pro","fee-vouchers",
+        "fees-pro","fee-vouchers","ledger","vendors","tax",
       ]}>
       <Routes>
         <Route index element={<ModuleErrorBoundary name="Dashboard"><AccountantHomeModule /></ModuleErrorBoundary>} />
@@ -88,6 +91,9 @@ const AccountantDashboard = () => {
         <Route path="payments" element={<ModuleErrorBoundary name="Payments"><AccountantPaymentsModule /></ModuleErrorBoundary>} />
         <Route path="expenses" element={<ModuleErrorBoundary name="Expenses"><AccountantExpensesModule /></ModuleErrorBoundary>} />
         <Route path="payroll" element={<ModuleErrorBoundary name="Payroll"><AccountantPayrollModule /></ModuleErrorBoundary>} />
+        <Route path="ledger" element={<ModuleErrorBoundary name="Ledger"><AccountantLedgerModule /></ModuleErrorBoundary>} />
+        <Route path="vendors" element={<ModuleErrorBoundary name="Vendors"><AccountantVendorsModule /></ModuleErrorBoundary>} />
+        <Route path="tax" element={<ModuleErrorBoundary name="Tax Center"><AccountantTaxModule /></ModuleErrorBoundary>} />
         <Route path="reports" element={<ModuleErrorBoundary name="Reports"><AccountantReportsModule /></ModuleErrorBoundary>} />
         <Route path="messages" element={<ModuleErrorBoundary name="Messages"><AccountantMessagesModule /></ModuleErrorBoundary>} />
         <Route path="*" element={<Navigate to={`/${tenant.slug}/accountant`} replace />} />
