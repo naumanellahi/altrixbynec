@@ -389,7 +389,8 @@ export function AccountantReportsModule() {
                 </TableRow>
               </TableBody>
             </Table>
-          </ScrollArea>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
