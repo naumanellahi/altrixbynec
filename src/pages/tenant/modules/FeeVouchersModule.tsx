@@ -636,6 +636,7 @@ function GenerateVoucherDialog({
   const [failCount, setFailCount] = useState(0);
   const [results, setResults] = useState<Array<{ studentId: string; name: string; status: "success" | "error"; error?: string; invoiceId?: string }>>([]);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewData, setPreviewData] = useState<VoucherCopyData | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const previewSeqRef = useRef(0);
 
@@ -891,6 +892,7 @@ function GenerateVoucherDialog({
   useEffect(() => {
     if (!open || !schoolId || !feePlanId) {
       setPreviewUrl((u) => { if (u) URL.revokeObjectURL(u); return null; });
+      setPreviewData(null);
       return;
     }
     const previewStudent =
@@ -899,6 +901,7 @@ function GenerateVoucherDialog({
         : targetStudents[0];
     if (!previewStudent) {
       setPreviewUrl((u) => { if (u) URL.revokeObjectURL(u); return null; });
+      setPreviewData(null);
       return;
     }
     const seq = ++previewSeqRef.current;
@@ -927,8 +930,11 @@ function GenerateVoucherDialog({
           if (prev) URL.revokeObjectURL(prev);
           return url;
         });
+        setPreviewData(data);
       } catch (e) {
         console.error("preview failed", e);
+        toast.error("Voucher preview could not be generated");
+        setPreviewData(null);
       } finally {
         if (seq === previewSeqRef.current) setPreviewLoading(false);
       }
