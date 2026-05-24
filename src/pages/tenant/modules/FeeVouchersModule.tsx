@@ -1367,8 +1367,8 @@ function GenerateVoucherDialog({
               ) : (
                 <div className="h-full min-h-[300px] flex items-center justify-center text-xs text-muted-foreground p-6 text-center">
                   {feePlanId
-                    ? "Pick a class & student (or section) to see the live PDF preview."
-                    : "Pick a fee plan to see a live PDF preview."}
+                    ? "Pick a class & student (or section) to see the live voucher preview."
+                    : "Pick a fee plan to see a live voucher preview."}
                 </div>
               )}
             </div>
