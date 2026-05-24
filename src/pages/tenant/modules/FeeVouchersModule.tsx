@@ -1331,13 +1331,52 @@ function GenerateVoucherDialog({
               </div>
             )}
 
-            <div className="flex-1 bg-background overflow-hidden">
+            <div className="flex-1 bg-background overflow-hidden flex flex-col">
               {previewUrl ? (
-                <iframe
-                  title="Voucher preview"
-                  src={previewUrl}
-                  className="w-full h-full border-0 min-h-[300px]"
-                />
+                <>
+                  <div className="flex items-center justify-between gap-2 border-b px-3 py-2 bg-muted/30">
+                    <span className="text-xs text-muted-foreground truncate">
+                      Live preview · if it doesn't render inline, use the buttons →
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(previewUrl, "_blank", "noopener,noreferrer")}
+                      >
+                        <Eye className="mr-1 h-3.5 w-3.5" /> Open
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const a = document.createElement("a");
+                          a.href = previewUrl;
+                          a.download = "voucher-preview.pdf";
+                          a.click();
+                        }}
+                      >
+                        <Download className="mr-1 h-3.5 w-3.5" /> Download
+                      </Button>
+                    </div>
+                  </div>
+                  <object
+                    data={previewUrl}
+                    type="application/pdf"
+                    className="w-full flex-1 min-h-[280px]"
+                    aria-label="Voucher preview"
+                  >
+                    <div className="h-full flex flex-col items-center justify-center gap-2 p-6 text-center text-xs text-muted-foreground">
+                      <p>
+                        Inline PDF preview is blocked in this embedded view. Use{" "}
+                        <strong>Open</strong> or <strong>Download</strong> above to view the
+                        voucher.
+                      </p>
+                    </div>
+                  </object>
+                </>
               ) : (
                 <div className="h-full min-h-[300px] flex items-center justify-center text-xs text-muted-foreground p-6 text-center">
                   {feePlanId
