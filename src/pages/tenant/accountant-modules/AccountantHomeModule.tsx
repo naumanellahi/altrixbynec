@@ -601,7 +601,7 @@ export function AccountantHomeModule() {
 
         <TabsContent value="overview" className="space-y-6">
           {/* Financial Health Score + Quick Stats */}
-          <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
             {/* Health Score Card */}
             <MotionCard 
               initial={{ opacity: 0, y: 20 }}
@@ -664,7 +664,7 @@ export function AccountantHomeModule() {
             </MotionCard>
 
             {/* Key Metrics Grid */}
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 min-w-0">
               <MotionCard 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -818,9 +818,9 @@ export function AccountantHomeModule() {
             </div>
           )}
 
-          <div className="grid gap-6 lg:grid-cols-5">
+          <div className="grid gap-6 lg:grid-cols-5 min-w-0">
             {/* Cash Flow Chart */}
-            <Card className="shadow-elevated lg:col-span-3">
+            <Card className="shadow-elevated lg:col-span-3 min-w-0 overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <div>
                   <CardTitle className="text-base font-semibold">Cash Flow (Last 30 Days)</CardTitle>
@@ -1047,7 +1047,7 @@ export function AccountantHomeModule() {
 
         <TabsContent value="analytics" className="space-y-6">
           {/* Monthly Comparison Chart */}
-          <Card className="shadow-elevated">
+          <Card className="shadow-elevated overflow-hidden">
             <CardHeader>
               <CardTitle className="text-lg">6-Month Revenue vs Expenses</CardTitle>
             </CardHeader>
@@ -1092,9 +1092,9 @@ export function AccountantHomeModule() {
             </CardContent>
           </Card>
 
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-2 min-w-0">
             {/* Expense Breakdown */}
-            <Card className="shadow-elevated">
+            <Card className="shadow-elevated overflow-hidden min-w-0">
               <CardHeader>
                 <CardTitle className="text-lg">Expense Breakdown</CardTitle>
               </CardHeader>

@@ -16,6 +16,8 @@ import { AccountantMessagesModule } from "@/pages/tenant/accountant-modules/Acco
 import FeesAdvancedModule from "@/pages/tenant/modules/FeesAdvancedModule";
 import FeeVouchersModule from "@/pages/tenant/modules/FeeVouchersModule";
 import { RouteGuard } from "@/components/tenant/RouteGuard";
+import { ModuleErrorBoundary } from "@/components/tenant/ModuleErrorBoundary";
+import { useFinanceRealtime } from "@/hooks/useFinanceRealtime";
 
 const AccountantDashboard = () => {
   const { schoolSlug } = useParams();
@@ -43,6 +45,9 @@ const AccountantDashboard = () => {
     userId: user?.id ?? null,
     enabled: !!schoolId && !!user && authzState === 'ok',
   });
+
+  // Keep every finance tab in realtime sync
+  useFinanceRealtime(schoolId);
 
   // Don't show loading if we have cached user
   if (loading && !user) {
@@ -77,16 +82,16 @@ const AccountantDashboard = () => {
         "fees-pro","fee-vouchers",
       ]}>
       <Routes>
-        <Route index element={<AccountantHomeModule />} />
-        <Route path="fees" element={<AccountantFeesModule />} />
-        <Route path="fees-pro" element={<FeesAdvancedModule />} />
-        <Route path="fee-vouchers" element={<FeeVouchersModule />} />
-        <Route path="invoices" element={<AccountantInvoicesModule />} />
-        <Route path="payments" element={<AccountantPaymentsModule />} />
-        <Route path="expenses" element={<AccountantExpensesModule />} />
-        <Route path="payroll" element={<AccountantPayrollModule />} />
-        <Route path="reports" element={<AccountantReportsModule />} />
-        <Route path="messages" element={<AccountantMessagesModule />} />
+        <Route index element={<ModuleErrorBoundary name="Dashboard"><AccountantHomeModule /></ModuleErrorBoundary>} />
+        <Route path="fees" element={<ModuleErrorBoundary name="Fee Plans"><AccountantFeesModule /></ModuleErrorBoundary>} />
+        <Route path="fees-pro" element={<ModuleErrorBoundary name="Fees (Advanced)"><FeesAdvancedModule /></ModuleErrorBoundary>} />
+        <Route path="fee-vouchers" element={<ModuleErrorBoundary name="Fee Vouchers"><FeeVouchersModule /></ModuleErrorBoundary>} />
+        <Route path="invoices" element={<ModuleErrorBoundary name="Invoices"><AccountantInvoicesModule /></ModuleErrorBoundary>} />
+        <Route path="payments" element={<ModuleErrorBoundary name="Payments"><AccountantPaymentsModule /></ModuleErrorBoundary>} />
+        <Route path="expenses" element={<ModuleErrorBoundary name="Expenses"><AccountantExpensesModule /></ModuleErrorBoundary>} />
+        <Route path="payroll" element={<ModuleErrorBoundary name="Payroll"><AccountantPayrollModule /></ModuleErrorBoundary>} />
+        <Route path="reports" element={<ModuleErrorBoundary name="Reports"><AccountantReportsModule /></ModuleErrorBoundary>} />
+        <Route path="messages" element={<ModuleErrorBoundary name="Messages"><AccountantMessagesModule /></ModuleErrorBoundary>} />
         <Route path="*" element={<Navigate to={`/${tenant.slug}/accountant`} replace />} />
       </Routes>
       </RouteGuard>
