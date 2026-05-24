@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, TrendingDown, Trash2, Edit, Filter, WifiOff, RefreshCw, Download } from "lucide-react";
-import { exportToCSV } from "@/lib/csv";
+import { Plus, TrendingDown, Trash2, Edit, Filter, WifiOff, RefreshCw } from "lucide-react";
+import { ReportExportMenu } from "@/components/accountant/ReportExportMenu";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
@@ -295,27 +295,32 @@ export function AccountantExpensesModule() {
               <p className="text-sm text-muted-foreground">Track and manage all expenses</p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (!filteredExpenses.length) return;
-                  exportToCSV(
-                    filteredExpenses.map((e) => ({
-                      date: e.expense_date,
-                      description: e.description,
-                      category: formatCategory(e.category),
-                      amount: e.amount,
-                      vendor: e.vendor || "",
-                      reference: e.reference || "",
-                      method: getMethodName(e.payment_method_id),
-                    })),
-                    `expenses-${new Date().toISOString().slice(0, 10)}`,
-                  );
-                }}
-              >
-                <Download className="mr-2 h-4 w-4" /> Export CSV
-              </Button>
+              {(() => {
+                const exportRows = filteredExpenses.map((e) => ({
+                  date: e.expense_date,
+                  description: e.description,
+                  category: formatCategory(e.category),
+                  amount: e.amount,
+                  vendor: e.vendor || "",
+                  reference: e.reference || "",
+                  method: getMethodName(e.payment_method_id),
+                }));
+                const total = filteredExpenses.reduce((s, e) => s + (e.amount || 0), 0);
+                return (
+                  <ReportExportMenu
+                    baseName="expenses"
+                    rows={exportRows}
+                    print={{
+                      title: "Expenses Report",
+                      subtitle: `Generated ${new Date().toLocaleDateString()} • Category: ${categoryFilter}`,
+                      summary: [
+                        { label: "Entries", value: filteredExpenses.length },
+                        { label: "Total spend", value: total.toLocaleString() },
+                      ],
+                    }}
+                  />
+                );
+              })()}
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger className="w-[160px]">
                   <Filter className="mr-2 h-4 w-4" />

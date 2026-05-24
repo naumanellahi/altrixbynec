@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, FileText, Eye, Trash2, CheckCircle, XCircle, Clock, Download } from "lucide-react";
-import { exportToCSV } from "@/lib/csv";
+import { Plus, FileText, Eye, Trash2, CheckCircle, XCircle, Clock } from "lucide-react";
+import { ReportExportMenu } from "@/components/accountant/ReportExportMenu";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
@@ -287,30 +287,38 @@ export function AccountantInvoicesModule() {
             <p className="text-sm text-muted-foreground">Generate and manage student invoices</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (!filteredInvoices.length) return;
-                exportToCSV(
-                  filteredInvoices.map((inv) => ({
-                    invoice_no: inv.invoice_no,
-                    student: getStudentName(inv.student_id),
-                    subtotal: inv.subtotal,
-                    discount: inv.discount_total,
-                    late_fee: inv.late_fee_total,
-                    total: inv.total,
-                    status: inv.status,
-                    issue_date: inv.issue_date,
-                    due_date: inv.due_date || "",
-                    notes: inv.notes || "",
-                  })),
-                  `invoices-${new Date().toISOString().slice(0, 10)}`,
-                );
-              }}
-            >
-              <Download className="mr-2 h-4 w-4" /> Export CSV
-            </Button>
+            {(() => {
+              const exportRows = filteredInvoices.map((inv) => ({
+                invoice_no: inv.invoice_no,
+                student: getStudentName(inv.student_id),
+                subtotal: inv.subtotal,
+                discount: inv.discount_total,
+                late_fee: inv.late_fee_total,
+                total: inv.total,
+                status: inv.status,
+                issue_date: inv.issue_date,
+                due_date: inv.due_date || "",
+                notes: inv.notes || "",
+              }));
+              const totalAmount = filteredInvoices.reduce((s, i) => s + (i.total || 0), 0);
+              const paidCount = filteredInvoices.filter((i) => i.status === "paid").length;
+              return (
+                <ReportExportMenu
+                  baseName="invoices"
+                  rows={exportRows}
+                  print={{
+                    title: "Invoices Report",
+                    subtitle: `Generated ${new Date().toLocaleDateString()} • Filter: ${statusFilter}`,
+                    summary: [
+                      { label: "Invoices", value: filteredInvoices.length },
+                      { label: "Total billed", value: totalAmount.toLocaleString() },
+                      { label: "Paid", value: paidCount },
+                      { label: "Outstanding", value: filteredInvoices.length - paidCount },
+                    ],
+                  }}
+                />
+              );
+            })()}
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue />
