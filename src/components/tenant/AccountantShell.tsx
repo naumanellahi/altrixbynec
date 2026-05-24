@@ -44,9 +44,7 @@ export function AccountantShell({ title, subtitle, schoolSlug, children }: Props
 
   const navItems = [
     { to: basePath, icon: LayoutGrid, label: "Dashboard", end: true, badge: 0 },
-    { to: `${basePath}/fees`, icon: DollarSign, label: "Fee Plans", badge: 0 },
-    { to: `${basePath}/fees-pro`, icon: DollarSign, label: "Fees (Advanced)", badge: 0 },
-    { to: `${basePath}/fee-vouchers`, icon: Receipt, label: "Fee Vouchers", badge: 0 },
+    { to: `${basePath}/fees`, icon: DollarSign, label: "Fees Center", badge: 0 },
     { to: `${basePath}/invoices`, icon: FileText, label: "Invoices", badge: 0 },
     { to: `${basePath}/payments`, icon: CreditCard, label: "Payments", badge: 0 },
     { to: `${basePath}/expenses`, icon: TrendingUp, label: "Expenses", badge: 0 },

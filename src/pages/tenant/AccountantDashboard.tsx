@@ -6,15 +6,13 @@ import { useAuthz } from "@/hooks/useAuthz";
 import { useUniversalPrefetch } from "@/hooks/useUniversalPrefetch";
 import { AccountantShell } from "@/components/tenant/AccountantShell";
 import { AccountantHomeModule } from "@/pages/tenant/accountant-modules/AccountantHomeModule";
-import { AccountantFeesModule } from "@/pages/tenant/accountant-modules/AccountantFeesModule";
 import { AccountantInvoicesModule } from "@/pages/tenant/accountant-modules/AccountantInvoicesModule";
 import { AccountantPaymentsModule } from "@/pages/tenant/accountant-modules/AccountantPaymentsModule";
 import { AccountantExpensesModule } from "@/pages/tenant/accountant-modules/AccountantExpensesModule";
 import { AccountantPayrollModule } from "@/pages/tenant/accountant-modules/AccountantPayrollModule";
 import { AccountantReportsModule } from "@/pages/tenant/accountant-modules/AccountantReportsModule";
 import { AccountantMessagesModule } from "@/pages/tenant/accountant-modules/AccountantMessagesModule";
-import FeesAdvancedModule from "@/pages/tenant/modules/FeesAdvancedModule";
-import FeeVouchersModule from "@/pages/tenant/modules/FeeVouchersModule";
+import FeesUnifiedModule from "@/pages/tenant/modules/FeesUnifiedModule";
 import { RouteGuard } from "@/components/tenant/RouteGuard";
 import { ModuleErrorBoundary } from "@/components/tenant/ModuleErrorBoundary";
 import { useFinanceRealtime } from "@/hooks/useFinanceRealtime";
@@ -83,9 +81,9 @@ const AccountantDashboard = () => {
       ]}>
       <Routes>
         <Route index element={<ModuleErrorBoundary name="Dashboard"><AccountantHomeModule /></ModuleErrorBoundary>} />
-        <Route path="fees" element={<ModuleErrorBoundary name="Fee Plans"><AccountantFeesModule /></ModuleErrorBoundary>} />
-        <Route path="fees-pro" element={<ModuleErrorBoundary name="Fees (Advanced)"><FeesAdvancedModule /></ModuleErrorBoundary>} />
-        <Route path="fee-vouchers" element={<ModuleErrorBoundary name="Fee Vouchers"><FeeVouchersModule /></ModuleErrorBoundary>} />
+        <Route path="fees" element={<ModuleErrorBoundary name="Fees Center"><FeesUnifiedModule /></ModuleErrorBoundary>} />
+        <Route path="fees-pro" element={<Navigate to={`/${tenant.slug}/accountant/fees?tab=advanced`} replace />} />
+        <Route path="fee-vouchers" element={<Navigate to={`/${tenant.slug}/accountant/fees?tab=vouchers`} replace />} />
         <Route path="invoices" element={<ModuleErrorBoundary name="Invoices"><AccountantInvoicesModule /></ModuleErrorBoundary>} />
         <Route path="payments" element={<ModuleErrorBoundary name="Payments"><AccountantPaymentsModule /></ModuleErrorBoundary>} />
         <Route path="expenses" element={<ModuleErrorBoundary name="Expenses"><AccountantExpensesModule /></ModuleErrorBoundary>} />
