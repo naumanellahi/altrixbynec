@@ -1,7 +1,8 @@
 import { useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, CreditCard, Trash2, Receipt } from "lucide-react";
+import { Plus, CreditCard, Trash2, Receipt, Download } from "lucide-react";
+import { exportToCSV } from "@/lib/csv";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
@@ -340,6 +341,28 @@ export function AccountantPaymentsModule() {
               <CardTitle className="font-display text-xl">Payments</CardTitle>
               <p className="text-sm text-muted-foreground">Record and track fee payments</p>
             </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (!payments.length) return;
+                  exportToCSV(
+                    payments.map((p) => ({
+                      date: p.paid_at,
+                      invoice: getInvoiceDisplay(p.invoice_id),
+                      student: getStudentName(p.student_id),
+                      amount: p.amount,
+                      method: getMethodName(p.method_id),
+                      reference: p.reference || "",
+                      notes: p.notes || "",
+                    })),
+                    `payments-${new Date().toISOString().slice(0, 10)}`,
+                  );
+                }}
+              >
+                <Download className="mr-2 h-4 w-4" /> Export CSV
+              </Button>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="hero" onClick={resetForm}>
@@ -426,9 +449,11 @@ export function AccountantPaymentsModule() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            </div>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[350px] rounded-xl border bg-surface">
+            <div className="max-h-[420px] overflow-auto rounded-xl border bg-surface">
+              <div className="min-w-[900px]">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -479,7 +504,8 @@ export function AccountantPaymentsModule() {
                   )}
                 </TableBody>
               </Table>
-            </ScrollArea>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
