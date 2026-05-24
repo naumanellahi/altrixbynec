@@ -601,7 +601,7 @@ export function AccountantHomeModule() {
 
         <TabsContent value="overview" className="space-y-6">
           {/* Financial Health Score + Quick Stats */}
-          <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
             {/* Health Score Card */}
             <MotionCard 
               initial={{ opacity: 0, y: 20 }}
