@@ -41,7 +41,11 @@ export function generatePayslipHTML(data: PayslipData): string {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
     }
+    html, body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: #f5f5f5;
@@ -188,12 +192,16 @@ export function generatePayslipHTML(data: PayslipData): string {
       body {
         background: white;
         padding: 0;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
       .payslip {
         box-shadow: none;
         border-radius: 0;
       }
+      .header, .totals { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     }
+    @page { size: A4; margin: 10mm; }
   </style>
 </head>
 <body>
@@ -275,20 +283,20 @@ export function generatePayslipHTML(data: PayslipData): string {
 }
 
 export function openPayslipPDF(data: PayslipData) {
-  const html = generatePayslipHTML(data);
+  const html = applyBrandToHtml(generatePayslipHTML(data));
   const printWindow = window.open('', '_blank');
   if (printWindow) {
     printWindow.document.write(html);
     printWindow.document.close();
-    // Auto-trigger print dialog after a short delay
     setTimeout(() => {
+      printWindow.focus();
       printWindow.print();
-    }, 250);
+    }, 300);
   }
 }
 
 export function downloadPayslipPDF(data: PayslipData) {
-  const html = generatePayslipHTML(data);
+  const html = applyBrandToHtml(generatePayslipHTML(data));
   const blob = new Blob([html], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -395,10 +403,11 @@ export function generateBulkPayslipsHTML(payslips: PayslipData[]): string {
   <meta charset="UTF-8">
   <title>Bulk Payslips</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+    html, body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f5f5f5; padding: 20px; color: #1a1a2e; }
     .payslip { max-width: 800px; margin: 0 auto 40px; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden; }
-    .header { background: linear-gradient(135deg, #007fff 0%, #0066cc 100%); color: white; padding: 25px; text-align: center; }
+    .header { background: linear-gradient(135deg, #007fff 0%, #0066cc 100%); color: white; padding: 25px; text-align: center; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     .header h1 { font-size: 24px; margin-bottom: 4px; }
     .header p { opacity: 0.9; font-size: 13px; }
     .period-badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 6px 16px; border-radius: 16px; margin-top: 12px; font-weight: 500; font-size: 13px; }
@@ -415,15 +424,20 @@ export function generateBulkPayslipsHTML(payslips: PayslipData[]): string {
     .line-item .amount { font-weight: 600; font-size: 14px; }
     .line-item .amount.positive { color: #22c55e; }
     .line-item .amount.negative { color: #ef4444; }
-    .totals { background: linear-gradient(135deg, #007fff 0%, #0066cc 100%); color: white; padding: 20px; border-radius: 8px; margin-top: 16px; }
+    .totals { background: linear-gradient(135deg, #007fff 0%, #0066cc 100%); color: white; padding: 20px; border-radius: 8px; margin-top: 16px; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     .totals .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
     .totals .row.net { font-size: 20px; font-weight: 700; padding-top: 12px; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.3); }
     .footer { text-align: center; padding: 16px; color: #999; font-size: 11px; border-top: 1px solid #eee; }
-    .status-badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+    .status-badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     .status-completed { background: #dcfce7; color: #166534; }
     .status-draft { background: #fef3c7; color: #92400e; }
     .status-processing { background: #dbeafe; color: #1e40af; }
-    @media print { body { background: white; padding: 0; } .payslip { box-shadow: none; border-radius: 0; margin-bottom: 0; } }
+    @media print {
+      body { background: white; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .payslip { box-shadow: none; border-radius: 0; margin-bottom: 0; page-break-after: always; }
+      .header, .totals, .status-badge { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    }
+    @page { size: A4; margin: 10mm; }
   </style>
 </head>
 <body>
@@ -433,20 +447,50 @@ export function generateBulkPayslipsHTML(payslips: PayslipData[]): string {
   `;
 }
 
+function getSchoolBrandHex(): { primary: string; dark: string } {
+  try {
+    const hsl = getComputedStyle(document.documentElement).getPropertyValue('--brand').trim();
+    const m = hsl.match(/(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%/);
+    if (!m) return { primary: '#007fff', dark: '#0066cc' };
+    const h = parseFloat(m[1]); const s = parseFloat(m[2]) / 100; const l = parseFloat(m[3]) / 100;
+    const toHex = (ll: number) => {
+      const c = (1 - Math.abs(2 * ll - 1)) * s;
+      const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+      const mm = ll - c / 2;
+      let r = 0, g = 0, b = 0;
+      if (h < 60) [r, g, b] = [c, x, 0];
+      else if (h < 120) [r, g, b] = [x, c, 0];
+      else if (h < 180) [r, g, b] = [0, c, x];
+      else if (h < 240) [r, g, b] = [0, x, c];
+      else if (h < 300) [r, g, b] = [x, 0, c];
+      else [r, g, b] = [c, 0, x];
+      const f = (v: number) => Math.round((v + mm) * 255).toString(16).padStart(2, '0');
+      return `#${f(r)}${f(g)}${f(b)}`;
+    };
+    return { primary: toHex(l), dark: toHex(Math.max(0, l - 0.08)) };
+  } catch { return { primary: '#007fff', dark: '#0066cc' }; }
+}
+
+function applyBrandToHtml(html: string): string {
+  const { primary, dark } = getSchoolBrandHex();
+  return html.replace(/#007fff/g, primary).replace(/#0066cc/g, dark);
+}
+
 export function openBulkPayslipsPDF(payslips: PayslipData[]) {
-  const html = generateBulkPayslipsHTML(payslips);
+  const html = applyBrandToHtml(generateBulkPayslipsHTML(payslips));
   const printWindow = window.open('', '_blank');
   if (printWindow) {
     printWindow.document.write(html);
     printWindow.document.close();
     setTimeout(() => {
+      printWindow.focus();
       printWindow.print();
-    }, 300);
+    }, 400);
   }
 }
 
 export function downloadBulkPayslipsHTML(payslips: PayslipData[], periodStart: string, periodEnd: string) {
-  const html = generateBulkPayslipsHTML(payslips);
+  const html = applyBrandToHtml(generateBulkPayslipsHTML(payslips));
   const blob = new Blob([html], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
