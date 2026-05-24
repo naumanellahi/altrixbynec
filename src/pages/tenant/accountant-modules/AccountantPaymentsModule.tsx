@@ -1,7 +1,8 @@
 import { useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, CreditCard, Trash2, Receipt } from "lucide-react";
+import { Plus, CreditCard, Trash2, Receipt, Download } from "lucide-react";
+import { exportToCSV } from "@/lib/csv";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
