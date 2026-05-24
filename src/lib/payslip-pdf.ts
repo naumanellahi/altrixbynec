@@ -424,15 +424,20 @@ export function generateBulkPayslipsHTML(payslips: PayslipData[]): string {
     .line-item .amount { font-weight: 600; font-size: 14px; }
     .line-item .amount.positive { color: #22c55e; }
     .line-item .amount.negative { color: #ef4444; }
-    .totals { background: linear-gradient(135deg, #007fff 0%, #0066cc 100%); color: white; padding: 20px; border-radius: 8px; margin-top: 16px; }
+    .totals { background: linear-gradient(135deg, #007fff 0%, #0066cc 100%); color: white; padding: 20px; border-radius: 8px; margin-top: 16px; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     .totals .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
     .totals .row.net { font-size: 20px; font-weight: 700; padding-top: 12px; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.3); }
     .footer { text-align: center; padding: 16px; color: #999; font-size: 11px; border-top: 1px solid #eee; }
-    .status-badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+    .status-badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     .status-completed { background: #dcfce7; color: #166534; }
     .status-draft { background: #fef3c7; color: #92400e; }
     .status-processing { background: #dbeafe; color: #1e40af; }
-    @media print { body { background: white; padding: 0; } .payslip { box-shadow: none; border-radius: 0; margin-bottom: 0; } }
+    @media print {
+      body { background: white; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .payslip { box-shadow: none; border-radius: 0; margin-bottom: 0; page-break-after: always; }
+      .header, .totals, .status-badge { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    }
+    @page { size: A4; margin: 10mm; }
   </style>
 </head>
 <body>
