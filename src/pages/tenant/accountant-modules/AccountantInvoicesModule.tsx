@@ -369,7 +369,8 @@ export function AccountantInvoicesModule() {
           </div>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[400px] rounded-xl border bg-surface">
+          <div className="max-h-[480px] overflow-auto rounded-xl border bg-surface">
+            <div className="min-w-[900px]">
             <Table>
               <TableHeader>
                 <TableRow>
