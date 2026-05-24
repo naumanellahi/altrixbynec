@@ -22,6 +22,7 @@ import { OwnerAdvisorModule } from "@/pages/tenant/owner-modules/OwnerAdvisorMod
 import { OwnerAIModule } from "@/pages/tenant/owner-modules/OwnerAIModule";
 import { MessagesModule } from "@/pages/tenant/modules/MessagesModule";
 import { RouteGuard } from "@/components/tenant/RouteGuard";
+import { AutoCatalogRoutes } from "@/components/tenant/AutoCatalogRoutes";
 import { UsersModule } from "@/pages/tenant/modules/UsersModule";
 import { CrmModule } from "@/pages/tenant/modules/CrmModule";
 import { AcademicModule } from "@/pages/tenant/modules/AcademicModule";
@@ -288,6 +289,19 @@ export default function OwnerDashboard() {
           <Route path="reports" element={<ReportsModule />} />
           <Route path="complaints" element={<PrincipalComplaintsModule />} />
           <Route path="counseling" element={<AICounselorMode schoolId={schoolId} />} />
+          <AutoCatalogRoutes
+            roles={["school_owner"]}
+            ctx={{ schoolId, schoolSlug: tenant.slug, role: "school_owner" }}
+            exclude={[
+              "academics","academic","timetable","attendance","exams","report-cards","diary",
+              "admissions","users","leaves","salaries","contracts","reviews","documents",
+              "crm","leads","follow-ups","calls","sources","campaigns","parent-notes",
+              "finance","fees","fees-pro","fee-vouchers","invoices","payments","expenses",
+              "payroll","ledger","vendors","tax",
+              "hr","wellbeing","compliance","campuses","brand","security","support",
+              "advisor","ai","messages","notices","holidays","reports","complaints","counseling",
+            ]}
+          />
         </Routes>
         </RouteGuard>
       )}
