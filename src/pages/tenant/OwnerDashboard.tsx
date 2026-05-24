@@ -44,6 +44,9 @@ import { AccountantInvoicesModule } from "@/pages/tenant/accountant-modules/Acco
 import { AccountantPaymentsModule } from "@/pages/tenant/accountant-modules/AccountantPaymentsModule";
 import { AccountantExpensesModule } from "@/pages/tenant/accountant-modules/AccountantExpensesModule";
 import { AccountantPayrollModule } from "@/pages/tenant/accountant-modules/AccountantPayrollModule";
+import { AccountantLedgerModule } from "@/pages/tenant/accountant-modules/AccountantLedgerModule";
+import { AccountantVendorsModule } from "@/pages/tenant/accountant-modules/AccountantVendorsModule";
+import { AccountantTaxModule } from "@/pages/tenant/accountant-modules/AccountantTaxModule";
 import NoticesModule from "@/pages/tenant/modules/NoticesModule";
 import HolidaysModule from "@/pages/tenant/modules/HolidaysModule";
 import DiaryModule from "@/pages/tenant/modules/DiaryModule";
@@ -234,6 +237,7 @@ export default function OwnerDashboard() {
         <RouteGuard extraAllowedPaths={[
           "academics","admissions","finance","hr","wellbeing","compliance",
           "campuses","brand","security","support","advisor","ai","messages",
+          "ledger","vendors","tax",
         ]}>
         <Routes>
           <Route index element={<OwnerOverviewModule schoolId={schoolId} />} />
@@ -264,6 +268,9 @@ export default function OwnerDashboard() {
           <Route path="payments" element={<AccountantPaymentsModule />} />
           <Route path="expenses" element={<AccountantExpensesModule />} />
           <Route path="payroll" element={<AccountantPayrollModule />} />
+          <Route path="ledger" element={<AccountantLedgerModule />} />
+          <Route path="vendors" element={<AccountantVendorsModule />} />
+          <Route path="tax" element={<AccountantTaxModule />} />
           <Route path="fees-pro" element={<Navigate to={`/${schoolSlug}/owner/fees?tab=advanced`} replace />} />
           <Route path="fee-vouchers" element={<Navigate to={`/${schoolSlug}/owner/fees?tab=vouchers`} replace />} />
           <Route path="hr" element={<OwnerHrModule schoolId={schoolId} />} />

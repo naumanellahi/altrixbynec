@@ -45,6 +45,9 @@ import { AccountantInvoicesModule } from "@/pages/tenant/accountant-modules/Acco
 import { AccountantPaymentsModule } from "@/pages/tenant/accountant-modules/AccountantPaymentsModule";
 import { AccountantExpensesModule } from "@/pages/tenant/accountant-modules/AccountantExpensesModule";
 import { AccountantPayrollModule } from "@/pages/tenant/accountant-modules/AccountantPayrollModule";
+import { AccountantLedgerModule } from "@/pages/tenant/accountant-modules/AccountantLedgerModule";
+import { AccountantVendorsModule } from "@/pages/tenant/accountant-modules/AccountantVendorsModule";
+import { AccountantTaxModule } from "@/pages/tenant/accountant-modules/AccountantTaxModule";
 import NoticesModule from "@/pages/tenant/modules/NoticesModule";
 import HolidaysModule from "@/pages/tenant/modules/HolidaysModule";
 import DiaryModule from "@/pages/tenant/modules/DiaryModule";
@@ -484,6 +487,9 @@ const TenantDashboard = () => {
             <Route path="payments" element={<AccountantPaymentsModule />} />
             <Route path="expenses" element={<AccountantExpensesModule />} />
             <Route path="payroll" element={<AccountantPayrollModule />} />
+            <Route path="ledger" element={<AccountantLedgerModule />} />
+            <Route path="vendors" element={<AccountantVendorsModule />} />
+            <Route path="tax" element={<AccountantTaxModule />} />
             <Route path="fees-pro" element={<Navigate to={`/${tenant.slug}/${role}/fees?tab=advanced`} replace />} />
             <Route path="fee-vouchers" element={<Navigate to={`/${tenant.slug}/${role}/fees?tab=vouchers`} replace />} />
 
