@@ -70,34 +70,29 @@ export function generatePayslipHTML(data: PayslipData): string {
     .header {
       background: linear-gradient(135deg, #007fff 0%, #0066cc 100%);
       color: white;
-      padding: 30px;
+      padding: 34px 30px;
       text-align: center;
+      border-radius: 28px 28px 32px 32px / 28px 28px 18px 18px;
     }
-    .header h1 {
-      font-size: 28px;
-      margin-bottom: 5px;
-    }
-    .header p {
-      opacity: 0.9;
-      font-size: 14px;
-    }
+    .header h1 { font-size: 26px; margin-bottom: 4px; letter-spacing: -0.01em; }
+    .header p { opacity: 0.92; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; }
     .period-badge {
       display: inline-block;
-      background: rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.22);
       padding: 8px 20px;
-      border-radius: 20px;
-      margin-top: 15px;
+      border-radius: 999px;
+      margin-top: 16px;
       font-weight: 500;
+      backdrop-filter: blur(4px);
     }
-    .content {
-      padding: 30px;
-    }
+    .content { padding: 28px 30px; }
     .employee-info {
       display: flex;
       justify-content: space-between;
       padding: 20px;
-      background: #f8f9fa;
-      border-radius: 10px;
+      background: linear-gradient(180deg, #f8fafc, #f1f5f9);
+      border: 1px solid #eef2f7;
+      border-radius: 20px;
       margin-bottom: 25px;
     }
     .employee-info div {
