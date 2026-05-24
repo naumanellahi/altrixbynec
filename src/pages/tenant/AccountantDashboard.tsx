@@ -18,6 +18,7 @@ import { AccountantTaxModule } from "@/pages/tenant/accountant-modules/Accountan
 import FeesUnifiedModule from "@/pages/tenant/modules/FeesUnifiedModule";
 import { RouteGuard } from "@/components/tenant/RouteGuard";
 import { ModuleErrorBoundary } from "@/components/tenant/ModuleErrorBoundary";
+import { AutoCatalogRoutes } from "@/components/tenant/AutoCatalogRoutes";
 import { useFinanceRealtime } from "@/hooks/useFinanceRealtime";
 
 const AccountantDashboard = () => {
@@ -96,6 +97,11 @@ const AccountantDashboard = () => {
         <Route path="tax" element={<ModuleErrorBoundary name="Tax Center"><AccountantTaxModule /></ModuleErrorBoundary>} />
         <Route path="reports" element={<ModuleErrorBoundary name="Reports"><AccountantReportsModule /></ModuleErrorBoundary>} />
         <Route path="messages" element={<ModuleErrorBoundary name="Messages"><AccountantMessagesModule /></ModuleErrorBoundary>} />
+        <AutoCatalogRoutes
+          roles={["accountant"]}
+          ctx={{ schoolId, schoolSlug: tenant.slug, role: "accountant" }}
+          exclude={["fees","fees-pro","fee-vouchers","invoices","payments","expenses","payroll","ledger","vendors","tax","reports","messages"]}
+        />
         <Route path="*" element={<Navigate to={`/${tenant.slug}/accountant`} replace />} />
       </Routes>
       </RouteGuard>
