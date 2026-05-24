@@ -1338,22 +1338,14 @@ function GenerateVoucherDialog({
             )}
 
             <div className="flex-1 bg-background overflow-hidden flex flex-col">
-              {previewUrl ? (
+              {previewData ? (
                 <>
                   <div className="flex items-center justify-between gap-2 border-b px-3 py-2 bg-muted/30">
                     <span className="text-xs text-muted-foreground truncate">
-                      Live preview · if it doesn't render inline, use the buttons →
+                      Live in-app preview · PDF embedding removed to avoid Chrome blocking
                     </span>
                     <div className="flex items-center gap-1">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.open(previewUrl, "_blank", "noopener,noreferrer")}
-                      >
-                        <Eye className="mr-1 h-3.5 w-3.5" /> Open
-                      </Button>
-                      <Button
+                      {previewUrl && <Button
                         type="button"
                         variant="outline"
                         size="sm"
@@ -1365,23 +1357,12 @@ function GenerateVoucherDialog({
                         }}
                       >
                         <Download className="mr-1 h-3.5 w-3.5" /> Download
-                      </Button>
+                      </Button>}
                     </div>
                   </div>
-                  <object
-                    data={previewUrl}
-                    type="application/pdf"
-                    className="w-full flex-1 min-h-[280px]"
-                    aria-label="Voucher preview"
-                  >
-                    <div className="h-full flex flex-col items-center justify-center gap-2 p-6 text-center text-xs text-muted-foreground">
-                      <p>
-                        Inline PDF preview is blocked in this embedded view. Use{" "}
-                        <strong>Open</strong> or <strong>Download</strong> above to view the
-                        voucher.
-                      </p>
-                    </div>
-                  </object>
+                  <ScrollArea className="flex-1 min-h-[280px]">
+                    <VoucherHtmlPreview data={previewData} />
+                  </ScrollArea>
                 </>
               ) : (
                 <div className="h-full min-h-[300px] flex items-center justify-center text-xs text-muted-foreground p-6 text-center">
