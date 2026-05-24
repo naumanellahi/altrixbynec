@@ -146,50 +146,18 @@ export function generatePayslipHTML(data: PayslipData): string {
     .totals {
       background: linear-gradient(135deg, #007fff 0%, #0066cc 100%);
       color: white;
-      padding: 25px;
-      border-radius: 10px;
-      margin-top: 20px;
+      padding: 26px;
+      border-radius: 22px;
+      margin-top: 22px;
+      box-shadow: 0 12px 30px -16px rgba(0,102,204,0.55);
     }
-    .totals .row {
-      display: flex;
-      justify-content: space-between;
-      padding: 8px 0;
-      font-size: 15px;
-    }
-    .totals .row.net {
-      font-size: 24px;
-      font-weight: 700;
-      padding-top: 15px;
-      margin-top: 10px;
-      border-top: 1px solid rgba(255,255,255,0.3);
-    }
-    .footer {
-      text-align: center;
-      padding: 20px;
-      color: #999;
-      font-size: 12px;
-      border-top: 1px solid #eee;
-    }
-    .status-badge {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-    }
-    .status-completed {
-      background: #dcfce7;
-      color: #166534;
-    }
-    .status-draft {
-      background: #fef3c7;
-      color: #92400e;
-    }
-    .status-processing {
-      background: #dbeafe;
-      color: #1e40af;
-    }
+    .totals .row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 15px; }
+    .totals .row.net { font-size: 24px; font-weight: 700; padding-top: 15px; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.3); }
+    .footer { text-align: center; padding: 22px; color: #94a3b8; font-size: 11px; border-top: 1px dashed #e5e7eb; background: #fafbfd; }
+    .status-badge { display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+    .status-completed { background: #dcfce7; color: #166534; }
+    .status-draft { background: #fef3c7; color: #92400e; }
+    .status-processing { background: #dbeafe; color: #1e40af; }
     @media print {
       body {
         background: white;
