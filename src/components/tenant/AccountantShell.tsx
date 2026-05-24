@@ -12,7 +12,7 @@ import { useTenantOptimized } from "@/hooks/useTenantOptimized";
 import { useSession } from "@/hooks/useSession";
 import { useOfflineUniversal } from "@/hooks/useOfflineUniversal";
 import { OfflineStatusIndicator } from "@/components/offline/OfflineStatusIndicator";
-import { NAV_CATALOG } from "@/lib/role-navigation";
+import { resolvePermissions } from "@/lib/permissions";
 
 type Props = PropsWithChildren<{
   title: string;
@@ -41,13 +41,29 @@ export function AccountantShell({ title, subtitle, schoolSlug, children }: Props
 
   const basePath = `/${schoolSlug}/accountant`;
 
-  // Auto-derive sidebar from the central NAV_CATALOG so any new module
-  // tagged for "accountant" appears here automatically.
+  // Auto-derive sidebar from the same centralized permission resolver used by
+  // the shared shells. This keeps the accountant shell, inherited finance
+  // shells, route guards, and future NAV_CATALOG additions in lockstep.
   const navItems = useMemo(() => {
     const allowedGroups = new Set(["overview", "finance", "operations", "communication"]);
     const hidden = new Set(["finance", "notices", "holidays", "complaints", "counseling", "support"]);
-    return NAV_CATALOG
-      .filter((m) => m.roles.includes("accountant") && allowedGroups.has(m.group) && !hidden.has(m.key))
+    const financeOrder = new Map([
+      ["", 0],
+      ["fees", 1],
+      ["invoices", 2],
+      ["payments", 3],
+      ["expenses", 4],
+      ["payroll", 5],
+      ["ledger", 6],
+      ["vendors", 7],
+      ["tax", 8],
+      ["reports", 9],
+      ["messages", 10],
+    ]);
+
+    return resolvePermissions(["accountant"]).visibleModules
+      .filter((m) => allowedGroups.has(m.group) && !hidden.has(m.key))
+      .sort((a, b) => (financeOrder.get(a.path) ?? 99) - (financeOrder.get(b.path) ?? 99))
       .map((m) => ({
         to: m.path ? `${basePath}/${m.path}` : basePath,
         icon: m.icon,
