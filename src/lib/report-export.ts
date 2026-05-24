@@ -187,65 +187,68 @@ export function printReport(opts: PrintOptions) {
   const html = `<!doctype html><html><head><meta charset="utf-8" /><title>${escapeHtml(title)} — ${escapeHtml(schoolName)}</title>
 <style>
   :root{ --brand:${brandHex}; --brand-rgb:${brandRgb}; }
-  *{box-sizing:border-box}
-  html,body{margin:0;padding:0;background:#fff;color:#0f172a;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  *{box-sizing:border-box;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important}
+  html,body{margin:0;padding:0;background:#f6f8fb;color:#0f172a;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
   body{padding:28px 32px}
+  .sheet{background:#fff;border-radius:24px;padding:28px 30px;box-shadow:0 12px 40px -18px rgba(15,23,42,0.18);border:1px solid #eef2f7;overflow:hidden}
 
   /* Brand header */
-  .brand-bar{height:6px;background:linear-gradient(90deg,var(--brand) 0%, rgba(var(--brand-rgb),0.55) 60%, rgba(var(--brand-rgb),0.15) 100%);border-radius:4px}
-  .brand{display:flex;justify-content:space-between;align-items:center;gap:24px;padding:18px 0 14px;border-bottom:1px solid #e5e7eb;margin-bottom:18px}
+  .brand-bar{height:8px;background:linear-gradient(90deg,var(--brand) 0%, rgba(var(--brand-rgb),0.6) 60%, rgba(var(--brand-rgb),0.15) 100%);border-radius:999px;margin-bottom:18px}
+  .brand{display:flex;justify-content:space-between;align-items:center;gap:24px;padding:6px 0 18px;border-bottom:1px solid #eef2f7;margin-bottom:20px}
   .brand-left{display:flex;align-items:center;gap:14px}
-  .mono{width:48px;height:48px;border-radius:12px;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;letter-spacing:.5px;box-shadow:0 6px 18px -8px rgba(var(--brand-rgb),0.7)}
-  .brand h1{margin:0;font-size:18px;font-weight:700;letter-spacing:-.01em;color:#0f172a}
-  .brand .school{font-size:12px;color:#6b7280;margin-top:2px;text-transform:uppercase;letter-spacing:.08em}
-  .brand .meta{text-align:right;font-size:11px;color:#6b7280;line-height:1.55}
-  .brand .meta strong{display:block;color:#111827;font-size:12px;letter-spacing:.04em}
+  .mono{width:54px;height:54px;border-radius:18px;background:linear-gradient(135deg,var(--brand),rgba(var(--brand-rgb),0.75));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;letter-spacing:.5px;box-shadow:0 10px 24px -10px rgba(var(--brand-rgb),0.7)}
+  .brand h1{margin:0;font-size:20px;font-weight:700;letter-spacing:-.01em;color:#0f172a}
+  .brand .school{font-size:11px;color:#64748b;margin-top:2px;text-transform:uppercase;letter-spacing:.12em;font-weight:600}
+  .brand .meta{text-align:right;font-size:11px;color:#64748b;line-height:1.6;background:#f8fafc;border:1px solid #eef2f7;border-radius:14px;padding:10px 14px}
+  .brand .meta strong{display:block;color:#0f172a;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
 
   h2.subtitle{font-size:13px;color:#475569;margin:0 0 16px;font-weight:500}
 
   /* Summary tiles */
-  .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 20px}
-  .summary-item{border:1px solid #e5e7eb;border-radius:10px;padding:12px 14px;background:linear-gradient(180deg,rgba(var(--brand-rgb),0.06),#fff);position:relative;overflow:hidden}
-  .summary-item::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--brand)}
-  .summary-item .lbl{font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
-  .summary-item .val{font-size:17px;font-weight:700;margin-top:4px;color:#0f172a}
+  .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0 22px}
+  .summary-item{border:1px solid #eef2f7;border-radius:18px;padding:14px 16px;background:linear-gradient(180deg,rgba(var(--brand-rgb),0.07),#fff);position:relative;overflow:hidden;box-shadow:0 4px 14px -8px rgba(15,23,42,0.08)}
+  .summary-item::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:4px;background:var(--brand);border-radius:0 4px 4px 0}
+  .summary-item .lbl{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+  .summary-item .val{font-size:18px;font-weight:700;margin-top:6px;color:#0f172a;letter-spacing:-.01em}
 
   /* Table */
-  table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;margin-top:8px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden}
-  th{background:var(--brand);color:#fff;font-weight:700;text-transform:uppercase;font-size:10px;letter-spacing:.06em;padding:10px 10px;text-align:left;border-bottom:1px solid rgba(0,0,0,.05)}
-  td{padding:9px 10px;border-bottom:1px solid #eef2f7;color:#1f2937;vertical-align:top}
-  tbody tr:nth-child(even) td{background:#f9fafb}
+  table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;margin-top:8px;border:1px solid #eef2f7;border-radius:18px;overflow:hidden;box-shadow:0 4px 14px -10px rgba(15,23,42,0.10)}
+  th{background:linear-gradient(180deg,var(--brand),rgba(var(--brand-rgb),0.85));color:#fff;font-weight:700;text-transform:uppercase;font-size:10px;letter-spacing:.08em;padding:12px 12px;text-align:left;border-bottom:1px solid rgba(0,0,0,.06)}
+  td{padding:10px 12px;border-bottom:1px solid #f1f5f9;color:#1f2937;vertical-align:top}
+  tbody tr:nth-child(even) td{background:#fafbfd}
   tbody tr:last-child td{border-bottom:none}
-  td.empty{text-align:center;color:#9ca3af;padding:24px;font-style:italic}
+  td.empty{text-align:center;color:#9ca3af;padding:28px;font-style:italic}
 
-  .footer{margin-top:28px;border-top:2px solid var(--brand);padding-top:10px;font-size:10px;color:#6b7280;display:flex;justify-content:space-between;align-items:center}
-  .footer .brand-mark{color:var(--brand);font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+  .footer{margin-top:28px;border-top:2px dashed rgba(var(--brand-rgb),0.4);padding-top:12px;font-size:10px;color:#64748b;display:flex;justify-content:space-between;align-items:center}
+  .footer .brand-mark{color:var(--brand);font-weight:700;letter-spacing:.06em;text-transform:uppercase}
 
-  @media print{ body{padding:14mm} .no-print{display:none} }
-  @page{size:A4;margin:12mm}
+  @media print{ body{padding:10mm;background:#fff} .no-print{display:none} .sheet{box-shadow:none;border:none;border-radius:18px} }
+  @page{size:A4;margin:10mm}
 </style></head><body>
-  <div class="brand-bar"></div>
-  <div class="brand">
-    <div class="brand-left">
-      <div class="mono">${escapeHtml(mono)}</div>
-      <div>
-        <div class="school">${escapeHtml(schoolName)}</div>
-        <h1>${escapeHtml(title)}</h1>
+  <div class="sheet">
+    <div class="brand-bar"></div>
+    <div class="brand">
+      <div class="brand-left">
+        <div class="mono">${escapeHtml(mono)}</div>
+        <div>
+          <div class="school">${escapeHtml(schoolName)}</div>
+          <h1>${escapeHtml(title)}</h1>
+        </div>
+      </div>
+      <div class="meta">
+        <strong>Generated</strong>
+        <div>${escapeHtml(generated)}</div>
+        ${contactLine ? `<div style="margin-top:4px">${escapeHtml(contactLine)}</div>` : ""}
       </div>
     </div>
-    <div class="meta">
-      <strong>Generated</strong>
-      <div>${escapeHtml(generated)}</div>
-      ${contactLine ? `<div style="margin-top:4px">${escapeHtml(contactLine)}</div>` : ""}
+    ${subtitle ? `<h2 class="subtitle">${escapeHtml(subtitle)}</h2>` : ""}
+    ${summaryHtml}
+    ${extraHtml ?? ""}
+    ${table}
+    <div class="footer">
+      <span class="brand-mark">${escapeHtml(schoolName)}</span>
+      <span>${rows.length} record${rows.length === 1 ? "" : "s"} • Page <span class="pg"></span></span>
     </div>
-  </div>
-  ${subtitle ? `<h2 class="subtitle">${escapeHtml(subtitle)}</h2>` : ""}
-  ${summaryHtml}
-  ${extraHtml ?? ""}
-  ${table}
-  <div class="footer">
-    <span class="brand-mark">${escapeHtml(schoolName)}</span>
-    <span>${rows.length} record${rows.length === 1 ? "" : "s"} • Page <span class="pg"></span></span>
   </div>
   <script>window.onload=function(){setTimeout(function(){window.print()},250)};window.onafterprint=function(){window.close()};</script>
 </body></html>`;

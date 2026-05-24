@@ -976,22 +976,24 @@ export function AccountantHomeModule() {
               <CardContent className="space-y-3">
                 <div className="rounded-lg bg-accent p-3">
                   <p className="text-xs text-muted-foreground">Monthly Cost</p>
-                  <p className="text-xl font-bold">{stats.monthlyPayroll.toLocaleString()}</p>
+                  <p className="text-xl font-bold tabular-nums break-words">{stats.monthlyPayroll.toLocaleString()}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-center">
-                  <div className="rounded-lg border p-2">
-                    <p className="text-lg font-semibold">{stats.activeEmployees}</p>
-                    <p className="text-xs text-muted-foreground">Employees</p>
+                  <div className="rounded-lg border p-2 min-w-0">
+                    <p className="text-lg font-semibold tabular-nums truncate">{stats.activeEmployees}</p>
+                    <p className="text-xs text-muted-foreground truncate">Employees</p>
                   </div>
-                  <div className="rounded-lg border p-2">
-                    <p className="text-lg font-semibold">{stats.avgSalary.toLocaleString()}</p>
-                    <p className="text-xs text-muted-foreground">Avg Salary</p>
+                  <div className="rounded-lg border p-2 min-w-0">
+                    <p className="text-lg font-semibold tabular-nums truncate" title={stats.avgSalary.toLocaleString()}>
+                      {stats.avgSalary.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">Avg Salary</p>
                   </div>
                 </div>
                 {stats.pendingPayRuns > 0 && (
                   <div className="flex items-center gap-2 rounded-lg bg-warning/10 p-2 text-warning">
-                    <Clock className="h-4 w-4" />
-                    <span className="text-sm font-medium">{stats.pendingPayRuns} pending runs</span>
+                    <Clock className="h-4 w-4 shrink-0" />
+                    <span className="text-sm font-medium truncate">{stats.pendingPayRuns} pending runs</span>
                   </div>
                 )}
               </CardContent>
@@ -1003,24 +1005,24 @@ export function AccountantHomeModule() {
                 <CardTitle className="text-base font-semibold">School Metrics</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-lg bg-chart-5/10 p-2">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="rounded-lg bg-chart-5/10 p-2 shrink-0">
                     <GraduationCap className="h-5 w-5 text-chart-5" />
                   </div>
-                  <div>
-                    <p className="text-xl font-bold">{stats.totalStudents}</p>
-                    <p className="text-xs text-muted-foreground">Total Students</p>
+                  <div className="min-w-0">
+                    <p className="text-xl font-bold tabular-nums">{stats.totalStudents}</p>
+                    <p className="text-xs text-muted-foreground truncate">Total Students</p>
                   </div>
                 </div>
                 <Separator />
                 <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Revenue/Student</span>
-                    <span className="font-medium">{stats.revenuePerStudent.toLocaleString()}</span>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-xs text-muted-foreground shrink-0">Revenue/Student</span>
+                    <span className="text-sm font-semibold tabular-nums text-right">{stats.revenuePerStudent.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Cost/Student</span>
-                    <span className="font-medium">{stats.costPerStudent.toLocaleString()}</span>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-xs text-muted-foreground shrink-0">Cost/Student</span>
+                    <span className="text-sm font-semibold tabular-nums text-right">{stats.costPerStudent.toLocaleString()}</span>
                   </div>
                 </div>
               </CardContent>
@@ -1034,18 +1036,18 @@ export function AccountantHomeModule() {
               <CardContent className="space-y-3">
                 <div className={`rounded-lg p-3 ${stats.cashPosition >= 0 ? "bg-primary/10" : "bg-destructive/10"}`}>
                   <p className="text-xs text-muted-foreground">Estimated Balance</p>
-                  <p className={`text-xl font-bold ${stats.cashPosition >= 0 ? "text-primary" : "text-destructive"}`}>
+                  <p className={`text-xl font-bold tabular-nums break-words ${stats.cashPosition >= 0 ? "text-primary" : "text-destructive"}`}>
                     {stats.cashPosition.toLocaleString()}
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Annual Payroll</span>
-                    <span className="font-medium">{stats.annualPayrollProjection.toLocaleString()}</span>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-xs text-muted-foreground shrink-0">Annual Payroll</span>
+                    <span className="text-sm font-semibold tabular-nums text-right">{stats.annualPayrollProjection.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Gross Profit</span>
-                    <span className={`font-medium ${stats.grossProfit >= 0 ? "text-primary" : "text-destructive"}`}>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-xs text-muted-foreground shrink-0">Gross Profit</span>
+                    <span className={`text-sm font-semibold tabular-nums text-right ${stats.grossProfit >= 0 ? "text-primary" : "text-destructive"}`}>
                       {stats.grossProfit.toLocaleString()}
                     </span>
                   </div>
