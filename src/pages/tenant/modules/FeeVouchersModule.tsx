@@ -113,38 +113,40 @@ export default function FeeVouchersModule() {
               No voucher batches yet.
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>When</TableHead>
-                  <TableHead>Scope</TableHead>
-                  <TableHead>Period</TableHead>
-                  <TableHead>Due</TableHead>
-                  <TableHead className="text-right">Students</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {batches.map((b) => (
-                  <TableRow key={b.id}>
-                    <TableCell>{new Date(b.created_at).toLocaleString()}</TableCell>
-                    <TableCell><Badge variant="secondary">{b.scope}</Badge></TableCell>
-                    <TableCell>{b.period_label ?? "—"}</TableCell>
-                    <TableCell>{b.due_date}</TableCell>
-                    <TableCell className="text-right">{b.total_students}</TableCell>
-                    <TableCell className="text-right font-medium">
-                      {b.total_amount.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button size="sm" variant="ghost" onClick={() => setDeliveriesBatch(b)}>
-                        <Mail className="mr-1 h-3 w-3" /> Deliveries
-                      </Button>
-                    </TableCell>
+            <div className="overflow-x-auto -mx-2 sm:mx-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>When</TableHead>
+                    <TableHead>Scope</TableHead>
+                    <TableHead>Period</TableHead>
+                    <TableHead>Due</TableHead>
+                    <TableHead className="text-right">Students</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {batches.map((b) => (
+                    <TableRow key={b.id}>
+                      <TableCell className="whitespace-nowrap text-xs">{new Date(b.created_at).toLocaleString()}</TableCell>
+                      <TableCell><Badge variant="secondary">{b.scope}</Badge></TableCell>
+                      <TableCell className="max-w-[180px] truncate" title={b.period_label ?? ""}>{b.period_label ?? "—"}</TableCell>
+                      <TableCell className="whitespace-nowrap">{b.due_date}</TableCell>
+                      <TableCell className="text-right">{b.total_students}</TableCell>
+                      <TableCell className="text-right font-medium">
+                        {b.total_amount.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="ghost" onClick={() => setDeliveriesBatch(b)}>
+                          <Eye className="mr-1 h-3 w-3" /> Manage
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
