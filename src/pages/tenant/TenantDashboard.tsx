@@ -477,13 +477,14 @@ const TenantDashboard = () => {
             <Route path="timetable" element={<TimetableBuilderModule />} />
             <Route path="attendance" element={<AttendanceModule />} />
             <Route path="finance" element={<FinanceModule />} />
-            <Route path="fees" element={<AccountantFeesModule />} />
+            <Route path="fees" element={<FeesUnifiedModule />} />
             <Route path="invoices" element={<AccountantInvoicesModule />} />
             <Route path="payments" element={<AccountantPaymentsModule />} />
             <Route path="expenses" element={<AccountantExpensesModule />} />
             <Route path="payroll" element={<AccountantPayrollModule />} />
-            <Route path="fees-pro" element={<FeesAdvancedModule />} />
-            <Route path="fee-vouchers" element={<FeeVouchersModule />} />
+            <Route path="fees-pro" element={<Navigate to={`/${tenant.slug}/${role}/fees?tab=advanced`} replace />} />
+            <Route path="fee-vouchers" element={<Navigate to={`/${tenant.slug}/${role}/fees?tab=vouchers`} replace />} />
+
             <Route path="admissions" element={<AdmissionsModule />} />
             <Route path="reports" element={<ReportsModule />} />
             <Route path="leaves" element={<HrLeavesModule />} />
