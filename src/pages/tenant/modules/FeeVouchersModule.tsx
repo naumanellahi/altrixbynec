@@ -519,8 +519,24 @@ type Delivery = {
   delivered_at: string;
 };
 
+type BatchInvoice = {
+  id: string;
+  invoice_number: string;
+  period_label: string | null;
+  due_date: string;
+  total_amount: number;
+  paid_amount: number;
+  status: string;
+};
+
 function DeliveriesDialog({ batch, onClose }: { batch: Batch | null; onClose: () => void }) {
   const open = !!batch;
+  const qc = useQueryClient();
+  const [editing, setEditing] = useState<BatchInvoice | null>(null);
+  const [editDue, setEditDue] = useState("");
+  const [editPeriod, setEditPeriod] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
+
   const { data: deliveries = [], isLoading } = useQuery({
     queryKey: ["fee_voucher_deliveries", batch?.id],
     queryFn: async () => {
@@ -535,64 +551,182 @@ function DeliveriesDialog({ batch, onClose }: { batch: Batch | null; onClose: ()
     enabled: open,
   });
 
+  const invoiceIds = useMemo(
+    () => Array.from(new Set(deliveries.map((d) => d.invoice_id).filter(Boolean))),
+    [deliveries],
+  );
+
+  const { data: invoices = [] } = useQuery({
+    queryKey: ["voucher_invoices", batch?.id, invoiceIds.length],
+    queryFn: async () => {
+      if (invoiceIds.length === 0) return [] as BatchInvoice[];
+      const { data, error } = await supabase
+        .from("fee_invoices")
+        .select("id, invoice_number, period_label, due_date, total_amount, paid_amount, status")
+        .in("id", invoiceIds);
+      if (error) throw error;
+      return (data || []) as BatchInvoice[];
+    },
+    enabled: open && invoiceIds.length > 0,
+  });
+  const invoiceMap = useMemo(() => new Map(invoices.map((i) => [i.id, i])), [invoices]);
+
   const sent = deliveries.filter((d) => d.status === "sent").length;
   const noAcct = deliveries.filter((d) => d.status === "no_account").length;
   const failed = deliveries.filter((d) => !["sent", "no_account"].includes(d.status)).length;
 
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ["voucher_invoices", batch?.id] });
+    qc.invalidateQueries({ queryKey: ["fee_invoices"] });
+    qc.invalidateQueries({ queryKey: ["fee_voucher_batches"] });
+  };
+
+  const openEdit = (inv: BatchInvoice) => {
+    setEditing(inv);
+    setEditDue(inv.due_date);
+    setEditPeriod(inv.period_label ?? "");
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    setBusyId(editing.id);
+    const { error } = await supabase
+      .from("fee_invoices")
+      .update({ due_date: editDue, period_label: editPeriod || null })
+      .eq("id", editing.id);
+    setBusyId(null);
+    if (error) return toast.error(error.message);
+    toast.success("Voucher updated");
+    setEditing(null);
+    refresh();
+  };
+
+  const setStatus = async (inv: BatchInvoice, status: "cancelled" | "pending") => {
+    if (Number(inv.paid_amount) > 0 && status === "cancelled") {
+      toast.error("Cannot void a voucher with payments. Refund/remove payments first.");
+      return;
+    }
+    setBusyId(inv.id);
+    const { error } = await supabase.from("fee_invoices").update({ status }).eq("id", inv.id);
+    setBusyId(null);
+    if (error) return toast.error(error.message);
+    toast.success(status === "cancelled" ? "Voucher voided" : "Voucher restored");
+    refresh();
+  };
+
+  const removeInvoice = async (inv: BatchInvoice) => {
+    if (Number(inv.paid_amount) > 0) {
+      toast.error("Cannot delete a voucher with payments.");
+      return;
+    }
+    if (!confirm(`Delete voucher ${inv.invoice_number}? This cannot be undone.`)) return;
+    setBusyId(inv.id);
+    const { error } = await supabase.from("fee_invoices").delete().eq("id", inv.id);
+    setBusyId(null);
+    if (error) return toast.error(error.message);
+    toast.success("Voucher deleted");
+    refresh();
+  };
+
+  const statusBadge = (s: string) => {
+    if (s === "paid") return <Badge className="bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 border border-emerald-600/30">Paid</Badge>;
+    if (s === "partial") return <Badge className="bg-amber-600/15 text-amber-700 dark:text-amber-400 border border-amber-600/30">Partial</Badge>;
+    if (s === "overdue") return <Badge variant="destructive">Overdue</Badge>;
+    if (s === "cancelled") return <Badge variant="outline" className="text-muted-foreground line-through">Cancelled</Badge>;
+    return <Badge variant="secondary">{s}</Badge>;
+  };
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
+      <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Delivery status</DialogTitle>
+          <DialogTitle>Batch vouchers & delivery</DialogTitle>
           <DialogDescription>
-            {sent} delivered · {noAcct} no parent account · {failed} failed
+            {sent} delivered · {noAcct} no parent account · {failed} failed · {invoices.length} vouchers
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="flex-1 pr-3">
           {isLoading ? (
             <div className="py-8 flex justify-center"><Loader2 className="h-5 w-5 animate-spin" /></div>
           ) : deliveries.length === 0 ? (
-            <div className="py-8 text-center text-sm text-muted-foreground">No delivery records.</div>
+            <div className="py-8 text-center text-sm text-muted-foreground">No vouchers in this batch.</div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Voucher</TableHead>
                   <TableHead>Parent</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Channel</TableHead>
+                  <TableHead>Due</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>When</TableHead>
+                  <TableHead>Delivery</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {deliveries.map((d) => (
-                  <TableRow key={d.id}>
-                    <TableCell className="font-medium">{d.guardian_name ?? "—"}</TableCell>
-                    <TableCell className="text-xs">
-                      {d.guardian_email ?? ""}{d.guardian_phone ? ` · ${d.guardian_phone}` : ""}
-                    </TableCell>
-                    <TableCell><Badge variant="outline">{d.channel}</Badge></TableCell>
-                    <TableCell>
-                      {d.status === "sent" ? (
-                        <Badge className="bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 border border-emerald-600/30">
-                          <CheckCircle2 className="mr-1 h-3 w-3" /> Sent
-                        </Badge>
-                      ) : d.status === "no_account" ? (
-                        <Badge variant="outline" className="text-amber-700 dark:text-amber-400 border-amber-500/40">
-                          <AlertCircle className="mr-1 h-3 w-3" /> No app account
-                        </Badge>
-                      ) : (
-                        <Badge variant="destructive">
-                          <XCircle className="mr-1 h-3 w-3" /> {d.status}
-                        </Badge>
-                      )}
-                      {d.error && <div className="text-[10px] text-destructive mt-1">{d.error}</div>}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {new Date(d.delivered_at).toLocaleString()}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {deliveries.map((d) => {
+                  const inv = invoiceMap.get(d.invoice_id);
+                  return (
+                    <TableRow key={d.id}>
+                      <TableCell className="font-mono text-xs">
+                        {inv?.invoice_number ?? "—"}
+                        {inv?.period_label && (
+                          <div className="text-[10px] text-muted-foreground">{inv.period_label}</div>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        <div className="font-medium">{d.guardian_name ?? "—"}</div>
+                        <div className="text-muted-foreground">
+                          {d.guardian_email ?? ""}{d.guardian_phone ? ` · ${d.guardian_phone}` : ""}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-xs">{inv?.due_date ?? "—"}</TableCell>
+                      <TableCell className="text-right font-medium">
+                        {inv ? Number(inv.total_amount).toLocaleString() : "—"}
+                        {inv && Number(inv.paid_amount) > 0 && (
+                          <div className="text-[10px] text-emerald-600">paid {Number(inv.paid_amount).toLocaleString()}</div>
+                        )}
+                      </TableCell>
+                      <TableCell>{inv ? statusBadge(inv.status) : "—"}</TableCell>
+                      <TableCell>
+                        {d.status === "sent" ? (
+                          <Badge className="bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 border border-emerald-600/30">
+                            <CheckCircle2 className="mr-1 h-3 w-3" /> Sent
+                          </Badge>
+                        ) : d.status === "no_account" ? (
+                          <Badge variant="outline" className="text-amber-700 dark:text-amber-400 border-amber-500/40">
+                            <AlertCircle className="mr-1 h-3 w-3" /> No account
+                          </Badge>
+                        ) : (
+                          <Badge variant="destructive">
+                            <XCircle className="mr-1 h-3 w-3" /> {d.status}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {inv ? (
+                          <div className="flex flex-wrap justify-end gap-1">
+                            <Button size="sm" variant="outline" disabled={busyId === inv.id} onClick={() => openEdit(inv)}>
+                              Edit
+                            </Button>
+                            {inv.status !== "cancelled" ? (
+                              <Button size="sm" variant="outline" disabled={busyId === inv.id} onClick={() => setStatus(inv, "cancelled")}>
+                                Void
+                              </Button>
+                            ) : (
+                              <Button size="sm" variant="outline" disabled={busyId === inv.id} onClick={() => setStatus(inv, "pending")}>
+                                Restore
+                              </Button>
+                            )}
+                            <Button size="sm" variant="ghost" className="text-destructive" disabled={busyId === inv.id} onClick={() => removeInvoice(inv)}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        ) : null}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
@@ -600,10 +734,38 @@ function DeliveriesDialog({ batch, onClose }: { batch: Batch | null; onClose: ()
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Close</Button>
         </DialogFooter>
+
+        {/* Edit voucher dialog */}
+        <Dialog open={!!editing} onOpenChange={(v) => !v && setEditing(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit voucher {editing?.invoice_number}</DialogTitle>
+              <DialogDescription>Update the due date or billing period.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 py-2">
+              <div className="space-y-1.5">
+                <Label>Due date</Label>
+                <Input type="date" value={editDue} onChange={(e) => setEditDue(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Period label</Label>
+                <Input value={editPeriod} onChange={(e) => setEditPeriod(e.target.value)} placeholder="e.g. November 2026" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
+              <Button onClick={saveEdit} disabled={!editDue || busyId === editing?.id}>
+                {busyId === editing?.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Save changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </DialogContent>
     </Dialog>
   );
 }
+
 
 function GenerateVoucherDialog({
   open,
