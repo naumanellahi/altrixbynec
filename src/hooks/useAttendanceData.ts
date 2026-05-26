@@ -35,8 +35,9 @@ export function useAttendanceData(schoolId: string | null) {
     async (
       sectionId: string,
       sessionDate: string,
-      periodLabel: string
-    ): Promise<{ sessionId: string; rows: StudentRow[] } | null> => {
+      periodLabel: string,
+      options?: { readOnly?: boolean }
+    ): Promise<{ sessionId: string | null; rows: StudentRow[] } | null> => {
       if (!schoolId) return null;
       setLoading(true);
 
@@ -51,9 +52,29 @@ export function useAttendanceData(schoolId: string | null) {
           .eq("period_label", periodLabel)
           .maybeSingle();
 
-        let sid = existingSession?.id;
+        let sid: string | null = existingSession?.id ?? null;
 
         if (!sid) {
+          if (options?.readOnly) {
+            // Viewer cannot create sessions — just return an empty roster
+            const { data: enrollments } = await supabase
+              .from("student_enrollments")
+              .select("student_id")
+              .eq("school_id", schoolId)
+              .eq("class_section_id", sectionId);
+            const studentIds = (enrollments ?? []).map((e) => e.student_id);
+            const { data: students } = studentIds.length
+              ? await supabase.from("students").select("id, first_name, last_name").in("id", studentIds)
+              : { data: [] as any[] };
+            const rows: StudentRow[] = (students ?? []).map((s: any) => ({
+              student_id: s.id,
+              first_name: s.first_name,
+              last_name: s.last_name,
+              status: "present",
+            }));
+            return { sessionId: null, rows };
+          }
+
           const { data: user } = await supabase.auth.getUser();
           const { data: newSession, error } = await supabase
             .from("attendance_sessions")
