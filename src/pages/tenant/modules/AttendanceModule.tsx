@@ -322,7 +322,7 @@ export function AttendanceModule() {
       {showStats && <StudentAttendanceStatsCard stats={studentStats} loading={loadingStats} />}
 
       {/* Attendance Table */}
-      {sessionId && (
+      {(sessionId || (!canEdit && rows.length > 0)) && (
         <Card>
           <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>Students ({rows.length})</CardTitle>
