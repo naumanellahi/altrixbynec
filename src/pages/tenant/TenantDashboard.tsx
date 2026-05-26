@@ -25,6 +25,7 @@ import { FinanceModule } from "@/pages/tenant/modules/FinanceModule";
 import { PrincipalHome } from "@/pages/tenant/role-homes/PrincipalHome";
 import { VicePrincipalHome } from "@/pages/tenant/role-homes/VicePrincipalHome";
 import { CounselorHome } from "@/pages/tenant/role-homes/CounselorHome";
+import { AcademicCoordinatorHome } from "@/pages/tenant/role-homes/AcademicCoordinatorHome";
 import { SupportModule } from "@/pages/tenant/modules/SupportModule";
 import { DirectoryModule } from "@/pages/tenant/modules/DirectoryModule";
 import { TimetableBuilderModule } from "@/pages/tenant/modules/TimetableBuilderModule";
