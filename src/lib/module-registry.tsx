@@ -58,6 +58,8 @@ import { MarketingSourcesModule } from "@/pages/tenant/marketing-modules/Marketi
 import { MarketingCampaignsModule } from "@/pages/tenant/marketing-modules/MarketingCampaignsModule";
 
 import { CounselingModule } from "@/pages/tenant/modules/CounselingModule";
+import { CounselorBehaviorModule } from "@/pages/tenant/modules/CounselorBehaviorModule";
+import { CounselorAtRiskModule } from "@/pages/tenant/modules/CounselorAtRiskModule";
 import { AICounselorMode } from "@/components/ai/AICounselorMode";
 
 /** Context passed to each module's prop factory. */
