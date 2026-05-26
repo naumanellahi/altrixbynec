@@ -59,6 +59,7 @@ import FeesAdvancedModule from "@/pages/tenant/modules/FeesAdvancedModule";
 import FeeVouchersModule from "@/pages/tenant/modules/FeeVouchersModule";
 import FeesUnifiedModule from "@/pages/tenant/modules/FeesUnifiedModule";
 import { AICounselorMode } from "@/components/ai/AICounselorMode";
+import { CounselingModule } from "@/pages/tenant/modules/CounselingModule";
 
 // Cache key for owner auth
 const OWNER_AUTHZ_CACHE = "eduverse_owner_authz_cache_strict_v2";
@@ -288,7 +289,7 @@ export default function OwnerDashboard() {
           <Route path="holidays" element={<HolidaysModule schoolId={schoolId} canManage />} />
           <Route path="reports" element={<ReportsModule />} />
           <Route path="complaints" element={<PrincipalComplaintsModule />} />
-          <Route path="counseling" element={<AICounselorMode schoolId={schoolId} />} />
+          <Route path="counseling" element={<CounselingModule schoolId={schoolId} />} />
           {createCatalogRouteElements({
             roles: ["school_owner"],
             ctx: { schoolId, schoolSlug: tenant.slug, role: "school_owner" },
