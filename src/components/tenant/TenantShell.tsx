@@ -68,13 +68,29 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
     return { grouped: g as ReturnType<typeof buildMergedNav>["grouped"] };
   }, [effectiveRoles]);
 
-  // Mobile bottom bar — pick a handful of always-useful items.
-  const bottomNavItems = [
-    { to: `/${schoolSlug}/${role}`, icon: LayoutGrid, label: "Home" },
-    { to: `/${schoolSlug}/${role}/messages`, icon: MessageSquare, label: "Messages", badge: unreadCount },
-    { to: `/${schoolSlug}/${role}/academic`, icon: GraduationCap, label: "Academic" },
-    { to: `/${schoolSlug}/${role}/users`, icon: Users, label: "Staff" },
-  ];
+  // Mobile bottom bar — role-aware. Keep to 5 items + "More" so nothing overflows.
+  const bottomNavItems = useMemo(() => {
+    const base = (path: string) => `/${schoolSlug}/${role}${path ? `/${path}` : ""}`;
+    const home = { to: base(""), icon: LayoutGrid, label: "Home" };
+    const messages = { to: base("messages"), icon: MessageSquare, label: "Messages", badge: unreadCount };
+
+    if (role === "academic_coordinator") {
+      return [
+        home,
+        { to: base("academic"), icon: GraduationCap, label: "Academic" },
+        { to: base("timetable"), icon: CalendarDays, label: "Timetable" },
+        { to: base("attendance"), icon: ClipboardCheck, label: "Attend" },
+        { to: base("exams"), icon: FileSpreadsheet, label: "Exams" },
+      ];
+    }
+
+    return [
+      home,
+      messages,
+      { to: base("academic"), icon: GraduationCap, label: "Academic" },
+      { to: base("users"), icon: Users, label: "Staff" },
+    ];
+  }, [role, schoolSlug, unreadCount]);
 
   const NavContent = () => (
     <>
