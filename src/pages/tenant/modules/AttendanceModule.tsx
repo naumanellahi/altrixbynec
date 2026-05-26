@@ -444,11 +444,13 @@ export function AttendanceModule() {
                     </TableBody>
                   </Table>
                 </div>
-                <div className="mt-4">
-                  <Button onClick={handleSaveAttendance} disabled={saving}>
-                    {saving ? "Saving..." : "Save Attendance"}
-                  </Button>
-                </div>
+                {canEdit && (
+                  <div className="mt-4">
+                    <Button onClick={handleSaveAttendance} disabled={saving}>
+                      {saving ? "Saving..." : "Save Attendance"}
+                    </Button>
+                  </div>
+                )}
               </>
             )}
           </CardContent>
