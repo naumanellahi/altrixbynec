@@ -6207,6 +6207,7 @@ export type Database = {
         Args: { _complaint_id: string }
         Returns: boolean
       }
+      can_edit_attendance: { Args: { _school_id: string }; Returns: boolean }
       can_manage_admissions: { Args: { _school_id: string }; Returns: boolean }
       can_manage_easypaisa: { Args: { _school_id: string }; Returns: boolean }
       can_manage_exam_datesheet: {

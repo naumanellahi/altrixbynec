@@ -35,6 +35,20 @@ export function AttendanceModule() {
   const schoolId = useMemo(() => (tenant.status === "ready" ? tenant.schoolId : null), [tenant.status, tenant.schoolId]);
   const perms = useSchoolPermissions(schoolId);
 
+  // Only teachers, principals (and ownership roles) may add/edit attendance.
+  // Counselors and other school members get a read-only view.
+  const [canEdit, setCanEdit] = useState<boolean>(false);
+  const [canEditLoading, setCanEditLoading] = useState<boolean>(true);
+  useEffect(() => {
+    if (!schoolId) { setCanEditLoading(false); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await (supabase as any).rpc("can_edit_attendance", { _school_id: schoolId });
+      if (!cancelled) { setCanEdit(!!data); setCanEditLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [schoolId]);
+
   const offlineSections = useOfflineSections(schoolId);
   const offlineClasses = useOfflineClasses(schoolId);
   const offlineTeacherAssignments = useOfflineTeacherAssignments(schoolId);
@@ -80,22 +94,25 @@ export function AttendanceModule() {
 
   // Load sections
   useEffect(() => {
-    if (perms.loading || !schoolId || !user?.id) return;
+    if (perms.loading || canEditLoading || !schoolId || !user?.id) return;
     let cancelled = false;
 
+    const loadAll = async () => {
+      const [{ data: sec }, { data: cls }] = await Promise.all([
+        supabase.from("class_sections").select("id,name,class_id").eq("school_id", schoolId).order("name"),
+        supabase.from("academic_classes").select("id,name").eq("school_id", schoolId),
+      ]);
+      const classMap = new Map((cls ?? []).map((c: any) => [c.id, c.name]));
+      return (sec ?? []).map((s: any) => ({
+        id: s.id, name: s.name, class_name: classMap.get(s.class_id) ?? "Class",
+      }));
+    };
+
     const load = async () => {
-      if (perms.canManageStudents) {
-        // Principal/admin: load ALL sections
-        const [{ data: sec }, { data: cls }] = await Promise.all([
-          supabase.from("class_sections").select("id,name,class_id").eq("school_id", schoolId).order("name"),
-          supabase.from("academic_classes").select("id,name").eq("school_id", schoolId),
-        ]);
-        const classMap = new Map((cls ?? []).map((c: any) => [c.id, c.name]));
-        const enriched = (sec ?? []).map((s: any) => ({
-          id: s.id,
-          name: s.name,
-          class_name: classMap.get(s.class_id) ?? "Class",
-        }));
+      // Principal/admin/coordinator OR any read-only viewer (e.g. counselor):
+      // load every section in the school.
+      if (perms.canManageStudents || !canEdit) {
+        const enriched = await loadAll();
         if (!cancelled) {
           setSections(enriched);
           if (enriched.length > 0 && !selectedSection) setSelectedSection(enriched[0].id);
@@ -135,7 +152,7 @@ export function AttendanceModule() {
     void load();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [schoolId, user?.id, perms.loading, perms.canManageStudents]);
+  }, [schoolId, user?.id, perms.loading, perms.canManageStudents, canEdit, canEditLoading]);
 
   const loadSession = async () => {
     if (!selectedSection) return;
@@ -247,11 +264,13 @@ export function AttendanceModule() {
       <Card>
         <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <CardTitle>Mark Attendance</CardTitle>
+            <CardTitle>{canEdit ? "Mark Attendance" : "Attendance (read-only)"}</CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              {perms.canManageStudents
-                ? "All sections are available"
-                : "Only your assigned sections are shown"}
+              {!canEdit
+                ? "View-only access. Only teachers and principals can add or edit attendance."
+                : perms.canManageStudents
+                  ? "All sections are available"
+                  : "Only your assigned sections are shown"}
             </p>
           </div>
           <div className="flex gap-2">
@@ -307,10 +326,12 @@ export function AttendanceModule() {
         <Card>
           <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>Students ({rows.length})</CardTitle>
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="outline" onClick={() => markAll("present")}>All Present</Button>
-              <Button size="sm" variant="outline" onClick={() => markAll("absent")}>All Absent</Button>
-            </div>
+            {canEdit && (
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={() => markAll("present")}>All Present</Button>
+                <Button size="sm" variant="outline" onClick={() => markAll("absent")}>All Absent</Button>
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             {rows.length === 0 ? (
@@ -333,19 +354,21 @@ export function AttendanceModule() {
                   </Badge>
                 </div>
 
-                {/* Keyboard Shortcuts */}
-                <div className="mb-4 flex items-center gap-2 text-xs text-muted-foreground">
-                  <Keyboard className="h-4 w-4" />
-                  <span>
-                    Shortcuts: <kbd className="rounded bg-muted px-1">↑↓</kbd> navigate, <kbd className="rounded bg-muted px-1">←→</kbd> change status,{" "}
-                    <kbd className="rounded bg-muted px-1">P</kbd> present,{" "}
-                    <kbd className="rounded bg-muted px-1">A</kbd> absent,{" "}
-                    <kbd className="rounded bg-muted px-1">L</kbd> late,{" "}
-                    <kbd className="rounded bg-muted px-1">E</kbd> excused
-                  </span>
-                </div>
+                {/* Keyboard Shortcuts (editors only) */}
+                {canEdit && (
+                  <div className="mb-4 flex items-center gap-2 text-xs text-muted-foreground">
+                    <Keyboard className="h-4 w-4" />
+                    <span>
+                      Shortcuts: <kbd className="rounded bg-muted px-1">↑↓</kbd> navigate, <kbd className="rounded bg-muted px-1">←→</kbd> change status,{" "}
+                      <kbd className="rounded bg-muted px-1">P</kbd> present,{" "}
+                      <kbd className="rounded bg-muted px-1">A</kbd> absent,{" "}
+                      <kbd className="rounded bg-muted px-1">L</kbd> late,{" "}
+                      <kbd className="rounded bg-muted px-1">E</kbd> excused
+                    </span>
+                  </div>
+                )}
 
-                <div tabIndex={0} onKeyDown={handleKeyDown} className="focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md">
+                <div tabIndex={canEdit ? 0 : -1} onKeyDown={canEdit ? handleKeyDown : undefined} className="focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md">
                   <Table ref={tableRef}>
                     <TableHeader>
                       <TableRow>
@@ -401,10 +424,12 @@ export function AttendanceModule() {
                                 <TableCell key={status} className="text-center">
                                   <button
                                     type="button"
-                                    onClick={() => updateStatus(r.student_id, status)}
+                                    onClick={() => canEdit && updateStatus(r.student_id, status)}
+                                    disabled={!canEdit}
                                     className={cn(
                                       "inline-flex h-8 w-8 items-center justify-center rounded-full border-2 transition-all",
-                                      r.status === status ? config.active : `border-muted ${config.hover}`
+                                      r.status === status ? config.active : `border-muted ${canEdit ? config.hover : ""}`,
+                                      !canEdit && "cursor-default opacity-80"
                                     )}
                                     aria-label={`Mark ${status}`}
                                   >
@@ -419,11 +444,13 @@ export function AttendanceModule() {
                     </TableBody>
                   </Table>
                 </div>
-                <div className="mt-4">
-                  <Button onClick={handleSaveAttendance} disabled={saving}>
-                    {saving ? "Saving..." : "Save Attendance"}
-                  </Button>
-                </div>
+                {canEdit && (
+                  <div className="mt-4">
+                    <Button onClick={handleSaveAttendance} disabled={saving}>
+                      {saving ? "Saving..." : "Save Attendance"}
+                    </Button>
+                  </div>
+                )}
               </>
             )}
           </CardContent>
