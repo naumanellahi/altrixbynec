@@ -354,19 +354,21 @@ export function AttendanceModule() {
                   </Badge>
                 </div>
 
-                {/* Keyboard Shortcuts */}
-                <div className="mb-4 flex items-center gap-2 text-xs text-muted-foreground">
-                  <Keyboard className="h-4 w-4" />
-                  <span>
-                    Shortcuts: <kbd className="rounded bg-muted px-1">↑↓</kbd> navigate, <kbd className="rounded bg-muted px-1">←→</kbd> change status,{" "}
-                    <kbd className="rounded bg-muted px-1">P</kbd> present,{" "}
-                    <kbd className="rounded bg-muted px-1">A</kbd> absent,{" "}
-                    <kbd className="rounded bg-muted px-1">L</kbd> late,{" "}
-                    <kbd className="rounded bg-muted px-1">E</kbd> excused
-                  </span>
-                </div>
+                {/* Keyboard Shortcuts (editors only) */}
+                {canEdit && (
+                  <div className="mb-4 flex items-center gap-2 text-xs text-muted-foreground">
+                    <Keyboard className="h-4 w-4" />
+                    <span>
+                      Shortcuts: <kbd className="rounded bg-muted px-1">↑↓</kbd> navigate, <kbd className="rounded bg-muted px-1">←→</kbd> change status,{" "}
+                      <kbd className="rounded bg-muted px-1">P</kbd> present,{" "}
+                      <kbd className="rounded bg-muted px-1">A</kbd> absent,{" "}
+                      <kbd className="rounded bg-muted px-1">L</kbd> late,{" "}
+                      <kbd className="rounded bg-muted px-1">E</kbd> excused
+                    </span>
+                  </div>
+                )}
 
-                <div tabIndex={0} onKeyDown={handleKeyDown} className="focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md">
+                <div tabIndex={canEdit ? 0 : -1} onKeyDown={canEdit ? handleKeyDown : undefined} className="focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md">
                   <Table ref={tableRef}>
                     <TableHeader>
                       <TableRow>
