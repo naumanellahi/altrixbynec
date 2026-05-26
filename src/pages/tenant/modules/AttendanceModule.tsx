@@ -156,7 +156,7 @@ export function AttendanceModule() {
 
   const loadSession = async () => {
     if (!selectedSection) return;
-    const result = await loadSessionData(selectedSection, sessionDate, periodLabel);
+    const result = await loadSessionData(selectedSection, sessionDate, periodLabel, { readOnly: !canEdit });
     if (result) {
       setSessionId(result.sessionId);
       setRows(result.rows);
@@ -322,7 +322,7 @@ export function AttendanceModule() {
       {showStats && <StudentAttendanceStatsCard stats={studentStats} loading={loadingStats} />}
 
       {/* Attendance Table */}
-      {sessionId && (
+      {(sessionId || (!canEdit && rows.length > 0)) && (
         <Card>
           <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>Students ({rows.length})</CardTitle>
