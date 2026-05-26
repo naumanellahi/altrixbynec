@@ -69,7 +69,7 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
   }, [effectiveRoles]);
 
   // Mobile bottom bar — role-aware. Keep to 5 items + "More" so nothing overflows.
-  const bottomNavItems = useMemo(() => {
+  const bottomNavItems = useMemo<Array<{ to: string; icon: typeof LayoutGrid; label: string; badge?: number }>>(() => {
     const base = (path: string) => `/${schoolSlug}/${role}${path ? `/${path}` : ""}`;
     const home = { to: base(""), icon: LayoutGrid, label: "Home" };
     const messages = { to: base("messages"), icon: MessageSquare, label: "Messages", badge: unreadCount };
