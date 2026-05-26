@@ -466,9 +466,10 @@ const TenantDashboard = () => {
           <RouteGuard>
             <Routes>
             <Route index element={
-              role === "principal" ? <PrincipalHome /> : 
-              role === "vice_principal" ? <VicePrincipalHome /> : 
+              role === "principal" ? <PrincipalHome /> :
+              role === "vice_principal" ? <VicePrincipalHome /> :
               role === "counselor" ? <CounselorHome /> :
+              role === "academic_coordinator" ? <AcademicCoordinatorHome /> :
               <DashboardHome />
             } />
             <Route path="admin" element={<AdminConsole />} />
