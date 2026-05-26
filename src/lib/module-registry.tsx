@@ -57,6 +57,7 @@ import { MarketingCallsModule } from "@/pages/tenant/marketing-modules/Marketing
 import { MarketingSourcesModule } from "@/pages/tenant/marketing-modules/MarketingSourcesModule";
 import { MarketingCampaignsModule } from "@/pages/tenant/marketing-modules/MarketingCampaignsModule";
 
+import { CounselingModule } from "@/pages/tenant/modules/CounselingModule";
 import { AICounselorMode } from "@/components/ai/AICounselorMode";
 
 /** Context passed to each module's prop factory. */
@@ -132,7 +133,7 @@ export const MODULE_REGISTRY: Record<string, ModuleEntry> = {
   holidays:   { Component: HolidaysModule, propsFor: (c) => ({ schoolId: c.schoolId, canManage: isGov(c.roles) }) },
   reports:    { Component: ReportsModule },
   complaints: { Component: PrincipalComplaintsModule },
-  counseling: { Component: AICounselorMode, propsFor: (c) => ({ schoolId: c.schoolId }) },
+  counseling: { Component: CounselingModule, propsFor: (c) => ({ schoolId: c.schoolId }) },
 
   // Communication
   messages: { Component: MessagesModule, propsFor: (c) => ({ schoolId: c.schoolId }) },
