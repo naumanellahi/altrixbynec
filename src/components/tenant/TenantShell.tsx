@@ -241,19 +241,19 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-3 left-1/2 z-50 flex -translate-x-1/2 items-center justify-around gap-1 rounded-3xl border border-border/60 bg-background/90 px-2 py-1.5 shadow-elevated backdrop-blur-xl lg:hidden w-[calc(100%-1.5rem)] max-w-md">
+      <nav className="fixed bottom-3 left-1/2 z-50 flex -translate-x-1/2 items-center justify-around gap-0.5 rounded-3xl border border-border/60 bg-background/90 px-1.5 py-1.5 shadow-elevated backdrop-blur-xl lg:hidden w-[calc(100%-1rem)] max-w-md">
         {bottomNavItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             end={item.to === `/${schoolSlug}/${role}`}
-            className="relative flex flex-1 flex-col items-center gap-0.5 rounded-2xl px-2 py-1.5 text-muted-foreground transition-all duration-200"
+            className="relative flex flex-1 flex-col items-center gap-0.5 rounded-2xl px-1 py-1.5 text-muted-foreground transition-all duration-200 min-w-0"
             activeClassName="text-primary-foreground bg-primary shadow-soft"
           >
-            <item.icon className="h-5 w-5" />
-            <span className="text-[10px] font-medium leading-tight">{item.label}</span>
-            {"badge" in item && item.badge !== undefined && item.badge > 0 && (
-              <span className="absolute -top-0.5 right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[8px] font-bold text-destructive-foreground">
+            <item.icon className="h-[18px] w-[18px]" />
+            <span className="text-[9px] font-medium leading-tight truncate max-w-full">{item.label}</span>
+            {item.badge !== undefined && item.badge > 0 && (
+              <span className="absolute -top-0.5 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[8px] font-bold text-destructive-foreground">
                 {item.badge > 9 ? "9+" : item.badge}
               </span>
             )}
@@ -261,10 +261,10 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
         ))}
         <button
           onClick={() => setMobileNavOpen(true)}
-          className="flex flex-1 flex-col items-center gap-0.5 rounded-2xl px-2 py-1.5 text-muted-foreground transition-colors"
+          className="flex flex-1 flex-col items-center gap-0.5 rounded-2xl px-1 py-1.5 text-muted-foreground transition-colors min-w-0"
         >
-          <Menu className="h-5 w-5" />
-          <span className="text-[10px] font-medium leading-tight">More</span>
+          <Menu className="h-[18px] w-[18px]" />
+          <span className="text-[9px] font-medium leading-tight">More</span>
         </button>
       </nav>
     </div>
