@@ -94,22 +94,25 @@ export function AttendanceModule() {
 
   // Load sections
   useEffect(() => {
-    if (perms.loading || !schoolId || !user?.id) return;
+    if (perms.loading || canEditLoading || !schoolId || !user?.id) return;
     let cancelled = false;
 
+    const loadAll = async () => {
+      const [{ data: sec }, { data: cls }] = await Promise.all([
+        supabase.from("class_sections").select("id,name,class_id").eq("school_id", schoolId).order("name"),
+        supabase.from("academic_classes").select("id,name").eq("school_id", schoolId),
+      ]);
+      const classMap = new Map((cls ?? []).map((c: any) => [c.id, c.name]));
+      return (sec ?? []).map((s: any) => ({
+        id: s.id, name: s.name, class_name: classMap.get(s.class_id) ?? "Class",
+      }));
+    };
+
     const load = async () => {
-      if (perms.canManageStudents) {
-        // Principal/admin: load ALL sections
-        const [{ data: sec }, { data: cls }] = await Promise.all([
-          supabase.from("class_sections").select("id,name,class_id").eq("school_id", schoolId).order("name"),
-          supabase.from("academic_classes").select("id,name").eq("school_id", schoolId),
-        ]);
-        const classMap = new Map((cls ?? []).map((c: any) => [c.id, c.name]));
-        const enriched = (sec ?? []).map((s: any) => ({
-          id: s.id,
-          name: s.name,
-          class_name: classMap.get(s.class_id) ?? "Class",
-        }));
+      // Principal/admin/coordinator OR any read-only viewer (e.g. counselor):
+      // load every section in the school.
+      if (perms.canManageStudents || !canEdit) {
+        const enriched = await loadAll();
         if (!cancelled) {
           setSections(enriched);
           if (enriched.length > 0 && !selectedSection) setSelectedSection(enriched[0].id);
@@ -149,7 +152,7 @@ export function AttendanceModule() {
     void load();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [schoolId, user?.id, perms.loading, perms.canManageStudents]);
+  }, [schoolId, user?.id, perms.loading, perms.canManageStudents, canEdit, canEditLoading]);
 
   const loadSession = async () => {
     if (!selectedSection) return;
