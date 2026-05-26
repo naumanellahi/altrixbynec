@@ -156,7 +156,7 @@ export function AttendanceModule() {
 
   const loadSession = async () => {
     if (!selectedSection) return;
-    const result = await loadSessionData(selectedSection, sessionDate, periodLabel);
+    const result = await loadSessionData(selectedSection, sessionDate, periodLabel, { readOnly: !canEdit });
     if (result) {
       setSessionId(result.sessionId);
       setRows(result.rows);
