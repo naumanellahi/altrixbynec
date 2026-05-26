@@ -136,6 +136,9 @@ export const MODULE_REGISTRY: Record<string, ModuleEntry> = {
   reports:    { Component: ReportsModule },
   complaints: { Component: PrincipalComplaintsModule },
   counseling: { Component: CounselingModule, propsFor: (c) => ({ schoolId: c.schoolId }) },
+  behavior:   { Component: CounselorBehaviorModule, propsFor: (c) => ({ schoolId: c.schoolId }) },
+  "at-risk":  { Component: CounselorAtRiskModule, propsFor: (c) => ({ schoolId: c.schoolId }) },
+  "ai-counselor": { Component: AICounselorMode, propsFor: (c) => ({ schoolId: c.schoolId ?? "" }) },
 
   // Communication
   messages: { Component: MessagesModule, propsFor: (c) => ({ schoolId: c.schoolId }) },
