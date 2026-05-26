@@ -326,10 +326,12 @@ export function AttendanceModule() {
         <Card>
           <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>Students ({rows.length})</CardTitle>
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="outline" onClick={() => markAll("present")}>All Present</Button>
-              <Button size="sm" variant="outline" onClick={() => markAll("absent")}>All Absent</Button>
-            </div>
+            {canEdit && (
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={() => markAll("present")}>All Present</Button>
+                <Button size="sm" variant="outline" onClick={() => markAll("absent")}>All Absent</Button>
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             {rows.length === 0 ? (
