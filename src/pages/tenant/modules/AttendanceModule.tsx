@@ -35,6 +35,20 @@ export function AttendanceModule() {
   const schoolId = useMemo(() => (tenant.status === "ready" ? tenant.schoolId : null), [tenant.status, tenant.schoolId]);
   const perms = useSchoolPermissions(schoolId);
 
+  // Only teachers, principals (and ownership roles) may add/edit attendance.
+  // Counselors and other school members get a read-only view.
+  const [canEdit, setCanEdit] = useState<boolean>(false);
+  const [canEditLoading, setCanEditLoading] = useState<boolean>(true);
+  useEffect(() => {
+    if (!schoolId) { setCanEditLoading(false); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await (supabase as any).rpc("can_edit_attendance", { _school_id: schoolId });
+      if (!cancelled) { setCanEdit(!!data); setCanEditLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [schoolId]);
+
   const offlineSections = useOfflineSections(schoolId);
   const offlineClasses = useOfflineClasses(schoolId);
   const offlineTeacherAssignments = useOfflineTeacherAssignments(schoolId);
