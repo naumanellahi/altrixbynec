@@ -467,6 +467,7 @@ const TenantDashboard = () => {
             <Route index element={
               role === "principal" ? <PrincipalHome /> : 
               role === "vice_principal" ? <VicePrincipalHome /> : 
+              role === "counselor" ? <CounselorHome /> :
               <DashboardHome />
             } />
             <Route path="admin" element={<AdminConsole />} />
