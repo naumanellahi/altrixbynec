@@ -424,10 +424,12 @@ export function AttendanceModule() {
                                 <TableCell key={status} className="text-center">
                                   <button
                                     type="button"
-                                    onClick={() => updateStatus(r.student_id, status)}
+                                    onClick={() => canEdit && updateStatus(r.student_id, status)}
+                                    disabled={!canEdit}
                                     className={cn(
                                       "inline-flex h-8 w-8 items-center justify-center rounded-full border-2 transition-all",
-                                      r.status === status ? config.active : `border-muted ${config.hover}`
+                                      r.status === status ? config.active : `border-muted ${canEdit ? config.hover : ""}`,
+                                      !canEdit && "cursor-default opacity-80"
                                     )}
                                     aria-label={`Mark ${status}`}
                                   >
