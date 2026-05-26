@@ -259,6 +259,17 @@ export function CounselorHome() {
                       }>
                         {b.note_type}
                       </Badge>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {b.students?.first_name ?? "Student"} {b.students?.last_name ?? ""} •{" "}
+                      {formatDistanceToNow(new Date(b.created_at), { addSuffix: true })}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2">
@@ -298,17 +309,6 @@ export function CounselorHome() {
                       {p.behavior || `Logged ${formatDistanceToNow(new Date(p.created_at), { addSuffix: true })}`}
                     </p>
                   </button>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {b.students?.first_name ?? "Student"} {b.students?.last_name ?? ""} •{" "}
-                      {formatDistanceToNow(new Date(b.created_at), { addSuffix: true })}
-                    </p>
-                  </div>
                 ))}
               </div>
             )}
