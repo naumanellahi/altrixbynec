@@ -45,7 +45,7 @@ export function CounselorHome() {
     queryKey: ["counselor-home", schoolId],
     enabled: !!schoolId,
     queryFn: async () => {
-      const [queue, behavior] = await Promise.all([
+      const [queue, behavior, parentNotes, students] = await Promise.all([
         supabase
           .from("ai_counseling_queue")
           .select("id, status, priority, reason_type, scheduled_date, created_at, student_id, students:student_id(first_name, last_name)")
@@ -59,10 +59,20 @@ export function CounselorHome() {
           .in("note_type", ["concern", "incident"])
           .order("created_at", { ascending: false })
           .limit(6),
+        supabase
+          .from("parent_behavior_notes")
+          .select("id, mood, behavior, note_date, created_at, student_id, students:student_id(first_name,last_name)")
+          .eq("school_id", schoolId!)
+          .order("created_at", { ascending: false })
+          .limit(5),
+        supabase.from("students").select("id", { count: "exact", head: true })
+          .eq("school_id", schoolId!).eq("status", "active"),
       ]);
       return {
         cases: (queue.data ?? []) as any[],
         recentBehavior: (behavior.data ?? []) as any[],
+        parentNotes: (parentNotes.data ?? []) as any[],
+        totalStudents: students.count ?? 0,
       };
     },
   });
