@@ -264,11 +264,13 @@ export function AttendanceModule() {
       <Card>
         <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <CardTitle>Mark Attendance</CardTitle>
+            <CardTitle>{canEdit ? "Mark Attendance" : "Attendance (read-only)"}</CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              {perms.canManageStudents
-                ? "All sections are available"
-                : "Only your assigned sections are shown"}
+              {!canEdit
+                ? "View-only access. Only teachers and principals can add or edit attendance."
+                : perms.canManageStudents
+                  ? "All sections are available"
+                  : "Only your assigned sections are shown"}
             </p>
           </div>
           <div className="flex gap-2">
