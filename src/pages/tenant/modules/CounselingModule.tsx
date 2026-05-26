@@ -42,7 +42,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 
-import { exportRowsToCSV } from "@/lib/csv";
+import { exportToCSV } from "@/lib/csv";
 
 interface Props {
   schoolId: string | null;
@@ -269,7 +269,7 @@ export function CounselingModule({ schoolId }: Props) {
       session_notes: r.session_notes ?? "",
       created_at: r.created_at ?? "",
     }));
-    exportRowsToCSV(`counseling-${new Date().toISOString().slice(0, 10)}.csv`, rows);
+    exportToCSV(rows, `counseling-${new Date().toISOString().slice(0, 10)}`);
   };
 
   // ---- render ---------------------------------------------------------------
