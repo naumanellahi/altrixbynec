@@ -45,7 +45,7 @@ export function CounselorHome() {
     queryKey: ["counselor-home", schoolId],
     enabled: !!schoolId,
     queryFn: async () => {
-      const [queue, behavior] = await Promise.all([
+      const [queue, behavior, parentNotes, students] = await Promise.all([
         supabase
           .from("ai_counseling_queue")
           .select("id, status, priority, reason_type, scheduled_date, created_at, student_id, students:student_id(first_name, last_name)")
@@ -59,10 +59,20 @@ export function CounselorHome() {
           .in("note_type", ["concern", "incident"])
           .order("created_at", { ascending: false })
           .limit(6),
+        supabase
+          .from("parent_behavior_notes")
+          .select("id, mood, behavior, note_date, created_at, student_id, students:student_id(first_name,last_name)")
+          .eq("school_id", schoolId!)
+          .order("created_at", { ascending: false })
+          .limit(5),
+        supabase.from("students").select("id", { count: "exact", head: true })
+          .eq("school_id", schoolId!).eq("status", "active"),
       ]);
       return {
         cases: (queue.data ?? []) as any[],
         recentBehavior: (behavior.data ?? []) as any[],
+        parentNotes: (parentNotes.data ?? []) as any[],
+        totalStudents: students.count ?? 0,
       };
     },
   });
@@ -255,6 +265,50 @@ export function CounselorHome() {
                       {formatDistanceToNow(new Date(b.created_at), { addSuffix: true })}
                     </p>
                   </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Users className="h-4 w-4 text-blue-600" /> Recent parent notes
+              </CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => navigate(`${base}/parent-notes`)}>
+                Open <ArrowRight className="ml-1 h-3 w-3" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-20 w-full" />
+            ) : (data?.parentNotes ?? []).length === 0 ? (
+              <p className="rounded-lg border border-dashed border-border/60 py-6 text-center text-sm text-muted-foreground">
+                No parent notes shared yet.
+              </p>
+            ) : (
+              <div className="grid gap-2 md:grid-cols-2">
+                {data!.parentNotes.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => navigate(`${base}/parent-notes`)}
+                    className="rounded-lg border border-border/60 p-3 text-left hover:border-primary/40 hover:bg-primary/5"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-medium truncate">
+                        {p.students?.first_name ?? "Student"} {p.students?.last_name ?? ""}
+                      </p>
+                      {p.mood && (
+                        <Badge variant="outline" className="capitalize">{p.mood}</Badge>
+                      )}
+                    </div>
+                    <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                      {p.behavior || `Logged ${formatDistanceToNow(new Date(p.created_at), { addSuffix: true })}`}
+                    </p>
+                  </button>
                 ))}
               </div>
             )}
