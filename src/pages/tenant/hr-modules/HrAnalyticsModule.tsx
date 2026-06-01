@@ -3,7 +3,6 @@ import { useParams } from "react-router-dom";
 import { useTenant } from "@/hooks/useTenant";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -12,7 +11,7 @@ import {
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
-  LineChart, Line, CartesianGrid, Legend, Area, AreaChart,
+  CartesianGrid, Legend, Area, AreaChart,
 } from "recharts";
 import { format, subMonths } from "date-fns";
 import { usePdfExport } from "@/hooks/usePdfExport";
