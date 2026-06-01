@@ -137,27 +137,25 @@ export const ContractLetterhead = forwardRef<HTMLDivElement, Props>(
           <p className="mt-4">Sincerely,</p>
 
           {/* Signatures */}
-          <div className="grid grid-cols-2 gap-10 pt-10 mt-4">
+          <div className="grid grid-cols-2 gap-10 pt-6 mt-2">
             <div>
-              <div className="border-b border-slate-400 pb-1 mb-2 h-12" />
+              <div className="border-b border-slate-400 pb-1 mb-2 h-10" />
               <p className="font-semibold">{c.signatory_name || "Authorized Signatory"}</p>
               <p className="text-xs text-slate-600">{c.signatory_title || "Human Resources"}</p>
               <p className="text-xs text-slate-500 mt-1">{school?.name}</p>
             </div>
             <div>
-              <div className="border-b border-slate-400 pb-1 mb-2 h-12" />
+              <div className="border-b border-slate-400 pb-1 mb-2 h-10" />
               <p className="font-semibold">{employeeName}</p>
               <p className="text-xs text-slate-600">Employee Acceptance</p>
-              <p className="text-xs text-slate-500 mt-1">Date: ____________________</p>
             </div>
           </div>
         </div>
 
-        {/* Footer band */}
-        <div className="px-10 py-3 border-t-2 mt-4 flex items-center justify-between text-[11px] text-slate-500"
-             style={{ borderColor: "hsl(var(--primary))" }}>
-          <span>{school?.name} · Confidential</span>
-          <span className="font-mono">Ref {c.reference_number || String(c.id).slice(0, 8).toUpperCase()}</span>
+        {/* Footer band — single tagline */}
+        <div className="px-10 py-3 border-t flex items-center justify-end text-[10.5px] text-slate-500"
+             style={{ borderColor: "hsl(var(--primary) / 0.4)" }}>
+          <span>AltRix — School Operating System</span>
         </div>
       </div>
     );
