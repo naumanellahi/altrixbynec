@@ -3,7 +3,7 @@ import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Briefcase, Calendar, CalendarDays, Coins, FileText, LayoutGrid, Megaphone, PartyPopper, Star, Users as UsersIcon, ClipboardList, Headphones, LogOut, Sparkles, MessageSquare, Menu } from "lucide-react";
+import { Briefcase, Calendar, Coins, FileText, LayoutGrid, Megaphone, PartyPopper, Star, Users as UsersIcon, ClipboardList, Headphones, LogOut, Sparkles, MessageSquare, Menu, UserPlus, ClipboardCheck, LogOut as ExitIcon, Wallet, BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GlobalCommandPalette } from "@/components/global/GlobalCommandPalette";
 import { NotificationsBell } from "@/components/global/NotificationsBell";
