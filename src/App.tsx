@@ -26,6 +26,8 @@ import OwnerDashboard from "./pages/tenant/OwnerDashboard";
 import UnifiedHub from "./pages/tenant/UnifiedHub";
 import ResetPassword from "./pages/ResetPassword";
 import { PoweredByFooter } from "./components/global/PoweredByFooter";
+import { KeyboardShortcutsOverlay } from "./components/global/KeyboardShortcutsOverlay";
+import { ArrowKeyAccelerator } from "./components/global/ArrowKeyAccelerator";
 
 const queryClient = new QueryClient();
 
@@ -83,6 +85,8 @@ export default function App() {
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <ArrowKeyAccelerator />
+        <KeyboardShortcutsOverlay />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
