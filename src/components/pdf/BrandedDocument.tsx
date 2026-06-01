@@ -39,13 +39,12 @@ export const BrandedDocument = forwardRef<HTMLDivElement, Props>(function Brande
   ref,
 ) {
   const ref_no = referenceNumber || `DOC-${Date.now().toString(36).toUpperCase()}`;
-  const issued = issuedOn || new Date();
 
   return (
     <div
       ref={ref}
       className="branded-doc bg-white text-slate-900 mx-auto shadow-sm"
-      style={{ width: "100%", maxWidth: 820, minHeight: 1100, fontFamily: "Georgia, 'Times New Roman', serif" }}
+      style={{ width: "100%", maxWidth: 820, fontFamily: "Georgia, 'Times New Roman', serif" }}
     >
       <style>{`
         @page { size: A4; margin: 12mm; }
