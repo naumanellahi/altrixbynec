@@ -70,7 +70,8 @@ export const ContractLetterhead = forwardRef<HTMLDivElement, Props>(
         </div>
 
         {/* Body */}
-        <div className="px-10 py-8 space-y-6 text-[13.5px] leading-relaxed">
+        <div className="px-10 py-6 space-y-5 text-[13px] leading-relaxed">
+
           <div>
             <p className="text-slate-500 text-xs uppercase tracking-wider mb-1">To</p>
             <p className="font-semibold text-base">{employeeName}</p>
