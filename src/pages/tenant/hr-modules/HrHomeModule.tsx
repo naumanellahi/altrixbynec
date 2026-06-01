@@ -48,7 +48,7 @@ export function HrHomeModule() {
     const [roles, leaves, contracts, postings, applicants, payroll, interviews, onboarding, regs] = await Promise.all([
       (supabase as any).from("user_roles").select("user_id", { count: "exact", head: true }).eq("school_id", schoolId),
       (supabase as any).from("hr_leave_requests").select("id", { count: "exact", head: true }).eq("school_id", schoolId).eq("status", "pending"),
-      (supabase as any).from("hr_contracts").select("id, employee_user_id, end_date, status").eq("school_id", schoolId),
+      (supabase as any).from("hr_contracts").select("id, user_id, end_date, status").eq("school_id", schoolId),
       (supabase as any).from("hr_job_postings").select("id, openings", { count: "exact" }).eq("school_id", schoolId).eq("status", "open"),
       (supabase as any).from("hr_applicants").select("id", { count: "exact", head: true }).eq("school_id", schoolId).in("stage", ["applied", "screening"]),
       (supabase as any).from("hr_payroll_runs").select("id", { count: "exact", head: true }).eq("school_id", schoolId).eq("status", "draft"),
