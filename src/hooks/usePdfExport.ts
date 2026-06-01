@@ -40,13 +40,14 @@ ${styleNodes}
 <style>
   html, body { background: #ffffff !important; color: #0f172a !important; margin:0; padding:0; }
   body { font-family: Georgia, 'Times New Roman', serif; }
-  [data-print="hide"] { display: none !important; }
-  @page { size: A4; margin: 12mm; }
+  [data-print="hide"], .no-print, [data-powered-by] { display: none !important; }
+  @page { size: A4; margin: 10mm; }
   @media print {
     html, body { background: #ffffff !important; }
-    .branded-doc { box-shadow: none !important; }
+    .branded-doc, .letterhead { box-shadow: none !important; }
+    /* Avoid splitting tables / signature rows across pages */
+    table, tr, td, th, .avoid-break { page-break-inside: avoid !important; break-inside: avoid !important; }
   }
-  /* Defensive: kill any dark mode tokens that may have copied across */
   :root, .dark { color-scheme: light !important; }
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 </style>
