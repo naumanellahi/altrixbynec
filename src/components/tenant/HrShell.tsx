@@ -44,19 +44,22 @@ export function HrShell({ title, subtitle, schoolSlug, children }: Props) {
 
   const navItems = [
     { to: basePath, icon: LayoutGrid, label: "Dashboard", end: true, badge: 0 },
-    { to: `${basePath}/users`, icon: UsersIcon, label: "Staff & Users", badge: 0 },
-    { to: `${basePath}/leaves`, icon: Calendar, label: "Leave Management", badge: 0 },
+    { to: `${basePath}/users`, icon: UsersIcon, label: "Staff Directory", badge: 0 },
+    { to: `${basePath}/recruitment`, icon: UserPlus, label: "Recruitment", badge: 0 },
+    { to: `${basePath}/onboarding`, icon: ClipboardCheck, label: "Onboarding", badge: 0 },
+    { to: `${basePath}/offboarding`, icon: ExitIcon, label: "Offboarding", badge: 0 },
     { to: `${basePath}/attendance`, icon: ClipboardList, label: "Staff Attendance", badge: 0 },
+    { to: `${basePath}/leaves`, icon: Calendar, label: "Leave Management", badge: 0 },
     { to: `${basePath}/salaries`, icon: Coins, label: "Salaries", badge: 0 },
-    { to: `${basePath}/fees?tab=vouchers`, icon: FileText, label: "Fee Vouchers", badge: 0 },
+    { to: `${basePath}/payroll`, icon: Wallet, label: "Payroll Runs", badge: 0 },
     { to: `${basePath}/contracts`, icon: FileText, label: "Contracts", badge: 0 },
     { to: `${basePath}/reviews`, icon: Star, label: "Performance Reviews", badge: 0 },
     { to: `${basePath}/documents`, icon: Briefcase, label: "Documents", badge: 0 },
+    { to: `${basePath}/analytics`, icon: BarChart3, label: "HR Analytics", badge: 0 },
     { to: `${basePath}/notices`, icon: Megaphone, label: "Notices", badge: 0 },
     { to: `${basePath}/holidays`, icon: PartyPopper, label: "Holidays", badge: 0 },
     { to: `${basePath}/support`, icon: Headphones, label: "Support Inbox", badge: 0 },
     { to: `${basePath}/messages`, icon: MessageSquare, label: "Messages", badge: unreadCount },
-    { to: `${basePath}/timetable`, icon: CalendarDays, label: "Timetable Builder", badge: 0 },
   ];
 
   const bottomNavItems = [
