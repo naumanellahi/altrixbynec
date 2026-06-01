@@ -67,8 +67,15 @@ ${styleNodes}
       const toRemove: HTMLElement[] = [];
       let n = walker.nextNode();
       while (n) {
-        const txt = (n.nodeValue || "").toLowerCase();
-        if (txt.includes("powered by") || txt.includes("altrix - lovable") || txt.includes("altrix: powered by")) {
+        const txt = (n.nodeValue || "").toLowerCase().trim();
+        if (
+          txt.includes("powered by") ||
+          txt.includes("altrix - lovable") ||
+          txt.includes("altrix-lovable") ||
+          txt.includes("altrix: powered by") ||
+          txt.startsWith("issued:") ||
+          txt.startsWith("issued on")
+        ) {
           if (n.parentElement) toRemove.push(n.parentElement);
         }
         n = walker.nextNode();
