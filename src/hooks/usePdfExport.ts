@@ -38,14 +38,17 @@ function buildPrintIframe(node: HTMLElement): Promise<HTMLIFrameElement> {
 <base href="${document.baseURI}">
 ${styleNodes}
 <style>
+  /* Remove browser-default print headers (date, URL, "AltRix - Lovable" title bar)
+     by zeroing @page margin, then re-add margins on the body so content still
+     has breathing room. */
+  @page { size: A4; margin: 0; }
   html, body { background: #ffffff !important; color: #0f172a !important; margin:0; padding:0; }
-  body { font-family: Georgia, 'Times New Roman', serif; }
+  body { font-family: Georgia, 'Times New Roman', serif; padding: 10mm; }
   [data-print="hide"], .no-print, [data-powered-by] { display: none !important; }
-  @page { size: A4; margin: 10mm; }
   @media print {
     html, body { background: #ffffff !important; }
+    body { padding: 10mm; }
     .branded-doc, .letterhead { box-shadow: none !important; }
-    /* Avoid splitting tables / signature rows across pages */
     table, tr, td, th, .avoid-break { page-break-inside: avoid !important; break-inside: avoid !important; }
   }
   :root, .dark { color-scheme: light !important; }

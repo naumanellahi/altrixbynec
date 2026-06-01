@@ -357,7 +357,13 @@ All colors MUST be HSL.
   animation: enter-fade 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
+/* Global print rules — kill browser-default headers (date/URL/title) and
+   keep margins via the body, so any window.print() call gets a clean A4. */
+@page { size: A4; margin: 0; }
+
 @media print {
+  html, body { margin: 0 !important; }
+  body { padding: 10mm !important; }
   /* Hide navigation + action controls across all portals */
   aside,
   nav,
