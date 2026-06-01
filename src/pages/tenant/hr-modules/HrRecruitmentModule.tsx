@@ -230,15 +230,36 @@ function PostingsTab({ postings, schoolId, onChange, loading }: { postings: JobP
                  </p>
                  {p.description && <p className="text-sm mt-2 line-clamp-2">{p.description}</p>}
                </div>
-               <div className="flex gap-2">
-                 <Button size="icon" variant="ghost" onClick={() => startEdit(p)}><Pencil className="h-4 w-4" /></Button>
-                 <Button size="icon" variant="ghost" onClick={() => del(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-               </div>
-             </CardContent>
-           </Card>
-         ))}
-       </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => setPreview(p)}><FileText className="h-4 w-4 mr-1" />View / Export</Button>
+                  <Button size="icon" variant="ghost" onClick={() => startEdit(p)}><Pencil className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" onClick={() => del(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       }
+
+      {/* Branded posting preview / export */}
+      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
+        <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto">
+          <DialogHeader className="flex-row items-center justify-between gap-4" data-print="hide">
+            <DialogTitle>Job Posting · Branded Letterhead</DialogTitle>
+            {preview && (
+              <ExportPdfButton
+                targetRef={docRef as any}
+                filename={`Job-${preview.title.replace(/\s+/g, "-")}-${preview.id.slice(0, 6)}`}
+              />
+            )}
+          </DialogHeader>
+          {preview && (
+            <div className="bg-slate-100 p-4 rounded">
+              <RecruitmentPostingDocument ref={docRef} school={school} posting={preview as any} />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
