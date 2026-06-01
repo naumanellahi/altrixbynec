@@ -1,75 +1,107 @@
-# HR Manager Shell — Full Overhaul Plan
+## Scope
 
-## Goal
-Turn the HR shell into a complete, professional HR system with every tab fully functional and synced to real backend data. Remove unrelated tabs, deepen thin ones, add modern HR features.
+Four independent workstreams. Each ships end-to-end; no half-done modules.
 
-## Final tab list
+---
 
-Kept & enhanced (12):
-1. **Dashboard** — real KPIs, headcount/turnover/leave trends, pending approvals, upcoming reviews/contract expiries, quick actions
-2. **Staff Directory** (was Staff & Users) — list, filters, profile drawer with full HR record, deactivate/reactivate, role changes, search/export
-3. **Recruitment** *(new)* — job postings, applicant pipeline (applied → screen → interview → offer → hired/rejected), interview scheduling, offer letters
-4. **Onboarding** *(new)* — per-new-hire checklist templates, asset issue, document collection, training assignments, progress tracking
-5. **Offboarding** *(new)* — exit checklist, asset return, final settlement trigger, exit interview notes
-6. **Attendance** — read+manage staff attendance (clock-in/out, biometric import CSV, monthly grid, regularization requests)
-7. **Leave Management** — types, balances per employee, applications inbox with approve/reject, leave calendar view, year-end carry-forward
-8. **Payroll Runs** *(new)* — monthly run: generate → review → approve → mark paid → payslip PDF; includes deductions/allowances/tax/bonuses
-9. **Salaries** — salary structures, components (basic/HRA/allowances/deductions), per-employee assignment (feeds Payroll)
-10. **Contracts** — create/renew/terminate, expiry alerts, e-sign upload, templates
-11. **Performance Reviews** — review cycles, KPIs/goals, self + manager review, ratings history
-12. **Documents** — employee document vault (CNIC, degrees, contracts) with expiry, secure storage bucket
-13. **HR Analytics** *(new)* — headcount by department/role, turnover %, attendance %, leave utilization, salary cost trend, gender ratio; CSV/PDF export
-14. **Notices** — kept (HR-wide announcements to staff)
-15. **Holidays** — kept (school calendar; HR owns publishing)
-16. **Support Inbox** — staff HR queries with thread, status, assignment
-17. **Messages** — kept
+### 1. Staff inclusion fix (small)
 
-Removed: **Timetable Builder**, **Fee Vouchers** (moved out of HR shell — they remain available to their proper roles).
+- Revert previous over-exclusion in `src/hooks/useOfflineData.ts` and `src/hooks/useUniversalPrefetch.ts`.
+- `NON_STAFF` set reduces to `['student', 'parent', 'owner', 'school_owner']`.
+- Per-school `super_admin` rows in `user_roles` will flow back into staff lists naturally.
+- Keep `platform_super_admins` excluded (this is where `naumancheema643@gmail.com` lives).
+- Verify staff appears in HR Staff list, Attendance, Payroll, Leave approvers.
 
-## Database additions (additive only)
+---
 
-New tables (each with `school_id`, RLS via `can_manage_hr`/`is_school_member`, full GRANTs):
+### 2. Account-less HR staff (record-only)
 
-- `hr_job_postings` — title, dept, location, type, status (draft/open/closed), description, openings, posted_at
-- `hr_applicants` — name, email, phone, posting_id, stage, resume_url, rating, notes
-- `hr_interviews` — applicant_id, scheduled_at, interviewer_user_id, mode, status, feedback
-- `hr_onboarding_templates` + `hr_onboarding_tasks_template` — reusable checklists
-- `hr_onboarding_assignments` + `hr_onboarding_task_status` — per-hire progress
-- `hr_offboarding_assignments` + `hr_offboarding_task_status`
-- `hr_assets` (asset registry) + `hr_asset_assignments` (issued/returned)
-- `hr_salary_components` (earning/deduction, formula type) + `hr_employee_salary_structure`
-- `hr_payroll_runs` (period, status: draft/locked/paid) + `hr_payslips` (per employee, gross/net/tax/deductions JSON)
-- `hr_attendance_regularizations` (request → approve/reject)
-- `hr_performance_cycles` + `hr_performance_reviews` (extends current reviews)
+DB migration (additive):
+- Add to `hr_employees`: `is_account_linked boolean default false`, `email text`, `phone text`, `cnic text`, `address text`, `joining_date date`, `notes text` — only if missing.
+- Make `user_id`/`profile_id` nullable on `hr_employees` if it isn't already.
+- Update RLS so HR managers can `INSERT`/`UPDATE`/`SELECT` rows without a linked user.
+- New RPC `hr_link_employee_to_user(_employee_id uuid, _user_id uuid)` for future linking.
 
-Reuse existing: `hr_leave_types`, leave applications, current attendance, current salaries, documents, notices, holidays, support, messages tables.
+UI (`HrStaffModule.tsx` + add-staff dialog):
+- "Add Staff" dialog gains a "Has system account?" toggle.
+  - Off → record-only path: capture name, role, department, joining date, contact, CNIC, address.
+  - On → existing flow (link to existing user / invite).
+- Staff list renders a "No login" badge for record-only entries with a "Link to account…" action.
 
-## Frontend work
+---
 
-- `src/components/tenant/HrShell.tsx` — new nav list, remove Timetable/Fee Vouchers, add 4 new entries grouped (People / Workforce / Payroll / Reports).
-- `src/pages/tenant/HrDashboard.tsx` — register new routes, drop removed ones.
-- Rewrite every `src/pages/tenant/hr-modules/*Module.tsx`:
-  - Real data queries with `useEffect` + `JSON.stringify` dep stability
-  - Filters (campus/department/status), search, pagination, CSV export
-  - Dialogs guarded by `perms.loading`, Enter-key submits work via global handler
-  - All HSL semantic tokens — no raw colors
-  - Empty + loading + error states
-- New modules added: `HrRecruitmentModule.tsx`, `HrOnboardingModule.tsx`, `HrOffboardingModule.tsx`, `HrPayrollModule.tsx`, `HrAnalyticsModule.tsx`
-- `HrHomeModule.tsx` rebuilt: KPI cards (live counts), pending-approvals list, contract-expiry alerts, upcoming reviews, recent hires, quick-action buttons → all clickable to routes.
+### 3. Super Master Admin shell overhaul
 
-## Execution order (one PR-style batch per phase)
+New shell at `/super-admin/*` (or existing platform route) — full layout:
 
-Because of the size, I'll deliver in 4 phases. Each phase ends with a working build:
+```text
+┌──────────────────────────────────────────────────────┐
+│  SuperAdminTopbar   [⌘K palette] [bell] [profile]   │
+├───────────┬──────────────────────────────────────────┤
+│ Sidebar   │  Page                                    │
+│  • Overview                                          │
+│  • Schools                                           │
+│  • Owners & Admins                                   │
+│  • Billing & Plans                                   │
+│  • Platform Users                                    │
+│  • Audit Log                                         │
+│  • System Health                                     │
+│  • Settings                                          │
+└───────────┴──────────────────────────────────────────┘
+```
 
-1. **Phase 1 — DB + Shell rewire**: migrations for all new tables, update `HrShell.tsx` + `HrDashboard.tsx` routes, rebuild `HrHomeModule` dashboard.
-2. **Phase 2 — People modules**: Staff Directory, Recruitment, Onboarding, Offboarding.
-3. **Phase 3 — Workforce/Payroll**: Attendance (with regularizations), Leaves (enhanced), Salaries (components), Payroll Runs, Contracts, Reviews, Documents.
-4. **Phase 4 — Comms + Analytics**: Notices/Holidays polish, Support Inbox real threading, Messages polish, HR Analytics.
+Files created:
+- `src/layouts/SuperAdminShell.tsx` — `SidebarProvider` + premium header + breadcrumbs.
+- `src/components/super-admin/SuperAdminSidebar.tsx` — collapsible icon sidebar, gradient brand block.
+- `src/components/super-admin/CommandPalette.tsx` — ⌘K global jump to any school/page.
+- `src/pages/super-admin/Overview.tsx` — KPI cards (schools count, active users, MRR placeholder, signups 30d), trend chart (Recharts), recent activity feed, health pings.
+- `src/pages/super-admin/Schools.tsx` — searchable table, status toggle, impersonate, deep-link to school shell.
+- `src/pages/super-admin/Owners.tsx` — manage school owner assignments via existing RPCs.
+- `src/pages/super-admin/AuditLog.tsx` — reads `app_notifications` + admin actions feed.
+- `src/pages/super-admin/Health.tsx` — Supabase status, edge function ping, DB row counts per core table.
 
-After your approval I'll start Phase 1 immediately (DB migration first — you'll get an approval prompt for it — then the shell + dashboard code).
+Design tokens: introduce `--super-bg`, `--super-surface`, `--super-accent` in `index.css` for a darker, premium navy/indigo theme distinct from tenant shell. All HSL.
+
+Routing: wire under `App.tsx` behind `is_platform_admin(auth.uid())` guard; non-admins redirected.
+
+---
+
+### 4. Global branded PDF export
+
+Strategy: **both** — branded print view everywhere + true downloadable PDF on key documents.
+
+Shared infra:
+- `src/components/pdf/BrandedDocument.tsx` — reusable letterhead wrapper consuming `school_branding` (logo, name, address, motto, primary color). Header band with logo + school info; footer with page number, reference, generated-at, signatory line.
+- `src/components/pdf/ExportPdfButton.tsx` — dropdown: "Print / Save as PDF" (uses `window.print()` scoped via `@media print` + a portal) and "Download .pdf" (uses `html2pdf.js` or `jspdf` + `html2canvas`; choose `html2canvas-pro` + `jspdf` for crisp output).
+- `src/hooks/usePdfExport.ts` — `exportNodeToPdf(node, { filename, orientation })`.
+- Global print stylesheet `src/styles/print.css` — hides `[data-print="hide"]`, shows `[data-print="only"]`, A4 page sizing, removes shadows, forces serif body where appropriate.
+
+Per-screen integrations (initial pass — all use the same wrapper):
+- HR Contracts → already done; swap inline header for shared `BrandedDocument` + add Download button.
+- HR Recruitment posting → new `RecruitmentPostingDocument.tsx`: full job spec on letterhead (title, dept, location, type, salary range, description, requirements, benefits, how to apply, deadline, posted-by). Export + Print + Share-link copy.
+- Fee invoices, payslips, ID cards, leave letters, exam datesheets, results, complaints, certificates — wired with the same `BrandedDocument` wrapper and `ExportPdfButton`. Each gets a small per-document template component.
+- Top-level: `AppToolbar` gains a context-aware "Export this page" button when the current route registers a printable view via a tiny `PrintableContext`.
+
+---
 
 ## Technical notes
-- All policies follow project convention: `can_manage_hr(school_id)` for write, `is_school_member` for read where appropriate. Sensitive payroll tables: only `can_manage_finance` or `can_manage_hr`.
-- No destructive DB changes; everything additive — existing modules keep working during the rewrite.
-- Storage buckets: reuse `hr-documents` if present, else create private `hr-documents` and `hr-resumes`.
-- PDF/CSV export via existing `jsPDF` + simple CSV helpers already in repo.
+
+- Libraries to install: `jspdf`, `html2canvas-pro`. Avoid heavyweight `puppeteer`/server-side render this round.
+- Branding pulled once via existing `useSchoolBranding` hook (cached).
+- Print view and downloaded PDF render the SAME React tree, so visuals stay identical.
+- All new tables follow Core memory rule: additive only, with GRANTs + RLS + service_role.
+
+## Out of scope (this round)
+
+- Server-side PDF generation via edge function (revisit if download fidelity is insufficient).
+- Email-the-PDF flows.
+- Bulk export (multiple records into one PDF).
+
+## Order of execution
+
+1. Staff inclusion revert (5 min, ships immediately).
+2. PDF infra + ExportPdfButton + branded wrapper.
+3. Recruitment posting branded document + export (since user is on `/hr/recruitment` now).
+4. Account-less staff migration + UI.
+5. Super Master Admin shell + pages.
+6. Roll PDF export across remaining document screens.

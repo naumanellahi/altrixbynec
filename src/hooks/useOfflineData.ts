@@ -479,8 +479,9 @@ export function useOfflineStaffMembers(schoolId: string | null, enabled = true) 
         supabase.from('platform_super_admins' as any).select('user_id'),
       ]);
 
-      // Exclude users with a non-staff role: student, parent, owner, super/platform admin
-      const NON_STAFF = new Set(['student', 'parent', 'owner', 'super_admin', 'platform_super_admin', 'school_owner']);
+      // Exclude users with a non-staff role: student, parent, owner. Per-school super_admin IS staff;
+      // platform super master admin is filtered separately via platform_super_admins below.
+      const NON_STAFF = new Set(['student', 'parent', 'owner', 'school_owner']);
       const excluded = new Set<string>();
       (rolesRes.data ?? []).forEach((r: any) => {
         if (r.user_id && NON_STAFF.has(String(r.role).toLowerCase())) excluded.add(r.user_id);

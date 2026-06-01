@@ -12,8 +12,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Briefcase, Users, Calendar as CalendarIcon, Trash2, Pencil } from "lucide-react";
+import { Plus, Briefcase, Users, Calendar as CalendarIcon, Trash2, Pencil, FileText } from "lucide-react";
 import { format } from "date-fns";
+import { useRef, useState as useRState } from "react";
+import { RecruitmentPostingDocument } from "@/components/hr/RecruitmentPostingDocument";
+import { ExportPdfButton } from "@/components/pdf/ExportPdfButton";
+import { useSchoolDocument } from "@/hooks/useSchoolDocument";
 
 type JobPosting = {
   id: string; title: string; department: string | null; location: string | null;
@@ -133,6 +137,9 @@ function PostingsTab({ postings, schoolId, onChange, loading }: { postings: JobP
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<JobPosting | null>(null);
   const [form, setForm] = useState({ title: "", department: "", location: "", employment_type: "full_time", openings: 1, description: "", requirements: "", status: "open" });
+  const [preview, setPreview] = useRState<JobPosting | null>(null);
+  const { school } = useSchoolDocument(schoolId);
+  const docRef = useRef<HTMLDivElement>(null);
 
   const startEdit = (p: JobPosting) => {
     setEdit(p);
@@ -223,15 +230,36 @@ function PostingsTab({ postings, schoolId, onChange, loading }: { postings: JobP
                  </p>
                  {p.description && <p className="text-sm mt-2 line-clamp-2">{p.description}</p>}
                </div>
-               <div className="flex gap-2">
-                 <Button size="icon" variant="ghost" onClick={() => startEdit(p)}><Pencil className="h-4 w-4" /></Button>
-                 <Button size="icon" variant="ghost" onClick={() => del(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-               </div>
-             </CardContent>
-           </Card>
-         ))}
-       </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => setPreview(p)}><FileText className="h-4 w-4 mr-1" />View / Export</Button>
+                  <Button size="icon" variant="ghost" onClick={() => startEdit(p)}><Pencil className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" onClick={() => del(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       }
+
+      {/* Branded posting preview / export */}
+      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
+        <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto">
+          <DialogHeader className="flex-row items-center justify-between gap-4" data-print="hide">
+            <DialogTitle>Job Posting · Branded Letterhead</DialogTitle>
+            {preview && (
+              <ExportPdfButton
+                targetRef={docRef as any}
+                filename={`Job-${preview.title.replace(/\s+/g, "-")}-${preview.id.slice(0, 6)}`}
+              />
+            )}
+          </DialogHeader>
+          {preview && (
+            <div className="bg-slate-100 p-4 rounded">
+              <RecruitmentPostingDocument ref={docRef} school={school} posting={preview as any} />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

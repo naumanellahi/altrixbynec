@@ -571,7 +571,7 @@ async function prefetchHrData(schoolId: string, cancelled: boolean, onProgress: 
       supabase.from('platform_super_admins' as any).select('user_id'),
     ]);
     if (!cancelled && dirRes.data) {
-      const NON_STAFF = new Set(['student', 'parent', 'owner', 'super_admin', 'platform_super_admin', 'school_owner']);
+      const NON_STAFF = new Set(['student', 'parent', 'owner', 'school_owner']);
       const excluded = new Set<string>();
       (rolesRes.data ?? []).forEach((r: any) => {
         if (r.user_id && NON_STAFF.has(String(r.role).toLowerCase())) excluded.add(r.user_id);

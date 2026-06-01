@@ -4836,6 +4836,96 @@ export type Database = {
           },
         ]
       }
+      hr_staff_directory: {
+        Row: {
+          address: string | null
+          campus_id: string | null
+          cnic: string | null
+          created_at: string
+          created_by: string | null
+          date_of_birth: string | null
+          department: string | null
+          email: string | null
+          emergency_contact: string | null
+          employment_type: string | null
+          full_name: string
+          gender: string | null
+          id: string
+          is_active: boolean
+          joining_date: string | null
+          linked_at: string | null
+          linked_user_id: string | null
+          notes: string | null
+          phone: string | null
+          position: string | null
+          school_id: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          campus_id?: string | null
+          cnic?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_of_birth?: string | null
+          department?: string | null
+          email?: string | null
+          emergency_contact?: string | null
+          employment_type?: string | null
+          full_name: string
+          gender?: string | null
+          id?: string
+          is_active?: boolean
+          joining_date?: string | null
+          linked_at?: string | null
+          linked_user_id?: string | null
+          notes?: string | null
+          phone?: string | null
+          position?: string | null
+          school_id: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          campus_id?: string | null
+          cnic?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_of_birth?: string | null
+          department?: string | null
+          email?: string | null
+          emergency_contact?: string | null
+          employment_type?: string | null
+          full_name?: string
+          gender?: string | null
+          id?: string
+          is_active?: boolean
+          joining_date?: string | null
+          linked_at?: string | null
+          linked_user_id?: string | null
+          notes?: string | null
+          phone?: string | null
+          position?: string | null
+          school_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_staff_directory_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_staff_directory_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jazzcash_settings: {
         Row: {
           created_at: string
