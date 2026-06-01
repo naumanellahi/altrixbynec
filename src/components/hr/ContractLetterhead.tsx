@@ -24,22 +24,19 @@ export const ContractLetterhead = forwardRef<HTMLDivElement, Props>(
   ({ school, contract, employeeName, employeeEmail }, ref) => {
     const c = contract;
     const salary = fmtMoney(c.salary_amount, c.salary_currency);
-    const issuedOn = c.created_at || c.start_date;
 
     return (
       <div ref={ref} className="letterhead bg-white text-slate-900 mx-auto" style={{ width: "100%", maxWidth: 820 }}>
         <style>{`
           @media print {
-            @page { size: A4; margin: 14mm; }
-            body * { visibility: hidden !important; }
-            .letterhead, .letterhead * { visibility: visible !important; }
-            .letterhead { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none !important; }
-            .no-print { display: none !important; }
+            @page { size: A4; margin: 12mm; }
+            .letterhead { box-shadow: none !important; }
+            .no-print, [data-print="hide"] { display: none !important; }
           }
         `}</style>
 
         {/* Header band */}
-        <div className="relative px-10 pt-10 pb-6 border-b-4" style={{ borderColor: "hsl(var(--primary))" }}>
+        <div className="relative px-10 pt-8 pb-5 border-b-4" style={{ borderColor: "hsl(var(--primary))" }}>
           <div className="absolute top-0 left-0 right-0 h-2" style={{ background: "hsl(var(--primary))" }} />
           <div className="flex items-start justify-between gap-6">
             <div className="flex items-start gap-4">
@@ -68,7 +65,6 @@ export const ContractLetterhead = forwardRef<HTMLDivElement, Props>(
             <div className="text-right text-xs text-slate-600">
               <p className="font-semibold text-slate-800 uppercase tracking-wider">Employment Contract</p>
               <p className="mt-1">Ref: <span className="font-mono">{c.reference_number || `HR-${String(c.id).slice(0, 8).toUpperCase()}`}</span></p>
-              <p>Issued: {fmtDate(issuedOn)}</p>
             </div>
           </div>
         </div>
