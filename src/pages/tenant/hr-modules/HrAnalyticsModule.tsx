@@ -328,7 +328,7 @@ export function HrAnalyticsModule() {
       <div className="fixed -left-[10000px] top-0 pointer-events-none" aria-hidden>
         <BrandedDocument
           ref={reportRef}
-          school={school.data}
+          school={school.school}
           documentTitle="HR Analytics Report"
           referenceNumber={`HRA-${format(new Date(), "yyyyMMdd")}`}
         >
