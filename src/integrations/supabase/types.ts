@@ -3855,43 +3855,82 @@ export type Database = {
       }
       hr_contracts: {
         Row: {
+          benefits: string | null
+          body: string | null
           contract_type: string | null
           created_at: string | null
           department: string | null
           end_date: string | null
           id: string
+          notice_period_days: number | null
           position: string | null
+          probation_period_months: number | null
+          reference_number: string | null
+          reporting_to: string | null
+          salary_amount: number | null
+          salary_currency: string | null
           school_id: string
+          signatory_name: string | null
+          signatory_title: string | null
+          signed_at: string | null
           start_date: string | null
           status: string | null
+          terms: string | null
           updated_at: string | null
           user_id: string
+          working_hours: string | null
         }
         Insert: {
+          benefits?: string | null
+          body?: string | null
           contract_type?: string | null
           created_at?: string | null
           department?: string | null
           end_date?: string | null
           id?: string
+          notice_period_days?: number | null
           position?: string | null
+          probation_period_months?: number | null
+          reference_number?: string | null
+          reporting_to?: string | null
+          salary_amount?: number | null
+          salary_currency?: string | null
           school_id: string
+          signatory_name?: string | null
+          signatory_title?: string | null
+          signed_at?: string | null
           start_date?: string | null
           status?: string | null
+          terms?: string | null
           updated_at?: string | null
           user_id: string
+          working_hours?: string | null
         }
         Update: {
+          benefits?: string | null
+          body?: string | null
           contract_type?: string | null
           created_at?: string | null
           department?: string | null
           end_date?: string | null
           id?: string
+          notice_period_days?: number | null
           position?: string | null
+          probation_period_months?: number | null
+          reference_number?: string | null
+          reporting_to?: string | null
+          salary_amount?: number | null
+          salary_currency?: string | null
           school_id?: string
+          signatory_name?: string | null
+          signatory_title?: string | null
+          signed_at?: string | null
           start_date?: string | null
           status?: string | null
+          terms?: string | null
           updated_at?: string | null
           user_id?: string
+          working_hours?: string | null
         }
         Relationships: [
           {
