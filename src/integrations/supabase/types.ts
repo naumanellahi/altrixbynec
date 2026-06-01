@@ -4747,6 +4747,56 @@ export type Database = {
           },
         ]
       }
+      hr_staff_attendance: {
+        Row: {
+          attendance_date: string
+          clock_in: string | null
+          clock_out: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          recorded_by: string | null
+          school_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attendance_date?: string
+          clock_in?: string | null
+          clock_out?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          recorded_by?: string | null
+          school_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attendance_date?: string
+          clock_in?: string | null
+          clock_out?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          recorded_by?: string | null
+          school_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_staff_attendance_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jazzcash_settings: {
         Row: {
           created_at: string
