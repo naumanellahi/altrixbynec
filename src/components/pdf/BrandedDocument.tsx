@@ -13,11 +13,6 @@ type Props = {
   showRecipientSignature?: boolean;
 };
 
-const fmtDate = (d: string | Date | null | undefined) => {
-  if (!d) return "—";
-  const date = typeof d === "string" ? new Date(d) : d;
-  return date.toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" });
-};
 
 /**
  * Reusable branded A4 letterhead. Wraps any document body in a premium school-branded
