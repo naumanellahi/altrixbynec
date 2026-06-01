@@ -155,7 +155,7 @@ export function HrHomeModule() {
               <ul className="space-y-2">
                 {expiringList.map((c: any) => (
                   <li key={c.id} className="flex justify-between items-center text-sm">
-                    <span className="font-mono text-xs">{c.employee_user_id.slice(0, 8)}…</span>
+                    <span className="font-mono text-xs">{c.user_id.slice(0, 8)}…</span>
                     <Badge variant="destructive">{new Date(c.end_date).toLocaleDateString()}</Badge>
                   </li>
                 ))}
