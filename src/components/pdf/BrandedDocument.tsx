@@ -13,11 +13,6 @@ type Props = {
   showRecipientSignature?: boolean;
 };
 
-const fmtDate = (d: string | Date | null | undefined) => {
-  if (!d) return "—";
-  const date = typeof d === "string" ? new Date(d) : d;
-  return date.toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" });
-};
 
 /**
  * Reusable branded A4 letterhead. Wraps any document body in a premium school-branded
@@ -39,13 +34,12 @@ export const BrandedDocument = forwardRef<HTMLDivElement, Props>(function Brande
   ref,
 ) {
   const ref_no = referenceNumber || `DOC-${Date.now().toString(36).toUpperCase()}`;
-  const issued = issuedOn || new Date();
 
   return (
     <div
       ref={ref}
       className="branded-doc bg-white text-slate-900 mx-auto shadow-sm"
-      style={{ width: "100%", maxWidth: 820, minHeight: 1100, fontFamily: "Georgia, 'Times New Roman', serif" }}
+      style={{ width: "100%", maxWidth: 820, fontFamily: "Georgia, 'Times New Roman', serif" }}
     >
       <style>{`
         @page { size: A4; margin: 12mm; }
@@ -103,7 +97,6 @@ export const BrandedDocument = forwardRef<HTMLDivElement, Props>(function Brande
             <p className="mt-2">
               Ref: <span className="font-mono text-slate-800">{ref_no}</span>
             </p>
-            <p>Issued: <span className="text-slate-800">{fmtDate(issued)}</span></p>
           </div>
         </div>
       </header>
@@ -112,11 +105,11 @@ export const BrandedDocument = forwardRef<HTMLDivElement, Props>(function Brande
       <main className="px-10 py-7 text-[13px] leading-relaxed">{children}</main>
 
       {(signatoryName || showRecipientSignature) && (
-        <section className="px-10 pb-8">
-          <div className="grid grid-cols-2 gap-12 pt-6">
+        <section className="px-10 pb-6">
+          <div className="grid grid-cols-2 gap-12 pt-4">
             {signatoryName && (
               <div>
-                <div className="border-b border-slate-400 pb-1 mb-2 h-12" />
+                <div className="border-b border-slate-400 pb-1 mb-2 h-10" />
                 <p className="font-semibold text-[13px]">{signatoryName}</p>
                 {signatoryTitle && <p className="text-[11px] text-slate-600">{signatoryTitle}</p>}
                 <p className="text-[11px] text-slate-500 mt-1">{school?.name}</p>
@@ -124,25 +117,21 @@ export const BrandedDocument = forwardRef<HTMLDivElement, Props>(function Brande
             )}
             {showRecipientSignature && (
               <div>
-                <div className="border-b border-slate-400 pb-1 mb-2 h-12" />
+                <div className="border-b border-slate-400 pb-1 mb-2 h-10" />
                 <p className="font-semibold text-[13px]">{recipientName || "Recipient"}</p>
                 <p className="text-[11px] text-slate-600">Signature</p>
-                <p className="text-[11px] text-slate-500 mt-1">Date: ____________________</p>
               </div>
             )}
           </div>
         </section>
       )}
 
-      {/* Footer */}
+      {/* Footer — single tagline on the last page, right-aligned */}
       <footer
-        className="px-10 py-3 border-t-2 flex items-center justify-between text-[10.5px] text-slate-500"
-        style={{ borderColor: "hsl(var(--primary))" }}
+        className="px-10 py-3 border-t flex items-center justify-end text-[10.5px] text-slate-500"
+        style={{ borderColor: "hsl(var(--primary) / 0.4)" }}
       >
-        <span>
-          {school?.name} · Confidential · {documentTitle}
-        </span>
-        <span className="font-mono">Ref {ref_no}</span>
+        <span>AltRix — School Operating System</span>
       </footer>
     </div>
   );

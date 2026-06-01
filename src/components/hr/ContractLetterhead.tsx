@@ -24,22 +24,19 @@ export const ContractLetterhead = forwardRef<HTMLDivElement, Props>(
   ({ school, contract, employeeName, employeeEmail }, ref) => {
     const c = contract;
     const salary = fmtMoney(c.salary_amount, c.salary_currency);
-    const issuedOn = c.created_at || c.start_date;
 
     return (
       <div ref={ref} className="letterhead bg-white text-slate-900 mx-auto" style={{ width: "100%", maxWidth: 820 }}>
         <style>{`
           @media print {
-            @page { size: A4; margin: 14mm; }
-            body * { visibility: hidden !important; }
-            .letterhead, .letterhead * { visibility: visible !important; }
-            .letterhead { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none !important; }
-            .no-print { display: none !important; }
+            @page { size: A4; margin: 12mm; }
+            .letterhead { box-shadow: none !important; }
+            .no-print, [data-print="hide"] { display: none !important; }
           }
         `}</style>
 
         {/* Header band */}
-        <div className="relative px-10 pt-10 pb-6 border-b-4" style={{ borderColor: "hsl(var(--primary))" }}>
+        <div className="relative px-10 pt-8 pb-5 border-b-4" style={{ borderColor: "hsl(var(--primary))" }}>
           <div className="absolute top-0 left-0 right-0 h-2" style={{ background: "hsl(var(--primary))" }} />
           <div className="flex items-start justify-between gap-6">
             <div className="flex items-start gap-4">
@@ -68,13 +65,13 @@ export const ContractLetterhead = forwardRef<HTMLDivElement, Props>(
             <div className="text-right text-xs text-slate-600">
               <p className="font-semibold text-slate-800 uppercase tracking-wider">Employment Contract</p>
               <p className="mt-1">Ref: <span className="font-mono">{c.reference_number || `HR-${String(c.id).slice(0, 8).toUpperCase()}`}</span></p>
-              <p>Issued: {fmtDate(issuedOn)}</p>
             </div>
           </div>
         </div>
 
         {/* Body */}
-        <div className="px-10 py-8 space-y-6 text-[13.5px] leading-relaxed">
+        <div className="px-10 py-6 space-y-5 text-[13px] leading-relaxed">
+
           <div>
             <p className="text-slate-500 text-xs uppercase tracking-wider mb-1">To</p>
             <p className="font-semibold text-base">{employeeName}</p>
@@ -140,27 +137,25 @@ export const ContractLetterhead = forwardRef<HTMLDivElement, Props>(
           <p className="mt-4">Sincerely,</p>
 
           {/* Signatures */}
-          <div className="grid grid-cols-2 gap-10 pt-10 mt-4">
+          <div className="grid grid-cols-2 gap-10 pt-6 mt-2">
             <div>
-              <div className="border-b border-slate-400 pb-1 mb-2 h-12" />
+              <div className="border-b border-slate-400 pb-1 mb-2 h-10" />
               <p className="font-semibold">{c.signatory_name || "Authorized Signatory"}</p>
               <p className="text-xs text-slate-600">{c.signatory_title || "Human Resources"}</p>
               <p className="text-xs text-slate-500 mt-1">{school?.name}</p>
             </div>
             <div>
-              <div className="border-b border-slate-400 pb-1 mb-2 h-12" />
+              <div className="border-b border-slate-400 pb-1 mb-2 h-10" />
               <p className="font-semibold">{employeeName}</p>
               <p className="text-xs text-slate-600">Employee Acceptance</p>
-              <p className="text-xs text-slate-500 mt-1">Date: ____________________</p>
             </div>
           </div>
         </div>
 
-        {/* Footer band */}
-        <div className="px-10 py-3 border-t-2 mt-4 flex items-center justify-between text-[11px] text-slate-500"
-             style={{ borderColor: "hsl(var(--primary))" }}>
-          <span>{school?.name} · Confidential</span>
-          <span className="font-mono">Ref {c.reference_number || String(c.id).slice(0, 8).toUpperCase()}</span>
+        {/* Footer band — single tagline */}
+        <div className="px-10 py-3 border-t flex items-center justify-end text-[10.5px] text-slate-500"
+             style={{ borderColor: "hsl(var(--primary) / 0.4)" }}>
+          <span>AltRix — School Operating System</span>
         </div>
       </div>
     );

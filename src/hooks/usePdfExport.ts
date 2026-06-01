@@ -40,13 +40,14 @@ ${styleNodes}
 <style>
   html, body { background: #ffffff !important; color: #0f172a !important; margin:0; padding:0; }
   body { font-family: Georgia, 'Times New Roman', serif; }
-  [data-print="hide"] { display: none !important; }
-  @page { size: A4; margin: 12mm; }
+  [data-print="hide"], .no-print, [data-powered-by] { display: none !important; }
+  @page { size: A4; margin: 10mm; }
   @media print {
     html, body { background: #ffffff !important; }
-    .branded-doc { box-shadow: none !important; }
+    .branded-doc, .letterhead { box-shadow: none !important; }
+    /* Avoid splitting tables / signature rows across pages */
+    table, tr, td, th, .avoid-break { page-break-inside: avoid !important; break-inside: avoid !important; }
   }
-  /* Defensive: kill any dark mode tokens that may have copied across */
   :root, .dark { color-scheme: light !important; }
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 </style>
@@ -67,8 +68,15 @@ ${styleNodes}
       const toRemove: HTMLElement[] = [];
       let n = walker.nextNode();
       while (n) {
-        const txt = (n.nodeValue || "").toLowerCase();
-        if (txt.includes("powered by") || txt.includes("altrix - lovable") || txt.includes("altrix: powered by")) {
+        const txt = (n.nodeValue || "").toLowerCase().trim();
+        if (
+          txt.includes("powered by") ||
+          txt.includes("altrix - lovable") ||
+          txt.includes("altrix-lovable") ||
+          txt.includes("altrix: powered by") ||
+          txt.startsWith("issued:") ||
+          txt.startsWith("issued on")
+        ) {
           if (n.parentElement) toRemove.push(n.parentElement);
         }
         n = walker.nextNode();
@@ -125,21 +133,36 @@ export function usePdfExport() {
 
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pageWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const ratio = canvas.height / canvas.width;
+      const naturalHeight = pageWidth * ratio;
 
-      if (imgHeight <= pageHeight) {
-        pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, imgHeight);
+      // Smart single-page fit: if content overflows by less than ~22%,
+      // scale it down so the whole document lands on a single A4 page
+      // (avoids the "1 page of data spilling onto a 2nd page" problem).
+      if (naturalHeight <= pageHeight * 1.22) {
+        const fitHeight = Math.min(naturalHeight, pageHeight);
+        const fitWidth = (fitHeight / ratio);
+        const x = (pageWidth - fitWidth) / 2;
+        pdf.addImage(imgData, "JPEG", x, 0, fitWidth, fitHeight);
       } else {
-        let remaining = imgHeight;
-        let y = 0;
-        while (remaining > 0) {
-          pdf.addImage(imgData, "JPEG", 0, y, imgWidth, imgHeight);
-          remaining -= pageHeight;
-          if (remaining > 0) {
-            pdf.addPage();
-            y -= pageHeight;
-          }
+        // Multi-page: slice the rendered image into page-sized chunks
+        // so each page starts on a fresh slice (no overlap, no clipping).
+        const pxPerMm = canvas.width / pageWidth;
+        const pageHeightPx = pageHeight * pxPerMm;
+        const totalPages = Math.ceil(canvas.height / pageHeightPx);
+
+        for (let i = 0; i < totalPages; i++) {
+          if (i > 0) pdf.addPage();
+          const sliceCanvas = document.createElement("canvas");
+          sliceCanvas.width = canvas.width;
+          sliceCanvas.height = Math.min(pageHeightPx, canvas.height - i * pageHeightPx);
+          const ctx = sliceCanvas.getContext("2d")!;
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+          ctx.drawImage(canvas, 0, -i * pageHeightPx);
+          const sliceImg = sliceCanvas.toDataURL("image/jpeg", 0.95);
+          const sliceHeightMm = (sliceCanvas.height / pxPerMm);
+          pdf.addImage(sliceImg, "JPEG", 0, 0, pageWidth, sliceHeightMm);
         }
       }
 
