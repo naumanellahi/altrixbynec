@@ -137,6 +137,9 @@ function PostingsTab({ postings, schoolId, onChange, loading }: { postings: JobP
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<JobPosting | null>(null);
   const [form, setForm] = useState({ title: "", department: "", location: "", employment_type: "full_time", openings: 1, description: "", requirements: "", status: "open" });
+  const [preview, setPreview] = useRState<JobPosting | null>(null);
+  const { school } = useSchoolDocument(schoolId);
+  const docRef = useRef<HTMLDivElement>(null);
 
   const startEdit = (p: JobPosting) => {
     setEdit(p);
