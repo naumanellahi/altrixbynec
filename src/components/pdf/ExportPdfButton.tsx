@@ -30,7 +30,7 @@ export function ExportPdfButton({
   size = "default",
   variant = "outline",
 }: Props) {
-  const { exportNodeToPdf } = usePdfExport();
+  const { exportNodeToPdf, printNode } = usePdfExport();
   const [busy, setBusy] = useState(false);
 
   const handleDownload = async () => {
@@ -49,6 +49,19 @@ export function ExportPdfButton({
     }
   };
 
+  const handlePrint = async () => {
+    if (!targetRef.current) {
+      toast.error("Nothing to print");
+      return;
+    }
+    setBusy(true);
+    try {
+      await printNode(targetRef.current);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -58,7 +71,7 @@ export function ExportPdfButton({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuItem onClick={() => window.print()}>
+        <DropdownMenuItem onClick={handlePrint} disabled={busy}>
           <Printer className="h-4 w-4 mr-2" /> Print / Save as PDF
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleDownload} disabled={busy}>

@@ -48,14 +48,13 @@ export const BrandedDocument = forwardRef<HTMLDivElement, Props>(function Brande
       style={{ width: "100%", maxWidth: 820, minHeight: 1100, fontFamily: "Georgia, 'Times New Roman', serif" }}
     >
       <style>{`
+        @page { size: A4; margin: 12mm; }
+        .branded-doc { background: #ffffff; color: #0f172a; }
+        .branded-doc h1, .branded-doc h2, .branded-doc h3 { font-family: Georgia, 'Times New Roman', serif; }
         @media print {
-          @page { size: A4; margin: 12mm; }
-          body * { visibility: hidden !important; }
-          .branded-doc, .branded-doc * { visibility: visible !important; }
-          .branded-doc { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none !important; }
+          .branded-doc { box-shadow: none !important; }
           [data-print="hide"] { display: none !important; }
         }
-        .branded-doc h1, .branded-doc h2, .branded-doc h3 { font-family: Georgia, 'Times New Roman', serif; }
       `}</style>
 
       {/* Header band */}
