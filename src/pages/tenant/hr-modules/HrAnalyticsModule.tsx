@@ -31,7 +31,7 @@ export function HrAnalyticsModule() {
 
     const [roles, leaves, postings, payroll, onb, offb] = await Promise.all([
       (supabase as any).from("user_roles").select("user_id, role").eq("school_id", schoolId),
-      (supabase as any).from("hr_leave_applications").select("id, status, leave_type_id, created_at").eq("school_id", schoolId).gte("created_at", sinceISO),
+      (supabase as any).from("hr_leave_requests").select("id, status, leave_type_id, created_at").eq("school_id", schoolId).gte("created_at", sinceISO),
       (supabase as any).from("hr_job_postings").select("status, openings").eq("school_id", schoolId),
       (supabase as any).from("hr_payroll_runs").select("period_year, period_month, total_net, status").eq("school_id", schoolId).gte("period_year", new Date().getFullYear()),
       (supabase as any).from("hr_onboarding_assignments").select("created_at, kind").eq("school_id", schoolId).eq("kind", "onboarding").gte("created_at", sinceISO),
