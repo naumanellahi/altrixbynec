@@ -12,8 +12,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Briefcase, Users, Calendar as CalendarIcon, Trash2, Pencil } from "lucide-react";
+import { Plus, Briefcase, Users, Calendar as CalendarIcon, Trash2, Pencil, FileText } from "lucide-react";
 import { format } from "date-fns";
+import { useRef, useState as useRState } from "react";
+import { RecruitmentPostingDocument } from "@/components/hr/RecruitmentPostingDocument";
+import { ExportPdfButton } from "@/components/pdf/ExportPdfButton";
+import { useSchoolDocument } from "@/hooks/useSchoolDocument";
 
 type JobPosting = {
   id: string; title: string; department: string | null; location: string | null;
