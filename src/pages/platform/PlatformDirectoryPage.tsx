@@ -292,7 +292,9 @@ type DirRow = { id: string; school_id: string; email: string; display_name: stri
             </CardContent>
           </Card>
         )}
+        </div>
       </div>
-    </div>
+    </SuperAdminShell>
   );
 }
+
