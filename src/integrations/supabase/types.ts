@@ -3654,6 +3654,205 @@ export type Database = {
           },
         ]
       }
+      hr_applicants: {
+        Row: {
+          applied_at: string
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          notes: string | null
+          phone: string | null
+          posting_id: string | null
+          rating: number | null
+          resume_url: string | null
+          school_id: string
+          source: string | null
+          stage: string
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          posting_id?: string | null
+          rating?: number | null
+          resume_url?: string | null
+          school_id: string
+          source?: string | null
+          stage?: string
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          posting_id?: string | null
+          rating?: number | null
+          resume_url?: string | null
+          school_id?: string
+          source?: string | null
+          stage?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_applicants_posting_id_fkey"
+            columns: ["posting_id"]
+            isOneToOne: false
+            referencedRelation: "hr_job_postings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_asset_assignments: {
+        Row: {
+          asset_id: string
+          condition_on_return: string | null
+          created_at: string
+          employee_user_id: string
+          id: string
+          issued_at: string
+          issued_by: string | null
+          notes: string | null
+          returned_at: string | null
+          school_id: string
+          updated_at: string
+        }
+        Insert: {
+          asset_id: string
+          condition_on_return?: string | null
+          created_at?: string
+          employee_user_id: string
+          id?: string
+          issued_at?: string
+          issued_by?: string | null
+          notes?: string | null
+          returned_at?: string | null
+          school_id: string
+          updated_at?: string
+        }
+        Update: {
+          asset_id?: string
+          condition_on_return?: string | null
+          created_at?: string
+          employee_user_id?: string
+          id?: string
+          issued_at?: string
+          issued_by?: string | null
+          notes?: string | null
+          returned_at?: string | null
+          school_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_asset_assignments_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "hr_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_assets: {
+        Row: {
+          asset_tag: string | null
+          category: string | null
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          purchase_cost: number | null
+          purchase_date: string | null
+          school_id: string
+          serial_number: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          asset_tag?: string | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          purchase_cost?: number | null
+          purchase_date?: string | null
+          school_id: string
+          serial_number?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          asset_tag?: string | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          purchase_cost?: number | null
+          purchase_date?: string | null
+          school_id?: string
+          serial_number?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      hr_attendance_regularizations: {
+        Row: {
+          attendance_date: string
+          created_at: string
+          employee_user_id: string
+          id: string
+          reason: string | null
+          requested_status: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          school_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attendance_date: string
+          created_at?: string
+          employee_user_id: string
+          id?: string
+          reason?: string | null
+          requested_status: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          school_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attendance_date?: string
+          created_at?: string
+          employee_user_id?: string
+          id?: string
+          reason?: string | null
+          requested_status?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          school_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       hr_contracts: {
         Row: {
           contract_type: string | null
@@ -3741,6 +3940,166 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      hr_employee_salary_structure: {
+        Row: {
+          amount: number
+          component_id: string
+          created_at: string
+          effective_from: string
+          effective_to: string | null
+          employee_user_id: string
+          id: string
+          notes: string | null
+          school_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          component_id: string
+          created_at?: string
+          effective_from?: string
+          effective_to?: string | null
+          employee_user_id: string
+          id?: string
+          notes?: string | null
+          school_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          component_id?: string
+          created_at?: string
+          effective_from?: string
+          effective_to?: string | null
+          employee_user_id?: string
+          id?: string
+          notes?: string | null
+          school_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_employee_salary_structure_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "hr_salary_components"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_interviews: {
+        Row: {
+          applicant_id: string
+          created_at: string
+          duration_minutes: number
+          feedback: string | null
+          id: string
+          interviewer_user_id: string | null
+          location_or_link: string | null
+          mode: string
+          scheduled_at: string
+          school_id: string
+          score: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          applicant_id: string
+          created_at?: string
+          duration_minutes?: number
+          feedback?: string | null
+          id?: string
+          interviewer_user_id?: string | null
+          location_or_link?: string | null
+          mode?: string
+          scheduled_at: string
+          school_id: string
+          score?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          applicant_id?: string
+          created_at?: string
+          duration_minutes?: number
+          feedback?: string | null
+          id?: string
+          interviewer_user_id?: string | null
+          location_or_link?: string | null
+          mode?: string
+          scheduled_at?: string
+          school_id?: string
+          score?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_interviews_applicant_id_fkey"
+            columns: ["applicant_id"]
+            isOneToOne: false
+            referencedRelation: "hr_applicants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_job_postings: {
+        Row: {
+          campus_id: string | null
+          closes_at: string | null
+          created_at: string
+          created_by: string | null
+          department: string | null
+          description: string | null
+          employment_type: string
+          id: string
+          location: string | null
+          openings: number
+          posted_at: string
+          requirements: string | null
+          school_id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          campus_id?: string | null
+          closes_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          description?: string | null
+          employment_type?: string
+          id?: string
+          location?: string | null
+          openings?: number
+          posted_at?: string
+          requirements?: string | null
+          school_id: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          campus_id?: string | null
+          closes_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          description?: string | null
+          employment_type?: string
+          id?: string
+          location?: string | null
+          openings?: number
+          posted_at?: string
+          requirements?: string | null
+          school_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       hr_leave_requests: {
         Row: {
@@ -3834,6 +4193,186 @@ export type Database = {
           },
         ]
       }
+      hr_onboarding_assignments: {
+        Row: {
+          created_at: string
+          employee_user_id: string
+          id: string
+          kind: string
+          notes: string | null
+          school_id: string
+          start_date: string
+          status: string
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          employee_user_id: string
+          id?: string
+          kind?: string
+          notes?: string | null
+          school_id: string
+          start_date?: string
+          status?: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          employee_user_id?: string
+          id?: string
+          kind?: string
+          notes?: string | null
+          school_id?: string
+          start_date?: string
+          status?: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_onboarding_assignments_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "hr_onboarding_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_onboarding_task_status: {
+        Row: {
+          assignment_id: string
+          created_at: string
+          description: string | null
+          done_at: string | null
+          done_by: string | null
+          due_date: string | null
+          id: string
+          is_done: boolean
+          owner_user_id: string | null
+          school_id: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignment_id: string
+          created_at?: string
+          description?: string | null
+          done_at?: string | null
+          done_by?: string | null
+          due_date?: string | null
+          id?: string
+          is_done?: boolean
+          owner_user_id?: string | null
+          school_id: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignment_id?: string
+          created_at?: string
+          description?: string | null
+          done_at?: string | null
+          done_by?: string | null
+          due_date?: string | null
+          id?: string
+          is_done?: boolean
+          owner_user_id?: string | null
+          school_id?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_onboarding_task_status_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "hr_onboarding_assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_onboarding_template_tasks: {
+        Row: {
+          created_at: string
+          description: string | null
+          due_offset_days: number
+          id: string
+          owner_role: string | null
+          school_id: string
+          sort_order: number
+          template_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          due_offset_days?: number
+          id?: string
+          owner_role?: string | null
+          school_id: string
+          sort_order?: number
+          template_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          due_offset_days?: number
+          id?: string
+          owner_role?: string | null
+          school_id?: string
+          sort_order?: number
+          template_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_onboarding_template_tasks_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "hr_onboarding_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_onboarding_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          kind: string
+          name: string
+          school_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: string
+          name: string
+          school_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: string
+          name?: string
+          school_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       hr_pay_runs: {
         Row: {
           created_at: string | null
@@ -3887,6 +4426,170 @@ export type Database = {
           },
         ]
       }
+      hr_payroll_runs: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          generated_at: string | null
+          id: string
+          label: string | null
+          notes: string | null
+          paid_at: string | null
+          period_month: number
+          period_year: number
+          school_id: string
+          status: string
+          total_deductions: number
+          total_gross: number
+          total_net: number
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          generated_at?: string | null
+          id?: string
+          label?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          period_month: number
+          period_year: number
+          school_id: string
+          status?: string
+          total_deductions?: number
+          total_gross?: number
+          total_net?: number
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          generated_at?: string | null
+          id?: string
+          label?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          period_month?: number
+          period_year?: number
+          school_id?: string
+          status?: string
+          total_deductions?: number
+          total_gross?: number
+          total_net?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      hr_payslips: {
+        Row: {
+          basic: number
+          bonus: number
+          breakdown: Json
+          created_at: string
+          deductions: number
+          earnings: number
+          employee_user_id: string
+          gross: number
+          id: string
+          net: number
+          notes: string | null
+          paid_at: string | null
+          run_id: string
+          school_id: string
+          status: string
+          tax: number
+          updated_at: string
+        }
+        Insert: {
+          basic?: number
+          bonus?: number
+          breakdown?: Json
+          created_at?: string
+          deductions?: number
+          earnings?: number
+          employee_user_id: string
+          gross?: number
+          id?: string
+          net?: number
+          notes?: string | null
+          paid_at?: string | null
+          run_id: string
+          school_id: string
+          status?: string
+          tax?: number
+          updated_at?: string
+        }
+        Update: {
+          basic?: number
+          bonus?: number
+          breakdown?: Json
+          created_at?: string
+          deductions?: number
+          earnings?: number
+          employee_user_id?: string
+          gross?: number
+          id?: string
+          net?: number
+          notes?: string | null
+          paid_at?: string | null
+          run_id?: string
+          school_id?: string
+          status?: string
+          tax?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_payslips_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "hr_payroll_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_performance_cycles: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          period_end: string
+          period_start: string
+          school_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          period_end: string
+          period_start: string
+          school_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          period_end?: string
+          period_start?: string
+          school_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       hr_reviews: {
         Row: {
           comments: string | null
@@ -3930,6 +4633,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      hr_salary_components: {
+        Row: {
+          calc_type: string
+          code: string | null
+          created_at: string
+          default_value: number
+          id: string
+          is_active: boolean
+          is_taxable: boolean
+          kind: string
+          name: string
+          school_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          calc_type?: string
+          code?: string | null
+          created_at?: string
+          default_value?: number
+          id?: string
+          is_active?: boolean
+          is_taxable?: boolean
+          kind?: string
+          name: string
+          school_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          calc_type?: string
+          code?: string | null
+          created_at?: string
+          default_value?: number
+          id?: string
+          is_active?: boolean
+          is_taxable?: boolean
+          kind?: string
+          name?: string
+          school_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       hr_salary_records: {
         Row: {
