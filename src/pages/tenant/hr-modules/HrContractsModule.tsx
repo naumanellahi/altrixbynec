@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +19,8 @@ import {
   Plus, AlertTriangle, FileText, Printer, Pencil, Eye, Trash2, Search,
 } from "lucide-react";
 import { ContractLetterhead } from "@/components/hr/ContractLetterhead";
+import { usePdfExport } from "@/hooks/usePdfExport";
+import { ExportPdfButton } from "@/components/pdf/ExportPdfButton";
 
 const today = () => new Date().toISOString().slice(0, 10);
 const daysBetween = (a: string, b: string) =>
@@ -180,7 +182,9 @@ export function HrContractsModule() {
     });
   };
 
-  const handlePrint = () => window.print();
+  const letterheadRef = useRef<HTMLDivElement>(null);
+  const { printNode } = usePdfExport();
+  const handlePrint = () => printNode(letterheadRef.current);
 
   const t = today();
   const filtered = useMemo(() => {
@@ -370,6 +374,12 @@ export function HrContractsModule() {
                   <Button size="sm" variant="outline" onClick={handlePrint}>
                     <Printer className="h-4 w-4 mr-1" />Print
                   </Button>
+                  <ExportPdfButton
+                    targetRef={letterheadRef}
+                    filename={`contract-${viewing?.reference_number || viewing?.id?.slice(0, 8) || "document"}.pdf`}
+                    label="Download"
+                    size="sm"
+                  />
                   <Button size="sm" variant="ghost" className="text-destructive"
                           onClick={() => { if (confirm("Delete this contract?")) remove.mutate(viewing.id); }}>
                     <Trash2 className="h-4 w-4" />
@@ -387,6 +397,7 @@ export function HrContractsModule() {
           <div className="p-4 bg-muted/30">
             {viewing && !editMode && (
               <ContractLetterhead
+                ref={letterheadRef}
                 school={school}
                 contract={viewing}
                 employeeName={nameOf(viewing.user_id)}

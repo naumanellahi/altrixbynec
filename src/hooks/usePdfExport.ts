@@ -58,6 +58,22 @@ ${styleNodes}
       const doc = iframe.contentDocument!;
       const root = doc.getElementById("print-root")!;
       root.appendChild(doc.adoptNode(clone));
+      // Defense-in-depth: strip elements explicitly marked no-print, and any
+      // stray "powered by / AltRix - Lovable" badge that may have copied across.
+      root
+        .querySelectorAll<HTMLElement>('[data-print="hide"], .no-print, [data-powered-by]')
+        .forEach((el) => el.remove());
+      const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+      const toRemove: HTMLElement[] = [];
+      let n = walker.nextNode();
+      while (n) {
+        const txt = (n.nodeValue || "").toLowerCase();
+        if (txt.includes("powered by") || txt.includes("altrix - lovable") || txt.includes("altrix: powered by")) {
+          if (n.parentElement) toRemove.push(n.parentElement);
+        }
+        n = walker.nextNode();
+      }
+      toRemove.forEach((el) => el.remove());
       // Give images a moment to decode
       const imgs = Array.from(root.querySelectorAll("img"));
       Promise.all(
