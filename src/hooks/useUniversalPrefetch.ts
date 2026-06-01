@@ -559,24 +559,28 @@ async function prefetchAssessmentsAndGrades(schoolId: string, cancelled: boolean
 async function prefetchHrData(schoolId: string, cancelled: boolean, onProgress: (task: string) => void) {
   const tasks: Promise<void>[] = [];
 
-  // Staff Members (from directory) — exclude students, parents, owners
+  // Staff Members (from directory) — exclude students, parents, owners, super/platform admins
   tasks.push((async () => {
-    const [dirRes, rolesRes, ownersRes] = await Promise.all([
+    const [dirRes, rolesRes, ownersRes, platformRes] = await Promise.all([
       supabase.from('school_user_directory')
         .select('user_id, email, display_name')
         .eq('school_id', schoolId)
         .limit(BATCH_SIZE),
       supabase.from('user_roles').select('user_id, role').eq('school_id', schoolId),
       supabase.from('school_owner_assignments').select('owner_user_id').eq('school_id', schoolId),
+      supabase.from('platform_super_admins' as any).select('user_id'),
     ]);
     if (!cancelled && dirRes.data) {
-      const NON_STAFF = new Set(['student', 'parent', 'owner']);
+      const NON_STAFF = new Set(['student', 'parent', 'owner', 'super_admin', 'platform_super_admin', 'school_owner']);
       const excluded = new Set<string>();
       (rolesRes.data ?? []).forEach((r: any) => {
         if (r.user_id && NON_STAFF.has(String(r.role).toLowerCase())) excluded.add(r.user_id);
       });
       (ownersRes.data ?? []).forEach((o: any) => {
         if (o.owner_user_id) excluded.add(o.owner_user_id);
+      });
+      ((platformRes as any).data ?? []).forEach((p: any) => {
+        if (p.user_id) excluded.add(p.user_id);
       });
       const cached: CachedStaffMember[] = dirRes.data
         .filter((s: any) => s.user_id && !excluded.has(s.user_id))
