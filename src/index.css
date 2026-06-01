@@ -206,6 +206,157 @@ All colors MUST be HSL.
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }
 
+/* ============================================================
+   Super Master Admin — luxury palette scope
+   Applied via `super-admin-scope` class on the main shell area.
+   Forces every shadcn card/button/input/table inside to use the
+   sidebar's dark-navy + amber-gold palette, so existing platform
+   pages inherit the premium look without rewriting layouts.
+============================================================ */
+.super-admin-scope {
+  --sa-bg: 230 40% 7%;
+  --sa-surface: 230 35% 11%;
+  --sa-surface-2: 230 30% 14%;
+  --sa-border: 230 25% 20%;
+  --sa-border-strong: 45 80% 50% / 0.35;
+  --sa-text: 220 30% 96%;
+  --sa-text-muted: 220 15% 70%;
+  --sa-text-dim: 220 12% 55%;
+  --sa-accent: 45 95% 58%;
+  --sa-accent-2: 35 90% 55%;
+
+  color: hsl(var(--sa-text));
+}
+
+.super-admin-scope .card-premium,
+.super-admin-scope [class*="rounded-lg border"],
+.super-admin-scope [class*="rounded-xl border"],
+.super-admin-scope [class*="rounded-2xl border"] {
+  background: linear-gradient(180deg, hsl(var(--sa-surface)) 0%, hsl(var(--sa-bg)) 100%) !important;
+  border-color: hsl(var(--sa-border)) !important;
+  color: hsl(var(--sa-text));
+  box-shadow: 0 1px 0 hsl(0 0% 100% / 0.03) inset, 0 12px 32px -16px hsl(230 60% 2% / 0.6) !important;
+}
+
+.super-admin-scope .card-premium:hover {
+  border-color: hsl(var(--sa-border-strong)) !important;
+}
+
+/* Headings & text */
+.super-admin-scope h1,
+.super-admin-scope h2,
+.super-admin-scope h3,
+.super-admin-scope h4 { color: hsl(var(--sa-text)); }
+.super-admin-scope .text-muted-foreground,
+.super-admin-scope [class*="text-slate-5"],
+.super-admin-scope [class*="text-slate-6"],
+.super-admin-scope [class*="text-gray-5"],
+.super-admin-scope [class*="text-gray-6"] { color: hsl(var(--sa-text-muted)) !important; }
+
+/* Primary buttons → gold */
+.super-admin-scope button[data-variant="default"],
+.super-admin-scope .btn-primary,
+.super-admin-scope button.bg-primary,
+.super-admin-scope a.bg-primary {
+  background: linear-gradient(135deg, hsl(var(--sa-accent)), hsl(var(--sa-accent-2))) !important;
+  color: hsl(230 40% 8%) !important;
+  border: 0 !important;
+  box-shadow: 0 6px 18px -8px hsl(var(--sa-accent) / 0.55);
+}
+.super-admin-scope button[data-variant="default"]:hover,
+.super-admin-scope button.bg-primary:hover {
+  filter: brightness(1.05);
+}
+
+/* Outline / ghost buttons */
+.super-admin-scope button[data-variant="outline"],
+.super-admin-scope button[data-variant="secondary"],
+.super-admin-scope button[data-variant="ghost"] {
+  background: hsl(0 0% 100% / 0.04) !important;
+  border-color: hsl(var(--sa-border)) !important;
+  color: hsl(var(--sa-text)) !important;
+}
+.super-admin-scope button[data-variant="outline"]:hover,
+.super-admin-scope button[data-variant="ghost"]:hover {
+  background: hsl(0 0% 100% / 0.08) !important;
+  border-color: hsl(var(--sa-accent) / 0.4) !important;
+}
+
+/* Inputs / selects / textareas */
+.super-admin-scope input,
+.super-admin-scope textarea,
+.super-admin-scope select,
+.super-admin-scope [role="combobox"] {
+  background: hsl(0 0% 100% / 0.04) !important;
+  border-color: hsl(var(--sa-border)) !important;
+  color: hsl(var(--sa-text)) !important;
+}
+.super-admin-scope input::placeholder,
+.super-admin-scope textarea::placeholder { color: hsl(var(--sa-text-dim)) !important; }
+.super-admin-scope input:focus-visible,
+.super-admin-scope textarea:focus-visible,
+.super-admin-scope [role="combobox"]:focus-visible {
+  border-color: hsl(var(--sa-accent) / 0.55) !important;
+  box-shadow: 0 0 0 3px hsl(var(--sa-accent) / 0.18) !important;
+}
+
+/* Tables */
+.super-admin-scope table { color: hsl(var(--sa-text)); }
+.super-admin-scope thead th {
+  background: hsl(var(--sa-surface-2)) !important;
+  color: hsl(var(--sa-text-muted)) !important;
+  border-color: hsl(var(--sa-border)) !important;
+  text-transform: uppercase;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+}
+.super-admin-scope tbody tr {
+  border-color: hsl(var(--sa-border)) !important;
+}
+.super-admin-scope tbody tr:hover {
+  background: hsl(var(--sa-accent) / 0.05) !important;
+}
+
+/* Tabs (Radix) */
+.super-admin-scope [role="tablist"] {
+  background: hsl(var(--sa-surface-2)) !important;
+  border: 1px solid hsl(var(--sa-border)) !important;
+  border-radius: 12px;
+  padding: 4px;
+}
+.super-admin-scope [role="tab"] {
+  color: hsl(var(--sa-text-muted)) !important;
+  border-radius: 8px !important;
+}
+.super-admin-scope [role="tab"][data-state="active"] {
+  background: linear-gradient(135deg, hsl(var(--sa-accent)), hsl(var(--sa-accent-2))) !important;
+  color: hsl(230 40% 8%) !important;
+  box-shadow: 0 4px 12px -4px hsl(var(--sa-accent) / 0.5);
+}
+
+/* Badges */
+.super-admin-scope [class*="bg-secondary"],
+.super-admin-scope [class*="bg-muted"] {
+  background: hsl(0 0% 100% / 0.06) !important;
+  color: hsl(var(--sa-text-muted)) !important;
+  border-color: hsl(var(--sa-border)) !important;
+}
+
+/* Section dividers / borders */
+.super-admin-scope hr,
+.super-admin-scope .border,
+.super-admin-scope .border-t,
+.super-admin-scope .border-b,
+.super-admin-scope .border-l,
+.super-admin-scope .border-r {
+  border-color: hsl(var(--sa-border)) !important;
+}
+
+/* "Walking pattern" — soft entry on each route */
+.super-admin-scope > * {
+  animation: enter-fade 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
 @media print {
   /* Hide navigation + action controls across all portals */
   aside,
