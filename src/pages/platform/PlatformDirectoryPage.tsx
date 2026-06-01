@@ -117,33 +117,10 @@ type DirRow = { id: string; school_id: string; email: string; display_name: stri
   }
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="mx-auto w-full max-w-6xl space-y-4">
-        <Card className="shadow-elevated">
-          <CardHeader>
-            <CardTitle className="font-display text-xl">Global Directory</CardTitle>
-            <p className="text-sm text-muted-foreground">Search across schools, users, students, and leads.</p>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <ShieldCheck className="h-4 w-4" /> Platform Super Admin
-            </div>
-            <div className="flex gap-2">
-              <Button variant="soft" onClick={() => navigate("/super_admin")}>
-                Back to dashboard
-              </Button>
-              <Button
-                variant="outline"
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  navigate("/auth");
-                }}
-              >
-                <LogOut className="mr-2 h-4 w-4" /> Logout
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+    <SuperAdminShell title="Owners & Admins" subtitle="Search across schools, users, students and leads">
+      <div className="space-y-4 text-foreground bg-background rounded-xl p-1">
+        <div className="-mx-1 -my-1 p-4">
+
 
         {!authz.loading && !authz.allowed && (
           <Card className="shadow-elevated">
