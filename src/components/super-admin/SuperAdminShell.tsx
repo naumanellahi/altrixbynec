@@ -213,7 +213,42 @@ export function SuperAdminShell({ title, subtitle, actions, children }: Props) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto super-admin-scope">
+          {(title || subtitle) && (
+            <div
+              className="border-b"
+              style={{
+                background:
+                  "linear-gradient(180deg, hsl(230 40% 9% / 0.6), transparent)",
+                borderColor: "hsl(230 30% 18%)",
+              }}
+            >
+              <div className="max-w-7xl mx-auto px-6 md:px-8 py-5 flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p
+                    className="text-[10px] uppercase tracking-[0.22em] font-semibold"
+                    style={{ color: "hsl(45 95% 65% / 0.9)" }}
+                  >
+                    Master Admin
+                  </p>
+                  <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-100 truncate">
+                    {title}
+                  </h2>
+                  {subtitle && (
+                    <p className="text-sm text-slate-400 mt-0.5 truncate">{subtitle}</p>
+                  )}
+                </div>
+                <div
+                  className="hidden md:block h-12 w-12 rounded-xl"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, hsl(45 95% 55% / 0.18), hsl(265 70% 45% / 0.12))",
+                    border: "1px solid hsl(45 80% 50% / 0.25)",
+                  }}
+                />
+              </div>
+            </div>
+          )}
           <div className="max-w-7xl mx-auto p-6 md:p-8">{children}</div>
         </main>
       </div>
