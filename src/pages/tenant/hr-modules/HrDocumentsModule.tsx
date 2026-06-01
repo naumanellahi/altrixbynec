@@ -56,12 +56,12 @@ export function HrDocumentsModule() {
       const fileName = `${schoolId}/${form.user_id}/${Date.now()}_${form.file.name}`;
       const { error: upErr } = await supabase.storage.from("hr-documents").upload(fileName, form.file);
       if (upErr) throw upErr;
-      const { data: urlData } = supabase.storage.from("hr-documents").getPublicUrl(fileName);
-      const user = (await supabase.auth.getUser()).data.user;
+      // Store storage path in file_url; we open via signed URL on demand
+      // because hr-documents is a private bucket.
       const { error: dbErr } = await supabase.from("hr_documents").insert({
         school_id: schoolId, user_id: form.user_id,
         document_type: form.document_type, document_name: form.document_name || form.file.name,
-        file_url: urlData.publicUrl,
+        file_url: fileName,
       });
       if (dbErr) throw dbErr;
       toast.success("Uploaded");
@@ -72,6 +72,24 @@ export function HrDocumentsModule() {
       toast.error(e.message);
     } finally { setUploading(false); }
   };
+
+  const openDoc = async (path: string) => {
+    if (!path) return;
+    // Backward-compat: if an old row still has a full URL, just open it.
+    if (/^https?:\/\//i.test(path)) {
+      window.open(path, "_blank", "noopener");
+      return;
+    }
+    const { data, error } = await supabase.storage
+      .from("hr-documents")
+      .createSignedUrl(path, 300);
+    if (error || !data?.signedUrl) {
+      toast.error(error?.message || "Unable to open document");
+      return;
+    }
+    window.open(data.signedUrl, "_blank", "noopener");
+  };
+
 
   const del = useMutation({
     mutationFn: async (id: string) => {
@@ -143,7 +161,7 @@ export function HrDocumentsModule() {
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="capitalize">{(d.document_type || "general").replace(/_/g, " ")}</Badge>
-              <Button size="icon" variant="ghost" asChild><a href={d.file_url} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" /></a></Button>
+              <Button size="icon" variant="ghost" onClick={() => openDoc(d.file_url)}><ExternalLink className="h-4 w-4" /></Button>
               <Button size="icon" variant="ghost" onClick={() => del.mutate(d.id)}><Trash2 className="h-4 w-4" /></Button>
             </div>
           </CardContent></Card>
