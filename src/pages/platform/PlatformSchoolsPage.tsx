@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import CampusCreatorCard from "./CampusCreatorCard";
+import { SuperAdminShell } from "@/components/super-admin/SuperAdminShell";
 import PlatformRequestsCard from "./PlatformRequestsCard";
 
 type SchoolRow = {
@@ -364,28 +365,9 @@ export default function PlatformSchoolsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="mx-auto w-full max-w-6xl space-y-4">
-        <Card className="shadow-elevated">
-          <CardHeader>
-            <CardTitle className="font-display text-xl">Platform</CardTitle>
-            <p className="text-sm text-muted-foreground">Signed in as {user?.email}</p>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <ShieldCheck className="h-4 w-4" /> All Schools & Audit Logs
-            </div>
-            <Button
-              variant="outline"
-              onClick={async () => {
-                await supabase.auth.signOut();
-                navigate("/auth");
-              }}
-            >
-              <LogOut className="mr-2 h-4 w-4" /> Logout
-            </Button>
-          </CardContent>
-        </Card>
+    <SuperAdminShell title="Schools" subtitle="Create, manage and inspect every tenant on the platform">
+      <div className="bg-background text-foreground rounded-xl p-4 space-y-4">
+
 
         {authz !== "ok" && (
           <Card className="shadow-elevated">
@@ -863,6 +845,7 @@ export default function PlatformSchoolsPage() {
           </>
         )}
       </div>
-    </div>
+    </SuperAdminShell>
   );
 }
+
