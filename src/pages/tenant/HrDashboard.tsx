@@ -1,28 +1,35 @@
 import { Navigate, Route, Routes, useParams } from "react-router-dom";
-import { useMemo } from "react";
+import { useMemo, lazy, Suspense } from "react";
 import { useSession } from "@/hooks/useSession";
 import { useTenantOptimized } from "@/hooks/useTenantOptimized";
 import { useAuthz } from "@/hooks/useAuthz";
 import { useUniversalPrefetch } from "@/hooks/useUniversalPrefetch";
 import { HrShell } from "@/components/tenant/HrShell";
-import { HrHomeModule } from "@/pages/tenant/hr-modules/HrHomeModule";
-import { HrUsersModule } from "@/pages/tenant/hr-modules/HrUsersModule";
-import { HrLeavesModule } from "@/pages/tenant/hr-modules/HrLeavesModule";
-import { HrAttendanceModule } from "@/pages/tenant/hr-modules/HrAttendanceModule";
-import { HrSalariesModule } from "@/pages/tenant/hr-modules/HrSalariesModule";
-import { HrContractsModule } from "@/pages/tenant/hr-modules/HrContractsModule";
-import { HrReviewsModule } from "@/pages/tenant/hr-modules/HrReviewsModule";
-import { HrDocumentsModule } from "@/pages/tenant/hr-modules/HrDocumentsModule";
-import { HrSupportModule } from "@/pages/tenant/hr-modules/HrSupportModule";
-import { HrMessagesModule } from "@/pages/tenant/hr-modules/HrMessagesModule";
-import { HrRecruitmentModule } from "@/pages/tenant/hr-modules/HrRecruitmentModule";
-import { HrOnboardingModule } from "@/pages/tenant/hr-modules/HrOnboardingModule";
-import { HrOffboardingModule } from "@/pages/tenant/hr-modules/HrOffboardingModule";
-import { HrPayrollModule } from "@/pages/tenant/hr-modules/HrPayrollModule";
-import { HrAnalyticsModule } from "@/pages/tenant/hr-modules/HrAnalyticsModule";
-import NoticesModule from "@/pages/tenant/modules/NoticesModule";
-import HolidaysModule from "@/pages/tenant/modules/HolidaysModule";
+
+const HrHomeModule = lazy(() => import("@/pages/tenant/hr-modules/HrHomeModule").then(m => ({ default: m.HrHomeModule })));
+const HrUsersModule = lazy(() => import("@/pages/tenant/hr-modules/HrUsersModule").then(m => ({ default: m.HrUsersModule })));
+const HrLeavesModule = lazy(() => import("@/pages/tenant/hr-modules/HrLeavesModule").then(m => ({ default: m.HrLeavesModule })));
+const HrAttendanceModule = lazy(() => import("@/pages/tenant/hr-modules/HrAttendanceModule").then(m => ({ default: m.HrAttendanceModule })));
+const HrSalariesModule = lazy(() => import("@/pages/tenant/hr-modules/HrSalariesModule").then(m => ({ default: m.HrSalariesModule })));
+const HrContractsModule = lazy(() => import("@/pages/tenant/hr-modules/HrContractsModule").then(m => ({ default: m.HrContractsModule })));
+const HrReviewsModule = lazy(() => import("@/pages/tenant/hr-modules/HrReviewsModule").then(m => ({ default: m.HrReviewsModule })));
+const HrDocumentsModule = lazy(() => import("@/pages/tenant/hr-modules/HrDocumentsModule").then(m => ({ default: m.HrDocumentsModule })));
+const HrSupportModule = lazy(() => import("@/pages/tenant/hr-modules/HrSupportModule").then(m => ({ default: m.HrSupportModule })));
+const HrMessagesModule = lazy(() => import("@/pages/tenant/hr-modules/HrMessagesModule").then(m => ({ default: m.HrMessagesModule })));
+const HrRecruitmentModule = lazy(() => import("@/pages/tenant/hr-modules/HrRecruitmentModule").then(m => ({ default: m.HrRecruitmentModule })));
+const HrOnboardingModule = lazy(() => import("@/pages/tenant/hr-modules/HrOnboardingModule").then(m => ({ default: m.HrOnboardingModule })));
+const HrOffboardingModule = lazy(() => import("@/pages/tenant/hr-modules/HrOffboardingModule").then(m => ({ default: m.HrOffboardingModule })));
+const HrPayrollModule = lazy(() => import("@/pages/tenant/hr-modules/HrPayrollModule").then(m => ({ default: m.HrPayrollModule })));
+const HrAnalyticsModule = lazy(() => import("@/pages/tenant/hr-modules/HrAnalyticsModule").then(m => ({ default: m.HrAnalyticsModule })));
+const NoticesModule = lazy(() => import("@/pages/tenant/modules/NoticesModule"));
+const HolidaysModule = lazy(() => import("@/pages/tenant/modules/HolidaysModule"));
 import { RouteGuard } from "@/components/tenant/RouteGuard";
+
+const DashboardLoader = () => (
+  <div className="flex h-[50vh] items-center justify-center">
+    <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+  </div>
+);
 
 const HrDashboard = () => {
   const { schoolSlug } = useParams();
@@ -79,26 +86,28 @@ const HrDashboard = () => {
         "support","messages","notices","holidays",
         "recruitment","onboarding","offboarding","payroll","analytics",
       ]}>
-      <Routes>
-        <Route index element={<HrHomeModule />} />
-        <Route path="users" element={<HrUsersModule />} />
-        <Route path="recruitment" element={<HrRecruitmentModule />} />
-        <Route path="onboarding" element={<HrOnboardingModule />} />
-        <Route path="offboarding" element={<HrOffboardingModule />} />
-        <Route path="leaves" element={<HrLeavesModule />} />
-        <Route path="attendance" element={<HrAttendanceModule />} />
-        <Route path="salaries" element={<HrSalariesModule />} />
-        <Route path="payroll" element={<HrPayrollModule />} />
-        <Route path="contracts" element={<HrContractsModule />} />
-        <Route path="reviews" element={<HrReviewsModule />} />
-        <Route path="documents" element={<HrDocumentsModule />} />
-        <Route path="analytics" element={<HrAnalyticsModule />} />
-        <Route path="support" element={<HrSupportModule />} />
-        <Route path="messages" element={<HrMessagesModule />} />
-        <Route path="notices" element={<NoticesModule schoolId={schoolId} canManage={true} />} />
-        <Route path="holidays" element={<HolidaysModule schoolId={schoolId} canManage={true} />} />
-        <Route path="*" element={<Navigate to={`/${tenant.slug}/hr`} replace />} />
-      </Routes>
+      <Suspense fallback={<DashboardLoader />}>
+        <Routes>
+          <Route index element={<HrHomeModule />} />
+          <Route path="users" element={<HrUsersModule />} />
+          <Route path="recruitment" element={<HrRecruitmentModule />} />
+          <Route path="onboarding" element={<HrOnboardingModule />} />
+          <Route path="offboarding" element={<HrOffboardingModule />} />
+          <Route path="leaves" element={<HrLeavesModule />} />
+          <Route path="attendance" element={<HrAttendanceModule />} />
+          <Route path="salaries" element={<HrSalariesModule />} />
+          <Route path="payroll" element={<HrPayrollModule />} />
+          <Route path="contracts" element={<HrContractsModule />} />
+          <Route path="reviews" element={<HrReviewsModule />} />
+          <Route path="documents" element={<HrDocumentsModule />} />
+          <Route path="analytics" element={<HrAnalyticsModule />} />
+          <Route path="support" element={<HrSupportModule />} />
+          <Route path="messages" element={<HrMessagesModule />} />
+          <Route path="notices" element={<NoticesModule schoolId={schoolId} canManage={true} />} />
+          <Route path="holidays" element={<HolidaysModule schoolId={schoolId} canManage={true} />} />
+          <Route path="*" element={<Navigate to={`/${tenant.slug}/hr`} replace />} />
+        </Routes>
+      </Suspense>
       </RouteGuard>
     </HrShell>
   );

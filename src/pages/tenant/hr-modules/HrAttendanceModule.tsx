@@ -14,11 +14,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   Download, RefreshCw, WifiOff, Check, X, Clock, FileCheck, Coffee,
-  Keyboard, Search, Users, CalendarDays,
+  Keyboard, Search, Users, CalendarDays, History
 } from "lucide-react";
 import { OfflineDataBanner } from "@/components/offline/OfflineDataBanner";
 import { exportToCSV } from "@/lib/csv";
 import { cn } from "@/lib/utils";
+import { StaffAttendanceHistoryDialog } from "@/components/attendance/StaffAttendanceHistoryDialog";
 
 type Status = "present" | "absent" | "late" | "half_day" | "leave";
 const STATUS_ORDER: Status[] = ["present", "absent", "late", "half_day", "leave"];
@@ -39,6 +40,7 @@ export function HrAttendanceModule() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [search, setSearch] = useState("");
   const [focusedRow, setFocusedRow] = useState(0);
+  const [showHistory, setShowHistory] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { data: cachedStaff, isOffline, isUsingCache, refresh: refreshStaff } = useOfflineStaffMembers(schoolId);
@@ -266,6 +268,7 @@ export function HrAttendanceModule() {
               <div className="flex flex-wrap gap-2">
                 {!isOffline && <Button variant="outline" size="sm" onClick={() => refetch()}><RefreshCw className="h-4 w-4 mr-1" />Refresh</Button>}
                 <Button variant="outline" size="sm" onClick={handleExport}><Download className="h-4 w-4 mr-1" />Export</Button>
+                <Button variant="outline" size="sm" onClick={() => setShowHistory(true)}><History className="h-4 w-4 mr-1" />History</Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -485,6 +488,18 @@ export function HrAttendanceModule() {
           })}
         </TabsContent>
       </Tabs>
+
+      <StaffAttendanceHistoryDialog
+        open={showHistory}
+        onOpenChange={setShowHistory}
+        schoolId={schoolId}
+        staffMembers={cachedStaff}
+        onSaveComplete={() => {
+          refetch();
+          queryClient.invalidateQueries({ queryKey: ["hr_staff_attendance"] });
+          queryClient.invalidateQueries({ queryKey: ["hr_staff_attendance_month"] });
+        }}
+      />
     </div>
   );
 }

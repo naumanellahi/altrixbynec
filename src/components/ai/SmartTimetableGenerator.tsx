@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
   Clock,
@@ -18,6 +18,12 @@ import {
   Save,
   X,
   Upload,
+  BookOpen,
+  User,
+  MapPin,
+  Coffee,
+  ListTodo,
+  TrendingUp,
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,6 +45,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import type { Json } from "@/integrations/supabase/types";
 
@@ -70,6 +77,15 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
   const [editMode, setEditMode] = useState(false);
   const [editedGrid, setEditedGrid] = useState<Record<string, Record<string, { subject: string; teacher: string; room?: string }>> | null>(null);
   const [editingCell, setEditingCell] = useState<{ day: string; period: string } | null>(null);
+
+  // Preview section state for school-wide suggestion display
+  const [previewSectionId, setPreviewSectionId] = useState<string | null>(null);
+
+  // AI Generation Constraints states
+  const [maxClassesPerTeacher, setMaxClassesPerTeacher] = useState<number>(6);
+  const [maxConsecutivePeriods, setMaxConsecutivePeriods] = useState<number>(3);
+  const [includeBreaks, setIncludeBreaks] = useState<boolean>(true);
+  const [subjectPeriodsPerWeek, setSubjectPeriodsPerWeek] = useState<number>(5);
 
   // Fetch class sections
   const { data: sections, isLoading: loadingSections } = useQuery({
@@ -156,15 +172,17 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
 
   // Generate timetable mutation
   const generateMutation = useMutation({
+    queryKey: ["generate_timetable", schoolId],
     mutationFn: async () => {
       const constraints = {
-        maxClassesPerTeacher: 6,
-        includeBreaks: true,
+        maxClassesPerTeacher,
+        maxConsecutivePeriods,
+        includeBreaks,
+        subjectPeriodsPerWeek,
       };
 
       const { data, error } = await supabase.functions.invoke("ai-timetable-generator", {
         body: {
-          // Support both camelCase and snake_case on the backend (we send camelCase)
           schoolId,
           classSectionId: selectedSection || null,
           constraints,
@@ -191,7 +209,7 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
     onSettled: () => {
       setGenerating(false);
     },
-  });
+  } as any);
 
   // Approve timetable mutation
   const approveMutation = useMutation({
@@ -220,11 +238,27 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
 
   const latestSuggestion = useMemo(() => suggestions?.[0], [suggestions]);
 
-  const normalizeSuggestion = (data: Json): Record<string, Record<string, { subject: string; teacher: string; room?: string }>> => {
+  // Synchronize previewSectionId when latestSuggestion updates
+  useEffect(() => {
+    if (latestSuggestion) {
+      if (latestSuggestion.class_section_id) {
+        setPreviewSectionId(latestSuggestion.class_section_id);
+      } else {
+        const rows = (latestSuggestion.suggestion_data as any)?.timetable || [];
+        const firstSectionId = rows[0]?.section_id || null;
+        setPreviewSectionId(firstSectionId);
+      }
+    } else {
+      setPreviewSectionId(null);
+    }
+  }, [latestSuggestion]);
+
+  const normalizeSuggestion = (data: Json, targetSectionId?: string | null): Record<string, Record<string, { subject: string; teacher: string; room?: string }>> => {
     const obj: any = data;
     if (obj && typeof obj === "object" && Array.isArray(obj.timetable)) {
       const grid: Record<string, Record<string, { subject: string; teacher: string; room?: string }>> = {};
       for (const row of obj.timetable) {
+        if (targetSectionId && row.section_id !== targetSectionId) continue;
         const day = String(row.day ?? "").toLowerCase();
         const periodIndex = Number(row.period_index);
         if (!day || !Number.isFinite(periodIndex)) continue;
@@ -245,8 +279,7 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
   // Apply suggestion as real timetable_entries
   const applyMutation = useMutation({
     mutationFn: async (suggestion: TimetableSuggestion) => {
-      if (!suggestion.class_section_id) throw new Error("Apply requires a specific section. Re-generate with a section selected.");
-      const grid = editedGrid ?? normalizeSuggestion(suggestion.suggestion_data);
+      const isSchoolWide = !suggestion.class_section_id;
 
       // Fetch periods to map P1.. -> period_id
       const { data: periodsData, error: pErr } = await supabase
@@ -260,13 +293,21 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
 
       const dayMap: Record<string, number> = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 };
 
-      // Clear existing entries for this section
-      const { error: delErr } = await supabase
-        .from("timetable_entries")
-        .delete()
-        .eq("school_id", schoolId)
-        .eq("class_section_id", suggestion.class_section_id);
-      if (delErr) throw delErr;
+      // Clear existing entries
+      if (isSchoolWide) {
+        const { error: delErr } = await supabase
+          .from("timetable_entries")
+          .delete()
+          .eq("school_id", schoolId);
+        if (delErr) throw delErr;
+      } else {
+        const { error: delErr } = await supabase
+          .from("timetable_entries")
+          .delete()
+          .eq("school_id", schoolId)
+          .eq("class_section_id", suggestion.class_section_id);
+        if (delErr) throw delErr;
+      }
 
       // Resolve teachers by display_name → user_id from directory
       const { data: dir } = await supabase
@@ -280,28 +321,66 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
       });
 
       const inserts: any[] = [];
-      for (const [dayLabel, periodsObj] of Object.entries(grid)) {
-        const dayOfWeek = dayMap[dayLabel] ?? -1;
-        if (dayOfWeek < 0) continue;
-        for (const [periodKey, cell] of Object.entries(periodsObj)) {
-          if (!cell?.subject || cell.subject === "—") continue;
-          const idx = Number(periodKey.replace("P", "")) - 1;
+
+      if (isSchoolWide) {
+        // If school-wide, suggestion_data.timetable has all rows
+        const timetableRows = (suggestion.suggestion_data as any)?.timetable || [];
+        for (const row of timetableRows) {
+          const sectionId = row.section_id;
+          if (!sectionId) continue;
+
+          const dayLabel = row.day.charAt(0).toUpperCase() + row.day.slice(1).toLowerCase();
+          const dayOfWeek = dayMap[dayLabel] ?? -1;
+          if (dayOfWeek < 0) continue;
+
+          const idx = Number(row.period_index);
           const period = periodByIndex.get(idx);
           if (!period || period.is_break) continue;
-          const teacherUserId = cell.teacher && cell.teacher !== "—" ? teacherIdByName.get(cell.teacher.toLowerCase()) ?? null : null;
+
+          const teacherUserId = row.teacher_name && row.teacher_name !== "—" 
+            ? teacherIdByName.get(row.teacher_name.toLowerCase()) ?? null 
+            : row.teacher_id && row.teacher_id !== "—" 
+            ? teacherIdByName.get(row.teacher_id.toLowerCase()) ?? null
+            : null;
+
           inserts.push({
             school_id: schoolId,
-            class_section_id: suggestion.class_section_id,
+            class_section_id: sectionId,
             day_of_week: dayOfWeek,
             period_id: period.id,
-            subject_name: cell.subject,
+            subject_name: row.subject_name,
             teacher_user_id: teacherUserId,
             start_time: period.start_time,
             end_time: period.end_time,
-            room: cell.room ?? null,
+            room: row.room ?? null,
           });
         }
+      } else {
+        const grid = editedGrid ?? normalizeSuggestion(suggestion.suggestion_data, suggestion.class_section_id);
+        for (const [dayLabel, periodsObj] of Object.entries(grid)) {
+          const dayOfWeek = dayMap[dayLabel] ?? -1;
+          if (dayOfWeek < 0) continue;
+          for (const [periodKey, cell] of Object.entries(periodsObj)) {
+            if (!cell?.subject || cell.subject === "—") continue;
+            const idx = Number(periodKey.replace("P", "")) - 1;
+            const period = periodByIndex.get(idx);
+            if (!period || period.is_break) continue;
+            const teacherUserId = cell.teacher && cell.teacher !== "—" ? teacherIdByName.get(cell.teacher.toLowerCase()) ?? null : null;
+            inserts.push({
+              school_id: schoolId,
+              class_section_id: suggestion.class_section_id,
+              day_of_week: dayOfWeek,
+              period_id: period.id,
+              subject_name: cell.subject,
+              teacher_user_id: teacherUserId,
+              start_time: period.start_time,
+              end_time: period.end_time,
+              room: cell.room ?? null,
+            });
+          }
+        }
       }
+
       if (inserts.length) {
         const { error: insErr } = await supabase.from("timetable_entries").insert(inserts);
         if (insErr) throw insErr;
@@ -317,7 +396,7 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
   });
 
   const renderTimetableGrid = (data: Json) => {
-    const baseGrid = normalizeSuggestion(data);
+    const baseGrid = normalizeSuggestion(data, previewSectionId);
     const timetableData = editMode && editedGrid ? editedGrid : baseGrid;
 
     const updateCell = (day: string, period: string, field: "subject" | "teacher" | "room", value: string) => {
@@ -330,22 +409,22 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
     };
 
     return (
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto rounded-2xl border border-primary/10 shadow-inner">
         <table className="w-full text-xs border-collapse">
           <thead>
             <tr>
-              <th className="p-2 border bg-muted font-medium">Period</th>
+              <th className="p-3 border-b border-r border-primary/10 bg-primary/5 font-semibold text-primary text-center">Period</th>
               {DAYS.map((day) => (
-                <th key={day} className="p-2 border bg-muted font-medium">
-                  {day.slice(0, 3)}
+                <th key={day} className="p-3 border-b border-primary/10 bg-primary/5 font-semibold text-primary text-center min-w-[130px]">
+                  {day}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
             {PERIODS.map((period) => (
-              <tr key={period}>
-                <td className="p-2 border bg-muted/50 font-medium text-center">P{period}</td>
+              <tr key={period} className="hover:bg-primary/5 transition-colors">
+                <td className="p-3 border-r border-b border-primary/10 bg-primary/5 font-bold text-center text-primary/80">P{period}</td>
                 {DAYS.map((day) => {
                   const periodKey = `P${period}`;
                   const cell = timetableData?.[day]?.[periodKey];
@@ -353,37 +432,37 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
 
                   if (editMode && isEditing) {
                     return (
-                      <td key={`${day}-${period}`} className="p-1 border align-top">
-                        <div className="space-y-1">
+                      <td key={`${day}-${period}`} className="p-2 border-b border-primary/10 align-top bg-surface shadow-lg rounded-lg">
+                        <div className="space-y-2">
                           <select
-                            className="w-full rounded border bg-background px-1 py-0.5 text-[11px]"
+                            className="w-full rounded-xl border border-primary/20 bg-background px-2 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-primary/40"
                             value={cell?.subject ?? ""}
                             onChange={(e) => updateCell(day, periodKey, "subject", e.target.value)}
                           >
-                            <option value="">—</option>
+                            <option value="">— Select —</option>
                             {(subjects ?? []).map((s) => (
                               <option key={s.id} value={s.name}>{s.name}</option>
                             ))}
                           </select>
                           <select
-                            className="w-full rounded border bg-background px-1 py-0.5 text-[10px]"
+                            className="w-full rounded-xl border border-primary/20 bg-background px-2 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-primary/40"
                             value={cell?.teacher ?? ""}
                             onChange={(e) => updateCell(day, periodKey, "teacher", e.target.value)}
                           >
-                            <option value="">— teacher —</option>
+                            <option value="">— Teacher —</option>
                             {(teachers ?? []).map((t: any) => {
                               const name = t.profiles?.display_name ?? "";
                               return name ? <option key={t.user_id} value={name}>{name}</option> : null;
                             })}
                           </select>
                           <input
-                            className="w-full rounded border bg-background px-1 py-0.5 text-[10px]"
-                            placeholder="Room"
+                            className="w-full rounded-xl border border-primary/20 bg-background px-2 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-primary/40"
+                            placeholder="Room name"
                             value={cell?.room ?? ""}
                             onChange={(e) => updateCell(day, periodKey, "room", e.target.value)}
                           />
                           <button
-                            className="w-full rounded bg-primary px-1 py-0.5 text-[10px] text-primary-foreground"
+                            className="w-full rounded-xl bg-gradient-to-r from-primary to-primary/80 px-2 py-1 text-[10px] text-primary-foreground font-semibold hover:opacity-90 transition-opacity"
                             onClick={() => setEditingCell(null)}
                           >
                             Done
@@ -396,17 +475,32 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
                   return (
                     <td
                       key={`${day}-${period}`}
-                      className={`p-2 border text-center ${editMode ? "cursor-pointer hover:bg-muted/40" : ""}`}
+                      className={`p-3 border-b border-primary/10 align-middle text-center transition-all ${
+                        editMode ? "cursor-pointer hover:bg-primary/10" : ""
+                      }`}
                       onClick={() => editMode && setEditingCell({ day, period: periodKey })}
                     >
-                      {cell ? (
-                        <div>
-                          <p className="font-medium text-primary">{cell.subject}</p>
-                          <p className="text-[10px] text-muted-foreground truncate">{cell.teacher}</p>
-                          {cell.room && <p className="text-[9px] text-muted-foreground">{cell.room}</p>}
+                      {cell && cell.subject !== "—" ? (
+                        <div className="p-2.5 rounded-2xl bg-gradient-to-br from-background to-primary/5 border border-primary/10 shadow-sm hover:scale-[1.02] transition-transform duration-200">
+                          <p className="font-bold text-primary flex items-center justify-center gap-1">
+                            <BookOpen className="h-3 w-3 opacity-70" />
+                            {cell.subject}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground truncate mt-1 flex items-center justify-center gap-0.5">
+                            <User className="h-2.5 w-2.5 opacity-60" />
+                            {cell.teacher}
+                          </p>
+                          {cell.room && (
+                            <p className="text-[9px] text-muted-foreground mt-0.5 flex items-center justify-center gap-0.5">
+                              <MapPin className="h-2.5 w-2.5 opacity-55" />
+                              {cell.room}
+                            </p>
+                          )}
                         </div>
                       ) : (
-                        <span className="text-muted-foreground">{editMode ? "+ add" : "—"}</span>
+                        <span className="text-muted-foreground italic text-[11px] opacity-40">
+                          {editMode ? "+ assign" : "—"}
+                        </span>
                       )}
                     </td>
                   );
@@ -421,36 +515,42 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
 
   if (loadingSections) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-64 w-full" />
+      <div className="space-y-6">
+        <Skeleton className="h-14 w-full rounded-2xl" />
+        <Skeleton className="h-[400px] w-full rounded-3xl" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-gradient-to-br from-primary to-primary/60 p-2.5">
-            <Wand2 className="h-5 w-5 text-primary-foreground" />
+      {/* Glow Backdrop */}
+      <div className="absolute top-0 right-1/4 -z-10 h-72 w-72 rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
+
+      {/* Header Panel */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-surface/40 backdrop-blur-md border border-primary/10 rounded-3xl p-6 shadow-premium">
+        <div className="flex items-center gap-4">
+          <div className="relative rounded-2xl bg-gradient-to-tr from-primary via-primary/80 to-[#ec4899] p-3 shadow-md shadow-primary/20">
+            <Wand2 className="h-6 w-6 text-primary-foreground animate-pulse" />
           </div>
           <div>
-            <h2 className="font-display text-xl font-bold">Smart Timetable Generator</h2>
+            <h2 className="font-display text-2xl font-black tracking-tight text-foreground flex items-center gap-1.5">
+              Smart Timetable Generator
+              <Badge variant="soft" className="bg-[#8b5cf6]/10 text-[#8b5cf6] font-semibold border border-[#8b5cf6]/20">AI v3.0</Badge>
+            </h2>
             <p className="text-sm text-muted-foreground">
-              AI-powered clash-free scheduling
+              Intelligent scheduler with zero clashes, balance validation, and custom rules
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Select value={selectedSection || "__all"} onValueChange={(v) => setSelectedSection(v === "__all" ? null : v)}>
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-[210px] rounded-2xl border border-primary/10 bg-background/50 hover:bg-background/80 transition-colors focus:ring-primary/30">
               <SelectValue placeholder="All Sections" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all">All Sections</SelectItem>
+            <SelectContent className="rounded-2xl border-primary/10">
+              <SelectItem value="__all">🏫 All Sections (Global)</SelectItem>
               {sections?.filter((s) => !!s.id).map((section) => (
                 <SelectItem key={section.id} value={section.id}>
                   {(section.academic_classes as any)?.name} - {section.name}
@@ -462,243 +562,347 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
           <Button
             onClick={() => generateMutation.mutate()}
             disabled={generating}
-            className="gap-2"
+            className="rounded-2xl bg-gradient-to-r from-primary via-[#8b5cf6] to-[#ec4899] hover:brightness-105 transition-all text-primary-foreground font-semibold px-6 py-2 shadow-lg shadow-primary/20 gap-2"
           >
             {generating ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4" />
             )}
-            Generate
+            Auto Schedule
           </Button>
         </div>
       </div>
 
       {/* Constraints Panel */}
       <Collapsible open={showConstraints} onOpenChange={setShowConstraints}>
-        <Card className="shadow-sm">
+        <Card className="shadow-premium border-primary/10 bg-surface/30 backdrop-blur-md rounded-3xl overflow-hidden transition-all duration-300">
           <CollapsibleTrigger asChild>
-            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+            <CardHeader className="cursor-pointer hover:bg-primary/5 transition-colors p-5 border-none">
               <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  <Lock className="h-4 w-4" />
-                  Constraints & Rules
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-tight">
+                  <Lock className="h-4 w-4 text-[#8b5cf6]" />
+                  Scheduler Parameters & Constraints
                 </CardTitle>
                 {showConstraints ? (
-                  <ChevronUp className="h-4 w-4" />
+                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
                 ) : (
-                  <ChevronDown className="h-4 w-4" />
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 )}
               </div>
             </CardHeader>
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <CardContent className="pt-0">
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="rounded-xl bg-surface-2 p-3">
-                  <p className="text-xs font-medium text-muted-foreground">Max Classes/Teacher</p>
-                  <p className="mt-1 text-lg font-bold">6 per day</p>
+            <CardContent className="pt-0 pb-6 px-6">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 border-t border-primary/5 pt-5">
+                
+                {/* Max classes */}
+                <div className="rounded-2xl bg-background/30 border border-primary/5 p-4 space-y-2">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                    <ListTodo className="h-3.5 w-3.5 text-primary" />
+                    <Label htmlFor="max-classes-input">Max Classes / Teacher</Label>
+                  </div>
+                  <Select
+                    value={String(maxClassesPerTeacher)}
+                    onValueChange={(val) => setMaxClassesPerTeacher(Number(val))}
+                  >
+                    <SelectTrigger id="max-classes-input" className="h-9 text-xs rounded-xl bg-background border-primary/10">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-primary/10">
+                      {[3, 4, 5, 6, 7, 8].map((n) => (
+                        <SelectItem key={n} value={String(n)}>{n} classes per day</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="rounded-xl bg-surface-2 p-3">
-                  <p className="text-xs font-medium text-muted-foreground">Break Periods</p>
-                  <p className="mt-1 text-lg font-bold">P4 (Lunch)</p>
+
+                {/* Consecutive Periods */}
+                <div className="rounded-2xl bg-background/30 border border-primary/5 p-4 space-y-2">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                    <Clock className="h-3.5 w-3.5 text-[#8b5cf6]" />
+                    <Label htmlFor="max-consec-input">Max Consecutive Slots</Label>
+                  </div>
+                  <Select
+                    value={String(maxConsecutivePeriods)}
+                    onValueChange={(val) => setMaxConsecutivePeriods(Number(val))}
+                  >
+                    <SelectTrigger id="max-consec-input" className="h-9 text-xs rounded-xl bg-background border-primary/10">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-primary/10">
+                      {[2, 3, 4, 5].map((n) => (
+                        <SelectItem key={n} value={String(n)}>{n} slots limit</SelectItem>
+                      ))}
+                      <SelectItem value="99">No limit</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="rounded-xl bg-surface-2 p-3">
-                  <p className="text-xs font-medium text-muted-foreground">Room Capacity</p>
-                  <p className="mt-1 text-lg font-bold">Auto-managed</p>
+
+                {/* Weekly frequency */}
+                <div className="rounded-2xl bg-background/30 border border-primary/5 p-4 space-y-2">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                    <TrendingUp className="h-3.5 w-3.5 text-[#ec4899]" />
+                    <Label htmlFor="subject-periods-input">Target Weekly Frequency</Label>
+                  </div>
+                  <Select
+                    value={String(subjectPeriodsPerWeek)}
+                    onValueChange={(val) => setSubjectPeriodsPerWeek(Number(val))}
+                  >
+                    <SelectTrigger id="subject-periods-input" className="h-9 text-xs rounded-xl bg-background border-primary/10">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-primary/10">
+                      {[2, 3, 4, 5, 6].map((n) => (
+                        <SelectItem key={n} value={String(n)}>{n} periods/week</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="rounded-xl bg-surface-2 p-3">
-                  <p className="text-xs font-medium text-muted-foreground">Subject Sequencing</p>
-                  <p className="mt-1 text-lg font-bold">Optimized</p>
+
+                {/* Break configuration */}
+                <div className="rounded-2xl bg-background/30 border border-primary/5 p-4 space-y-2 flex flex-col justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                    <Coffee className="h-3.5 w-3.5 text-amber-500" />
+                    <Label htmlFor="breaks-toggle">Break Protection</Label>
+                  </div>
+                  <div className="flex items-center gap-2 h-9">
+                    <input
+                      type="checkbox"
+                      id="breaks-toggle"
+                      checked={includeBreaks}
+                      onChange={(e) => setIncludeBreaks(e.target.checked)}
+                      className="rounded-lg border-primary/20 text-primary focus:ring-primary/40 h-4.5 w-4.5 bg-background transition-colors cursor-pointer"
+                    />
+                    <span className="text-xs font-medium text-foreground/80">Respect break slots</span>
+                  </div>
                 </div>
+
               </div>
             </CardContent>
           </CollapsibleContent>
         </Card>
       </Collapsible>
 
-      {/* Current/Latest Suggestion */}
+      {/* Suggestion Loader state */}
       {generating && (
-        <Card className="shadow-elevated border-primary/20">
-          <CardContent className="py-12 text-center">
-            <div className="relative mx-auto h-16 w-16">
-              <div className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
-              <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                <Wand2 className="h-8 w-8 text-primary animate-pulse" />
+        <Card className="shadow-premium border-primary/20 bg-surface/40 backdrop-blur-md rounded-3xl overflow-hidden">
+          <CardContent className="py-16 text-center space-y-6">
+            <div className="relative mx-auto h-20 w-20">
+              <div className="absolute inset-0 animate-ping rounded-full bg-primary/10" />
+              <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-tr from-primary to-[#ec4899] shadow-md shadow-primary/20">
+                <Wand2 className="h-9 w-9 text-primary-foreground animate-pulse" />
               </div>
             </div>
-            <p className="mt-4 font-medium">Generating optimal timetable...</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              AI is analyzing constraints and creating clash-free schedules
-            </p>
-            <Progress value={65} className="mt-4 mx-auto max-w-xs" />
+            <div className="space-y-2 max-w-md mx-auto">
+              <p className="font-display text-lg font-bold tracking-tight">AI Solver Computing Timetable...</p>
+              <p className="text-xs text-muted-foreground">
+                Analyzing sections, class lists, room occupancy, teacher busy slots, and custom constraints. Generating clash-free matrix...
+              </p>
+            </div>
+            <Progress value={78} className="mt-4 mx-auto max-w-xs h-2 bg-primary/10" />
           </CardContent>
         </Card>
       )}
 
+      {/* suggestion result */}
       {!generating && latestSuggestion && (
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
         >
-          <Card className="shadow-elevated">
-            <CardHeader className="pb-3">
+          <Card className="shadow-premium border-primary/10 bg-surface/30 backdrop-blur-md rounded-3xl overflow-hidden">
+            <CardHeader className="pb-3 border-b border-primary/5 bg-primary/5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
+                <div className="space-y-1">
+                  <CardTitle className="flex items-center gap-2 font-display text-lg font-bold">
                     <Calendar className="h-5 w-5 text-primary" />
-                    Generated Timetable v{latestSuggestion.version_number || 1}
+                    AI Suggestion Matrix (Version {latestSuggestion.version_number || 1})
                   </CardTitle>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Created {format(new Date(latestSuggestion.created_at), "MMM d, yyyy 'at' h:mm a")}
+                  <p className="text-xs text-muted-foreground">
+                    Generated {format(new Date(latestSuggestion.created_at), "MMM d, yyyy 'at' h:mm a")}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <Badge className={
                     latestSuggestion.status === "approved"
-                      ? "bg-emerald-500/10 text-emerald-600"
-                      : latestSuggestion.status === "rejected"
-                      ? "bg-red-500/10 text-red-600"
-                      : "bg-amber-500/10 text-amber-600"
+                      ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 px-3 py-1 font-semibold"
+                      : "bg-amber-500/10 text-amber-600 border border-amber-500/20 px-3 py-1 font-semibold"
                   }>
-                    {latestSuggestion.status || "pending"}
+                    {latestSuggestion.status || "draft"}
                   </Badge>
                   {latestSuggestion.optimization_score !== null && (
-                    <Badge variant="outline">
-                      Score: {latestSuggestion.optimization_score}%
+                    <Badge variant="outline" className="border-primary/20 text-foreground font-medium px-3 py-1">
+                      Optimization: {latestSuggestion.optimization_score}%
                     </Badge>
                   )}
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Stats */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className={`rounded-xl p-3 text-center ${
+            <CardContent className="space-y-6 pt-6 px-6">
+              {/* Stats Grid */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className={`rounded-2xl border p-4 text-center transition-all ${
                   (latestSuggestion.conflicts_found || 0) === 0
-                    ? "bg-emerald-500/10"
-                    : "bg-red-500/10"
+                    ? "bg-emerald-500/10 border-emerald-500/25"
+                    : "bg-red-500/10 border-red-500/25"
                 }`}>
                   {(latestSuggestion.conflicts_found || 0) === 0 ? (
-                    <CheckCircle2 className="mx-auto h-5 w-5 text-emerald-600" />
+                    <CheckCircle2 className="mx-auto h-5 w-5 text-emerald-600 animate-bounce" />
                   ) : (
                     <AlertTriangle className="mx-auto h-5 w-5 text-red-600" />
                   )}
-                  <p className="mt-1 text-xs text-muted-foreground">Conflicts</p>
-                  <p className="font-bold">{latestSuggestion.conflicts_found || 0}</p>
+                  <p className="mt-1.5 text-xs text-muted-foreground font-medium">Clash Validation</p>
+                  <p className="text-xl font-black mt-0.5">
+                    {(latestSuggestion.conflicts_found || 0) === 0 ? "0 Clashes" : `${latestSuggestion.conflicts_found} Clashes`}
+                  </p>
                 </div>
-                <div className="rounded-xl bg-surface-2 p-3 text-center">
-                  <Clock className="mx-auto h-5 w-5 text-blue-600" />
-                  <p className="mt-1 text-xs text-muted-foreground">Periods</p>
-                  <p className="font-bold">{PERIODS.length * DAYS.length}</p>
+
+                <div className="rounded-2xl border border-primary/5 bg-background/30 p-4 text-center">
+                  <Clock className="mx-auto h-5 w-5 text-blue-500" />
+                  <p className="mt-1.5 text-xs text-muted-foreground font-medium">Scheduled Slots</p>
+                  <p className="text-xl font-black mt-0.5">
+                    {PERIODS.length * DAYS.length} slots
+                  </p>
                 </div>
-                <div className="rounded-xl bg-surface-2 p-3 text-center">
-                  <Sparkles className="mx-auto h-5 w-5 text-primary" />
-                  <p className="mt-1 text-xs text-muted-foreground">Optimization</p>
-                  <p className="font-bold">{latestSuggestion.optimization_score || 0}%</p>
+
+                <div className="rounded-2xl border border-primary/5 bg-background/30 p-4 text-center">
+                  <Sparkles className="mx-auto h-5 w-5 text-[#8b5cf6]" />
+                  <p className="mt-1.5 text-xs text-muted-foreground font-medium">Optimization Rank</p>
+                  <p className="text-xl font-black mt-0.5">{latestSuggestion.optimization_score || 0}%</p>
                 </div>
               </div>
 
+              {/* Preview switcher for school-wide suggestions */}
+              {!latestSuggestion.class_section_id && (
+                <div className="flex items-center gap-3 bg-primary/5 p-4 rounded-2xl border border-primary/10">
+                  <span className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                    <BookOpen className="h-4 w-4 text-primary" />
+                    Preview Class Section:
+                  </span>
+                  <Select value={previewSectionId || ""} onValueChange={setPreviewSectionId}>
+                    <SelectTrigger className="w-[250px] h-9 text-xs rounded-xl border border-primary/15 bg-background/80 shadow-sm">
+                      <SelectValue placeholder="Select section..." />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-primary/10">
+                      {sections?.map((section) => (
+                        <SelectItem key={section.id} value={section.id}>
+                          {(section.academic_classes as any)?.name} - {section.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               {/* Timetable Grid */}
               {latestSuggestion.suggestion_data && (
-                <div className="rounded-xl border p-4">
+                <div className="rounded-2xl border border-primary/10 p-5 bg-background/40">
                   {renderTimetableGrid(latestSuggestion.suggestion_data)}
                 </div>
               )}
 
-              {/* Actions */}
-              <div className="flex flex-wrap gap-2 pt-2">
-                {!editMode ? (
-                  <Button variant="outline" onClick={() => setEditMode(true)} className="gap-2">
-                    <Pencil className="h-4 w-4" />
-                    Edit Timetable
-                  </Button>
-                ) : (
-                  <>
-                    <Button variant="outline" onClick={() => { setEditMode(false); setEditedGrid(null); setEditingCell(null); }} className="gap-2">
-                      <X className="h-4 w-4" />
-                      Cancel Edits
+              {/* Actions panel */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-primary/5 pt-5">
+                <div className="flex flex-wrap gap-2">
+                  {!latestSuggestion.class_section_id ? null : !editMode ? (
+                    <Button variant="outline" onClick={() => setEditMode(true)} className="rounded-xl border-primary/15 h-9 text-xs gap-1.5">
+                      <Pencil className="h-3.5 w-3.5" />
+                      Override Grid
                     </Button>
-                    <Button variant="secondary" onClick={() => toast.success("Edits kept locally — click Apply to save")} className="gap-2">
-                      <Save className="h-4 w-4" />
-                      Keep Edits
-                    </Button>
-                  </>
-                )}
-                <Button
-                  onClick={() => applyMutation.mutate(latestSuggestion)}
-                  disabled={applyMutation.isPending || !latestSuggestion.class_section_id}
-                  className="gap-2"
-                  title={!latestSuggestion.class_section_id ? "Generate with a section selected to enable Apply" : "Save these entries to the live timetable"}
-                >
-                  {applyMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                  Apply to Live Timetable
-                </Button>
-                {latestSuggestion.status !== "approved" && (
+                  ) : (
+                    <>
+                      <Button variant="outline" onClick={() => { setEditMode(false); setEditedGrid(null); setEditingCell(null); }} className="rounded-xl border-destructive/20 text-destructive h-9 text-xs gap-1.5">
+                        <X className="h-3.5 w-3.5" />
+                        Discard Overrides
+                      </Button>
+                      <Button variant="secondary" onClick={() => toast.success("Changes kept locally — click Apply to commit")} className="rounded-xl h-9 text-xs gap-1.5">
+                        <Save className="h-3.5 w-3.5" />
+                        Keep Overrides
+                      </Button>
+                    </>
+                  )}
+
                   <Button
-                    variant="outline"
-                    onClick={() => approveMutation.mutate(latestSuggestion.id)}
-                    disabled={approveMutation.isPending}
-                    className="gap-2"
+                    onClick={() => applyMutation.mutate(latestSuggestion)}
+                    disabled={applyMutation.isPending}
+                    className="rounded-xl bg-gradient-to-r from-primary to-[#8b5cf6] text-primary-foreground h-9 text-xs gap-1.5 shadow-md shadow-primary/15"
+                    title="Commit this schedule to live system"
                   >
-                    <CheckCircle2 className="h-4 w-4" />
-                    Approve
+                    {applyMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                    Apply to Live Schedule
                   </Button>
-                )}
-                <Button variant="ghost" className="gap-2" onClick={() => {
-                  const blob = new Blob([JSON.stringify(latestSuggestion.suggestion_data, null, 2)], { type: "application/json" });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement("a"); a.href = url; a.download = `timetable-v${latestSuggestion.version_number ?? 1}.json`; a.click();
-                  URL.revokeObjectURL(url);
-                }}>
-                  <Download className="h-4 w-4" />
-                  Export JSON
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => generateMutation.mutate()}
-                  disabled={generating}
-                  className="gap-2"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  Regenerate
-                </Button>
+
+                  {latestSuggestion.status !== "approved" && (
+                    <Button
+                      variant="outline"
+                      onClick={() => approveMutation.mutate(latestSuggestion.id)}
+                      disabled={approveMutation.isPending}
+                      className="rounded-xl border-emerald-500/20 text-emerald-600 hover:bg-emerald-500/5 h-9 text-xs gap-1.5"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Approve suggestion
+                    </Button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" className="rounded-xl h-9 text-xs gap-1.5" onClick={() => {
+                    const blob = new Blob([JSON.stringify(latestSuggestion.suggestion_data, null, 2)], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a"); a.href = url; a.download = `ai-suggestion-v${latestSuggestion.version_number ?? 1}.json`; a.click();
+                    URL.revokeObjectURL(url);
+                  }}>
+                    <Download className="h-3.5 w-3.5" />
+                    Download JSON
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => generateMutation.mutate()}
+                    disabled={generating}
+                    className="rounded-xl h-9 text-xs gap-1.5 text-primary hover:bg-primary/5"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Regenerate AI suggestions
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
         </motion.div>
       )}
 
-      {/* Version History */}
+      {/* Version History List */}
       {suggestions && suggestions.length > 1 && (
-        <Card className="shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Version History</CardTitle>
+        <Card className="shadow-premium border-primary/10 bg-surface/20 backdrop-blur-md rounded-3xl overflow-hidden">
+          <CardHeader className="pb-3 border-b border-primary/5 p-5">
+            <CardTitle className="text-sm font-semibold tracking-tight">Recent Suggestions Archive</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[200px]">
-              <div className="space-y-2 pr-4">
+          <CardContent className="p-4">
+            <ScrollArea className="h-[180px]">
+              <div className="space-y-2.5 pr-3">
                 {suggestions.slice(1).map((suggestion) => (
                   <div
                     key={suggestion.id}
-                    className="flex items-center justify-between rounded-xl border p-3 hover:bg-muted/50 transition-colors"
+                    className="flex items-center justify-between rounded-2xl border border-primary/5 bg-background/25 p-3.5 hover:bg-primary/5 transition-all duration-200"
                   >
                     <div>
-                      <p className="text-sm font-medium">
-                        Version {suggestion.version_number || "—"}
+                      <p className="text-sm font-bold">
+                        Draft Version {suggestion.version_number || "—"}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {format(new Date(suggestion.created_at), "MMM d, h:mm a")}
+                        {format(new Date(suggestion.created_at), "MMMM d, h:mm a")}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-[10px]">
-                        {suggestion.optimization_score || 0}%
+                    <div className="flex items-center gap-3">
+                      <Badge variant="outline" className="border-primary/15 text-[10px] font-medium px-2 py-0.5">
+                        Opt Rank: {suggestion.optimization_score || 0}%
                       </Badge>
                       <Badge className={
                         suggestion.status === "approved"
-                          ? "bg-emerald-500/10 text-emerald-600 text-[10px]"
-                          : "bg-muted text-muted-foreground text-[10px]"
+                          ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-[10px] font-semibold"
+                          : "bg-muted text-muted-foreground border border-primary/5 text-[10px] font-medium"
                       }>
                         {suggestion.status || "draft"}
                       </Badge>
@@ -713,26 +917,18 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
 
       {/* Empty State */}
       {!generating && !latestSuggestion && (
-        <Card className="shadow-sm border-dashed">
-          <CardContent className="py-12 text-center">
-            <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <Wand2 className="h-8 w-8 text-primary" />
-            </div>
-            <h3 className="mt-4 font-display font-semibold">No Timetables Generated Yet</h3>
-            <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
-              Click the "Generate" button to let AI create an optimized, clash-free timetable 
-              based on your teachers, subjects, and constraints.
+        <div className="rounded-3xl border border-dashed border-primary/10 bg-primary/[0.02] p-8 text-center max-w-xl mx-auto space-y-3">
+          <Sparkles className="h-5 w-5 text-primary mx-auto opacity-60 animate-pulse" />
+          <div className="space-y-1">
+            <h4 className="font-display text-sm font-semibold text-foreground/80">No suggestions generated yet</h4>
+            <p className="text-xs text-muted-foreground leading-normal max-w-sm mx-auto">
+              Configure parameters above and click <span className="font-semibold text-primary">Auto Schedule</span> to compute an optimized, clash-free school timetable suggestion.
             </p>
-            <Button
-              onClick={() => generateMutation.mutate()}
-              className="mt-6 gap-2"
-            >
-              <Sparkles className="h-4 w-4" />
-              Generate First Timetable
-            </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
     </div>
   );
 }
+
+

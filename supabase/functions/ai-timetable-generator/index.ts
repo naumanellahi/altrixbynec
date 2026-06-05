@@ -32,30 +32,162 @@ serve(async (req) => {
       subjectsRes,
       teachersRes,
       periodsRes,
-      assignmentsRes,
+      sectionSubjectsRes,
+      subjectAssignmentsRes,
+      generalAssignmentsRes,
+      existingEntriesRes,
     ] = await Promise.all([
       supabase
         .from("class_sections")
         .select("id, name, room, class_id, academic_classes(name)")
         .eq("school_id", schoolId),
-      supabase.from("subjects").select("id, name, periods_per_week").eq("school_id", schoolId),
+      supabase
+        .from("subjects")
+        .select("id, name")
+        .eq("school_id", schoolId),
       supabase
         .from("user_roles")
         .select("user_id, profiles(display_name)")
         .eq("school_id", schoolId)
         .eq("role", "teacher"),
-      supabase.from("timetable_periods").select("*").eq("school_id", schoolId).order("sort_order"),
+      supabase
+        .from("timetable_periods")
+        .select("*")
+        .eq("school_id", schoolId)
+        .order("sort_order"),
+      supabase
+        .from("class_section_subjects")
+        .select("class_section_id, subject_id")
+        .eq("school_id", schoolId),
+      supabase
+        .from("teacher_subject_assignments")
+        .select("teacher_user_id, class_section_id, subject_id")
+        .eq("school_id", schoolId),
       supabase
         .from("teacher_assignments")
         .select("teacher_user_id, class_section_id, subject_id")
         .eq("school_id", schoolId),
+      supabase
+        .from("timetable_entries")
+        .select("id, day_of_week, period_id, subject_name, teacher_user_id, room, class_section_id")
+        .eq("school_id", schoolId),
     ]);
+
+    if (sectionsRes.error) throw sectionsRes.error;
+    if (subjectsRes.error) throw subjectsRes.error;
+    if (teachersRes.error) throw teachersRes.error;
+    if (periodsRes.error) throw periodsRes.error;
+    if (sectionSubjectsRes.error) throw sectionSubjectsRes.error;
+    if (subjectAssignmentsRes.error) throw subjectAssignmentsRes.error;
+    if (generalAssignmentsRes.error) throw generalAssignmentsRes.error;
+    if (existingEntriesRes.error) throw existingEntriesRes.error;
 
     const sections = sectionsRes.data || [];
     const subjects = subjectsRes.data || [];
     const teachers = teachersRes.data || [];
     const periods = periodsRes.data || [];
-    const assignments = assignmentsRes.data || [];
+
+    // Map teacher display name
+    const teacherNameMap = new Map<string, string>();
+    teachers.forEach((t: any) => {
+      const name = t.profiles?.display_name || t.user_id;
+      teacherNameMap.set(t.user_id, name);
+    });
+
+    // Merge subject assignments
+    const mergedAssignments: Array<{ teacherId: string; sectionId: string; subjectId: string }> = [];
+    const seenAssignments = new Set<string>();
+
+    const addAssignment = (teacherId: string, sectionId: string, subjectId: string | null) => {
+      if (!teacherId || !sectionId || !subjectId) return;
+      const key = `${teacherId}:${sectionId}:${subjectId}`;
+      if (seenAssignments.has(key)) return;
+      seenAssignments.add(key);
+      mergedAssignments.push({ teacherId, sectionId, subjectId });
+    };
+
+    (subjectAssignmentsRes.data || []).forEach((a: any) => {
+      addAssignment(a.teacher_user_id, a.class_section_id, a.subject_id);
+    });
+    (generalAssignmentsRes.data || []).forEach((a: any) => {
+      addAssignment(a.teacher_user_id, a.class_section_id, a.subject_id);
+    });
+
+    // Map which subjects are offered in each section
+    const sectionSubjectsMap = new Map<string, string[]>();
+    (sectionSubjectsRes.data || []).forEach((ss: any) => {
+      const subject = subjects.find((s: any) => s.id === ss.subject_id);
+      if (subject) {
+        const list = sectionSubjectsMap.get(ss.class_section_id) || [];
+        list.push(subject.name);
+        sectionSubjectsMap.set(ss.class_section_id, list);
+      }
+    });
+
+    // Busy slots mapping for clash prevention
+    const busyTeachers = new Map<string, string[]>();
+    const busyRooms = new Map<string, string[]>();
+    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+    if (classSectionId) {
+      // Single section generation: avoid conflicts with ALL OTHER sections
+      const otherEntries = (existingEntriesRes.data || []).filter(
+        (e: any) => e.class_section_id !== classSectionId
+      );
+
+      otherEntries.forEach((e: any) => {
+        const dayLabel = dayNames[e.day_of_week];
+        if (!dayLabel) return;
+
+        const pIndex = periods.findIndex((p: any) => p.id === e.period_id);
+        if (pIndex < 0) return;
+
+        const slotKey = `${dayLabel} period_index ${pIndex}`;
+
+        if (e.teacher_user_id) {
+          const list = busyTeachers.get(e.teacher_user_id) || [];
+          list.push(slotKey);
+          busyTeachers.set(e.teacher_user_id, list);
+        }
+
+        if (e.room) {
+          const roomKey = String(e.room).toLowerCase().trim();
+          const list = busyRooms.get(roomKey) || [];
+          list.push(slotKey);
+          busyRooms.set(roomKey, list);
+        }
+      });
+    }
+
+    const teacherBusyConstraints = [];
+    for (const [teacherId, slots] of busyTeachers.entries()) {
+      const name = teacherNameMap.get(teacherId) || teacherId;
+      teacherBusyConstraints.push(`- Teacher "${name}" [ID: ${teacherId}] is BUSY at: ${slots.join(", ")}`);
+    }
+
+    const roomBusyConstraints = [];
+    for (const [room, slots] of busyRooms.entries()) {
+      roomBusyConstraints.push(`- Room "${room}" is BUSY at: ${slots.join(", ")}`);
+    }
+
+    // Active days detection
+    const activeDays = new Set([1, 2, 3, 4, 5]); // default Mon-Fri
+    (existingEntriesRes.data || []).forEach((e: any) => {
+      if (e.day_of_week !== null && e.day_of_week !== undefined) {
+        activeDays.add(e.day_of_week);
+      }
+    });
+    const targetDays = Array.from(activeDays).sort().map(d => dayNames[d]);
+
+    // Active period templates
+    const periodDefs = periods.map((p: any, idx: number) => ({
+      index: idx,
+      id: p.id,
+      label: p.label,
+      startTime: p.start_time,
+      endTime: p.end_time,
+      isBreak: p.is_break,
+    }));
 
     const contextData = `
 School Timetable Generation Request:
@@ -63,60 +195,82 @@ School Timetable Generation Request:
 TARGET SECTION:
 ${classSectionId ? `- Only generate for section_id: ${classSectionId}` : "- All sections"}
 
-SECTIONS (${sections.length}):
+SECTIONS TO SCHEDULE:
 ${sections
   .filter((s: any) => !classSectionId || s.id === classSectionId)
-  .map((s: any) => `- ${s.academic_classes?.name} ${s.name} (Room: ${s.room || "TBD"}) [${s.id}]`)
+  .map((s: any) => {
+    const offeredSubjects = sectionSubjectsMap.get(s.id) || [];
+    return `- ${s.academic_classes?.name || ""} ${s.name} (Room: ${s.room || "TBD"}) [ID: ${s.id}]
+  Offered Subjects: ${offeredSubjects.length > 0 ? offeredSubjects.join(", ") : "None assigned yet"}`;
+  })
   .join("\n")}
 
-SUBJECTS (${subjects.length}):
-${subjects.map((s: any) => `- ${s.name} (${s.periods_per_week || 5} periods/week)`).join("\n")}
+ACTIVE DAYS OF THE WEEK:
+${targetDays.join(", ")}
 
-TEACHERS (${teachers.length}):
-${teachers.map((t: any) => `- ${t.profiles?.display_name || t.user_id} [${t.user_id}]`).join("\n")}
+AVAILABLE PERIOD SLOTS PER DAY:
+${periodDefs
+  .map(
+    (p) =>
+      `- Index ${p.index}: ${p.label} (${p.startTime || "TBD"} - ${p.endTime || "TBD"})${
+        p.isBreak ? " [BREAK - DO NOT SCHEDULE CLASSES HERE]" : ""
+      }`
+  )
+  .join("\n")}
 
-PERIODS PER DAY (${periods.length}):
-${periods.map((p: any) => `- ${p.label}: ${p.start_time} - ${p.end_time}${p.is_break ? " (BREAK)" : ""}`).join("\n")}
+TEACHER AVAILABILITY & ASSIGNMENTS:
+${mergedAssignments
+  .map((a: any) => {
+    const tName = teacherNameMap.get(a.teacherId) || a.teacherId;
+    const subj = subjects.find((s: any) => s.id === a.subjectId);
+    const sect = sections.find((s: any) => s.id === a.sectionId);
+    return `- Teacher "${tName}" [ID: ${a.teacherId}] is assigned to teach "${subj?.name}" in section "${sect?.academic_classes?.name || ""} ${sect?.name || ""}" [Section ID: ${a.sectionId}]`;
+  })
+  .join("\n")}
 
-EXISTING ASSIGNMENTS:
-${assignments.slice(0, 50).map((a: any) => `- Teacher ${a.teacher_user_id} teaches subject ${a.subject_id} in section ${a.class_section_id}`).join("\n")}
+CLASH CONSTRAINTS (BUSY TEACHERS/ROOMS FROM OTHER SECTIONS):
+${teacherBusyConstraints.length > 0 ? teacherBusyConstraints.join("\n") : "- No teacher busy constraints."}
+${roomBusyConstraints.length > 0 ? roomBusyConstraints.join("\n") : "- No room busy constraints."}
 
-CONSTRAINTS:
+USER-DEFINED CONSTRAINTS:
 - Max classes per teacher per day: ${constraints?.maxClassesPerTeacher || 6}
-- Include breaks: ${constraints?.includeBreaks !== false}
-- Days: Monday to Friday
-- Avoid teacher double-booking
-- Balance subjects across the week
+- Max consecutive periods for a teacher: ${constraints?.maxConsecutivePeriods || "No Limit"}
+- Respect break periods: ${constraints?.includeBreaks !== false}
+- Subject frequency (periods/week): Target around ${constraints?.subjectPeriodsPerWeek || 5} periods per subject per section.
 `;
 
-    const systemPrompt = `You are an expert timetable generator for schools. Create an optimized, clash-free timetable based on the provided data.
+    const systemPrompt = `You are a professional, expert school timetable generator. Your task is to produce a fully optimized, clash-free schedule in valid JSON format.
 
-Return a JSON object with this structure:
+JSON schema:
 {
   "timetable": [
     {
       "section_id": "uuid",
-      "day": "monday" | "tuesday" | "wednesday" | "thursday" | "friday",
-      "period_index": 0-7,
-      "subject_name": "Math",
+      "day": "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday",
+      "period_index": integer,
+      "subject_name": "string",
       "teacher_id": "uuid or null",
-      "teacher_name": "Display name or null",
-      "room": "Room 101"
+      "teacher_name": "string or null",
+      "room": "string"
     }
   ],
-  "conflicts_found": 0,
-  "optimization_score": 0-100,
-  "notes": ["Any important notes about the generated timetable"]
+  "conflicts_found": integer,
+  "optimization_score": integer (0 to 100),
+  "notes": ["string"]
 }
 
-Rules:
-1. No teacher should be in two classes at the same time.
-2. No room should be double-booked.
-3. Distribute subjects evenly across the week.
-4. Consider teacher workload balance.
-5. Respect break periods (do not schedule classes in break periods).
+STRICT RULE CHECKLIST:
+1. Teacher Double-Booking: A teacher must NEVER be scheduled in two different sections at the same day/period_index.
+2. Teacher Availability: Do not schedule a teacher at any slot listed as BUSY for them.
+3. Room Availability: Do not schedule any room at a slot listed as BUSY for it.
+4. Breaks: Do not schedule any class during a period index designated as [BREAK - DO NOT SCHEDULE]. Leave these slots empty.
+5. Subject limits: Only schedule subjects listed as "Offered Subjects" for that section.
+6. Teacher assignments: Schedule the correct teacher for each subject according to the "TEACHER AVAILABILITY & ASSIGNMENTS" list. If a subject has no assigned teacher, schedule with teacher_id: null and teacher_name: null (TBD).
+7. Consecutive limit: A teacher should not teach more than ${constraints?.maxConsecutivePeriods || "No Limit"} periods consecutively without a break/free period.
+8. Day selection: Only schedule classes on the days listed in "ACTIVE DAYS OF THE WEEK".
+9. Valid period_index: Only schedule using period indexes that are defined in "AVAILABLE PERIOD SLOTS PER DAY" (from 0 up to ${periodDefs.length - 1}).
 
-Return ONLY valid JSON.`;
+Return ONLY the valid JSON block. Do not add markdown explanation, code blocks, or comments outside the JSON.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

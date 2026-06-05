@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, lazy, Suspense } from "react";
 import { Routes, Route, Navigate, useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
@@ -7,23 +7,29 @@ import { useMyChildren, ChildInfo } from "@/hooks/useMyChildren";
 import { useUniversalPrefetch } from "@/hooks/useUniversalPrefetch";
 import { ParentShell } from "@/components/tenant/ParentShell";
 
-import ParentHomeModule from "./parent-modules/ParentHomeModule";
-import ParentAttendanceModule from "./parent-modules/ParentAttendanceModule";
-import ParentGradesModule from "./parent-modules/ParentGradesModule";
-import ParentFeesModule from "./parent-modules/ParentFeesModule";
-import ParentMessagesModule from "./parent-modules/ParentMessagesModule";
-import ParentTimetableModule from "./parent-modules/ParentTimetableModule";
-import ParentNotificationsModule from "./parent-modules/ParentNotificationsModule";
-import ParentSupportModule from "./parent-modules/ParentSupportModule";
-import ParentAIModule from "./parent-modules/ParentAIModule";
-import ParentBehaviorModule from "./parent-modules/ParentBehaviorModule";
-import ParentComplaintsModule from "./parent-modules/ParentComplaintsModule";
-import NoticesModule from "./modules/NoticesModule";
-import HolidaysModule from "./modules/HolidaysModule";
-import DiaryModule from "./modules/DiaryModule";
-import ExamsModule from "./modules/ExamsModule";
-import ReportCardModule from "./modules/ReportCardModule";
+const ParentHomeModule = lazy(() => import("./parent-modules/ParentHomeModule"));
+const ParentAttendanceModule = lazy(() => import("./parent-modules/ParentAttendanceModule"));
+const ParentGradesModule = lazy(() => import("./parent-modules/ParentGradesModule"));
+const ParentFeesModule = lazy(() => import("./parent-modules/ParentFeesModule"));
+const ParentMessagesModule = lazy(() => import("./parent-modules/ParentMessagesModule"));
+const ParentTimetableModule = lazy(() => import("./parent-modules/ParentTimetableModule"));
+const ParentNotificationsModule = lazy(() => import("./parent-modules/ParentNotificationsModule"));
+const ParentSupportModule = lazy(() => import("./parent-modules/ParentSupportModule"));
+const ParentAIModule = lazy(() => import("./parent-modules/ParentAIModule"));
+const ParentBehaviorModule = lazy(() => import("./parent-modules/ParentBehaviorModule"));
+const ParentComplaintsModule = lazy(() => import("./parent-modules/ParentComplaintsModule"));
+const NoticesModule = lazy(() => import("./modules/NoticesModule"));
+const HolidaysModule = lazy(() => import("./modules/HolidaysModule"));
+const DiaryModule = lazy(() => import("./modules/DiaryModule"));
+const ExamsModule = lazy(() => import("./modules/ExamsModule"));
+const ReportCardModule = lazy(() => import("./modules/ReportCardModule"));
 import { RouteGuard } from "@/components/tenant/RouteGuard";
+
+const DashboardLoader = () => (
+  <div className="flex h-[50vh] items-center justify-center">
+    <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+  </div>
+);
 
 // Cache key for parent auth
 const PARENT_AUTHZ_CACHE = "eduverse_parent_authz_cache";
@@ -301,25 +307,27 @@ const ParentDashboard = () => {
           "notifications","support","behavior","notices","holidays","diary",
           "exams","report-card","complaints",
         ]}>
-        <Routes>
-          <Route index element={<ParentHomeModule child={selectedChild} schoolId={schoolId} />} />
-          <Route path="ai-insights" element={<ParentAIModule child={selectedChild} schoolId={schoolId} />} />
-          <Route path="attendance" element={<ParentAttendanceModule child={selectedChild} schoolId={schoolId} />} />
-          <Route path="grades" element={<ParentGradesModule child={selectedChild} schoolId={schoolId} />} />
-          <Route path="fees" element={<ParentFeesModule child={selectedChild} schoolId={schoolId} />} />
-          <Route path="messages" element={<ParentMessagesModule child={selectedChild} schoolId={schoolId} />} />
-          <Route path="timetable" element={<ParentTimetableModule child={selectedChild} schoolId={schoolId} />} />
-          <Route path="notifications" element={<ParentNotificationsModule child={selectedChild} schoolId={schoolId} />} />
-          <Route path="support" element={<ParentSupportModule child={selectedChild} schoolId={schoolId} />} />
-          <Route path="behavior" element={<ParentBehaviorModule child={selectedChild} schoolId={schoolId} />} />
-          <Route path="notices" element={<NoticesModule schoolId={schoolId} canManage={false} />} />
-          <Route path="holidays" element={<HolidaysModule schoolId={schoolId} canManage={false} />} />
-          <Route path="diary" element={<DiaryModule schoolId={schoolId} canManage={false} />} />
-          <Route path="exams" element={<ExamsModule schoolId={schoolId} canManage={false} />} />
-          <Route path="report-card" element={<ReportCardModule schoolId={schoolId} canManage={false} studentIdLocked={selectedChild?.student_id ?? null} />} />
-          <Route path="complaints" element={<ParentComplaintsModule child={selectedChild} schoolId={schoolId} />} />
-          <Route path="*" element={<Navigate to="" replace />} />
-        </Routes>
+        <Suspense fallback={<DashboardLoader />}>
+          <Routes>
+            <Route index element={<ParentHomeModule child={selectedChild} schoolId={schoolId} />} />
+            <Route path="ai-insights" element={<ParentAIModule child={selectedChild} schoolId={schoolId} />} />
+            <Route path="attendance" element={<ParentAttendanceModule child={selectedChild} schoolId={schoolId} />} />
+            <Route path="grades" element={<ParentGradesModule child={selectedChild} schoolId={schoolId} />} />
+            <Route path="fees" element={<ParentFeesModule child={selectedChild} schoolId={schoolId} />} />
+            <Route path="messages" element={<ParentMessagesModule child={selectedChild} schoolId={schoolId} />} />
+            <Route path="timetable" element={<ParentTimetableModule child={selectedChild} schoolId={schoolId} />} />
+            <Route path="notifications" element={<ParentNotificationsModule child={selectedChild} schoolId={schoolId} />} />
+            <Route path="support" element={<ParentSupportModule child={selectedChild} schoolId={schoolId} />} />
+            <Route path="behavior" element={<ParentBehaviorModule child={selectedChild} schoolId={schoolId} />} />
+            <Route path="notices" element={<NoticesModule schoolId={schoolId} canManage={false} />} />
+            <Route path="holidays" element={<HolidaysModule schoolId={schoolId} canManage={false} />} />
+            <Route path="diary" element={<DiaryModule schoolId={schoolId} canManage={false} />} />
+            <Route path="exams" element={<ExamsModule schoolId={schoolId} canManage={false} />} />
+            <Route path="report-card" element={<ReportCardModule schoolId={schoolId} canManage={false} studentIdLocked={selectedChild?.student_id ?? null} />} />
+            <Route path="complaints" element={<ParentComplaintsModule child={selectedChild} schoolId={schoolId} />} />
+            <Route path="*" element={<Navigate to="" replace />} />
+          </Routes>
+        </Suspense>
         </RouteGuard>
     </ParentShell>
   );
