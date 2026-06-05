@@ -1,10 +1,10 @@
 import { PropsWithChildren, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Menu, Settings, Sparkles, GraduationCap, MessageSquare, Users, LayoutGrid, CalendarDays, ClipboardCheck, FileSpreadsheet, HeartHandshake } from "lucide-react";
+import { LogOut, Menu, Settings, Sparkles, GraduationCap, MessageSquare, Users, LayoutGrid, CalendarDays, ClipboardCheck, FileSpreadsheet, HeartHandshake, ChevronDown } from "lucide-react";
 import type { EduverseRole } from "@/lib/eduverse-roles";
 import { supabase } from "@/integrations/supabase/client";
 import { GlobalCommandPalette } from "@/components/global/GlobalCommandPalette";
@@ -14,8 +14,10 @@ import { useUnreadMessagesOptimized } from "@/hooks/useUnreadMessagesOptimized";
 import { useTenantOptimized } from "@/hooks/useTenantOptimized";
 import { useSession } from "@/hooks/useSession";
 import { useUserRole } from "@/hooks/useUserRole";
-import { buildMergedNav, GROUP_LABELS, GROUP_ORDER } from "@/lib/role-navigation";
+import { buildMergedNav, GROUP_LABELS, GROUP_ORDER, DROPDOWN_MAPPING } from "@/lib/role-navigation";
 import { resolvePermissions } from "@/lib/permissions";
+import { cn } from "@/lib/utils";
+
 
 type Props = PropsWithChildren<{
   title: string;
@@ -27,7 +29,24 @@ type Props = PropsWithChildren<{
 export function TenantShell({ title, subtitle, role, schoolSlug, children }: Props) {
   const navigate = useNavigate();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const location = useLocation();
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+
+  const toggleGroup = (groupKey: string) => {
+    setExpandedGroups((prev) => ({ ...prev, [groupKey]: !prev[groupKey] }));
+  };
+
+  const isGroupExpanded = (groupKey: string, childUrls: string[]) => {
+    if (expandedGroups[groupKey] !== undefined) {
+      return expandedGroups[groupKey];
+    }
+    return childUrls.some(
+      (url) => location.pathname === url || location.pathname.startsWith(url + "/")
+    );
+  };
+
   const { user } = useSession();
+
 
   // Use optimized tenant hook that caches and applies branding automatically
   const tenant = useTenantOptimized(schoolSlug);
@@ -121,13 +140,34 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
         {GROUP_ORDER.map((g) => {
           const items = grouped[g];
           if (!items?.length) return null;
+
+          const directItems: typeof items = [];
+          const dropdownGroups: Record<string, { label: string; icon: any; items: typeof items }> = {};
+
+          items.forEach((item) => {
+            const mapping = DROPDOWN_MAPPING[item.key];
+            if (mapping) {
+              if (!dropdownGroups[mapping.groupKey]) {
+                dropdownGroups[mapping.groupKey] = {
+                  label: mapping.label,
+                  icon: mapping.icon,
+                  items: []
+                };
+              }
+              dropdownGroups[mapping.groupKey].items.push(item);
+            } else {
+              directItems.push(item);
+            }
+          });
+
           return (
             <div key={g}>
               <p className="px-2 mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
                 {GROUP_LABELS[g]}
               </p>
               <div className="space-y-0.5">
-                {items.map((item) => {
+                {/* Direct Items */}
+                {directItems.map((item) => {
                   const to = item.path ? `/${schoolSlug}/${role}/${item.path}` : `/${schoolSlug}/${role}`;
                   const badge = item.key === "messages" ? unreadCount : 0;
                   const Icon = item.icon;
@@ -149,6 +189,72 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
                         </Badge>
                       )}
                     </NavLink>
+                  );
+                })}
+
+                {/* Collapsible Dropdown Groups */}
+                {Object.entries(dropdownGroups).map(([groupKey, groupInfo]) => {
+                  const childUrls = groupInfo.items.map(item =>
+                    item.path ? `/${schoolSlug}/${role}/${item.path}` : `/${schoolSlug}/${role}`
+                  );
+                  const isOpen = isGroupExpanded(groupKey, childUrls);
+                  const isDropdownActive = childUrls.some(url => location.pathname === url || location.pathname.startsWith(url + "/"));
+                  const GroupIcon = groupInfo.icon;
+
+                  return (
+                    <div key={groupKey} className="space-y-0.5">
+                      <button
+                        onClick={() => toggleGroup(groupKey)}
+                        className={cn(
+                          "w-full flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-150",
+                          isDropdownActive && "text-foreground font-semibold"
+                        )}
+                      >
+                        <span className="flex items-center gap-2.5">
+                          <GroupIcon className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{groupInfo.label}</span>
+                        </span>
+                        <ChevronDown
+                          className={cn(
+                            "h-4 w-4 shrink-0 transition-transform duration-200 text-muted-foreground/60",
+                            isOpen ? "rotate-180" : "rotate-0"
+                          )}
+                        />
+                      </button>
+
+                      <div
+                        className={cn(
+                          "overflow-hidden transition-all duration-200 ease-in-out",
+                          isOpen ? "max-h-[500px] opacity-100 mt-0.5" : "max-h-0 opacity-0 pointer-events-none"
+                        )}
+                      >
+                        <div className="pl-4 ml-3 border-l border-border/40 space-y-0.5">
+                          {groupInfo.items.map((item) => {
+                            const to = item.path ? `/${schoolSlug}/${role}/${item.path}` : `/${schoolSlug}/${role}`;
+                            const badge = item.key === "messages" ? unreadCount : 0;
+                            const Icon = item.icon;
+                            return (
+                              <NavLink
+                                key={item.key}
+                                to={to}
+                                className="group flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-150"
+                                activeClassName="bg-primary text-primary-foreground shadow-soft hover:bg-primary hover:text-primary-foreground"
+                                onClick={() => setMobileNavOpen(false)}
+                              >
+                                <span className="flex items-center gap-2.5">
+                                  <Icon className="h-4 w-4 shrink-0" /> {item.label}
+                                </span>
+                                {badge > 0 && (
+                                  <Badge variant="destructive" className="h-5 px-1.5 text-[10px] rounded-full">
+                                    {badge > 99 ? "99+" : badge}
+                                  </Badge>
+                                )}
+                              </NavLink>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
                   );
                 })}
               </div>
@@ -221,7 +327,7 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
         </div>
       </header>
 
-      <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-4 px-3 py-4 sm:px-4 lg:grid-cols-[280px_1fr] lg:gap-6 lg:px-6 lg:py-6">
+      <div className="grid w-full grid-cols-1 gap-4 px-3 py-4 sm:px-4 lg:grid-cols-[280px_1fr] lg:gap-6 lg:px-6 lg:py-6">
         {/* Desktop Sidebar */}
         <aside className="sticky top-6 hidden self-start max-h-[calc(100vh-3rem)] overflow-y-auto rounded-3xl border border-border/60 bg-surface/80 p-4 shadow-soft backdrop-blur-sm lg:block no-scrollbar">
           <NavContent />

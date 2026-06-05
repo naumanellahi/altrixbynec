@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
+import { StaffAttendanceWidget } from "@/components/tenant/StaffAttendanceWidget";
 
 const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
@@ -149,6 +150,9 @@ export function AcademicCoordinatorHome() {
           </div>
         </div>
       </div>
+
+      {/* Staff Attendance Widget */}
+      {schoolId && <StaffAttendanceWidget schoolId={schoolId} />}
 
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">

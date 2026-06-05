@@ -537,6 +537,8 @@ function DeliveriesDialog({ batch, onClose }: { batch: Batch | null; onClose: ()
   const [editing, setEditing] = useState<BatchInvoice | null>(null);
   const [editDue, setEditDue] = useState("");
   const [editPeriod, setEditPeriod] = useState("");
+  const [editAmount, setEditAmount] = useState<number>(0);
+  const [editStatus, setEditStatus] = useState<string>("");
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const { data: deliveries = [], isLoading } = useQuery({
@@ -587,6 +589,8 @@ function DeliveriesDialog({ batch, onClose }: { batch: Batch | null; onClose: ()
     setEditing(inv);
     setEditDue(inv.due_date);
     setEditPeriod(inv.period_label ?? "");
+    setEditAmount(Number(inv.total_amount));
+    setEditStatus(inv.status);
   };
 
   const saveEdit = async () => {
@@ -594,11 +598,16 @@ function DeliveriesDialog({ batch, onClose }: { batch: Batch | null; onClose: ()
     setBusyId(editing.id);
     const { error } = await supabase
       .from("fee_invoices")
-      .update({ due_date: editDue, period_label: editPeriod || null })
+      .update({ 
+        due_date: editDue, 
+        period_label: editPeriod || null,
+        total_amount: editAmount,
+        status: editStatus
+      })
       .eq("id", editing.id);
     setBusyId(null);
     if (error) return toast.error(error.message);
-    toast.success("Voucher updated");
+    toast.success("Voucher updated successfully");
     setEditing(null);
     refresh();
   };
@@ -741,17 +750,43 @@ function DeliveriesDialog({ batch, onClose }: { batch: Batch | null; onClose: ()
         <Dialog open={!!editing} onOpenChange={(v) => !v && setEditing(null)}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Edit voucher {editing?.invoice_number}</DialogTitle>
-              <DialogDescription>Update the due date or billing period.</DialogDescription>
+              <DialogTitle>Edit Voucher {editing?.invoice_number}</DialogTitle>
+              <DialogDescription>Update the billed amount, payment status, due date, or billing period.</DialogDescription>
             </DialogHeader>
-            <div className="space-y-3 py-2">
+            <div className="space-y-4 py-2">
               <div className="space-y-1.5">
-                <Label>Due date</Label>
-                <Input type="date" value={editDue} onChange={(e) => setEditDue(e.target.value)} />
+                <Label>Total Amount (PKR)</Label>
+                <Input
+                  type="number"
+                  value={editAmount}
+                  onChange={(e) => setEditAmount(Number(e.target.value))}
+                  className="bg-background text-foreground h-9"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Due Date</Label>
+                  <Input type="date" value={editDue} onChange={(e) => setEditDue(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Period Label</Label>
+                  <Input value={editPeriod} onChange={(e) => setEditPeriod(e.target.value)} placeholder="e.g. November 2026" />
+                </div>
               </div>
               <div className="space-y-1.5">
-                <Label>Period label</Label>
-                <Input value={editPeriod} onChange={(e) => setEditPeriod(e.target.value)} placeholder="e.g. November 2026" />
+                <Label>Payment Status</Label>
+                <Select value={editStatus} onValueChange={setEditStatus}>
+                  <SelectTrigger className="bg-background text-foreground h-9 text-xs">
+                    <SelectValue placeholder="Select Status" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover text-popover-foreground">
+                    <SelectItem value="paid">Paid</SelectItem>
+                    <SelectItem value="partial">Partial</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="overdue">Overdue</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <DialogFooter>

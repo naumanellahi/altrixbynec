@@ -27,6 +27,7 @@ import { QuickActionsBar } from "@/components/teacher/QuickActionsBar";
 import { OfflineIndicator } from "@/components/teacher/OfflineIndicator";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
 import { useTeacherKeyboardShortcuts } from "@/hooks/useTeacherKeyboardShortcuts";
+import { StaffAttendanceWidget } from "@/components/tenant/StaffAttendanceWidget";
 import {
   DashboardHeader,
   QuickActionGrid,
@@ -277,6 +278,11 @@ export function TeacherHome() {
       {/* Offline Notice */}
       {isOffline && (
         <SmartCard title="Offline mode" subtitle="Showing cached data — some features may be limited." icon={CalendarCheck} tone="warning" />
+      )}
+
+      {/* Staff Attendance Widget */}
+      {tenant.status === "ready" && (
+        <StaffAttendanceWidget schoolId={tenant.schoolId} />
       )}
 
       {/* Today's Focus */}

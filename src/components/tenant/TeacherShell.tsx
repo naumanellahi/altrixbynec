@@ -34,6 +34,8 @@ import { useTeacherBadges } from "@/hooks/useTeacherBadges";
 import { useUnreadMessagesOptimized } from "@/hooks/useUnreadMessagesOptimized";
 import { useSession } from "@/hooks/useSession";
 import { useTenantOptimized } from "@/hooks/useTenantOptimized";
+import { useOfflineUniversal } from "@/hooks/useOfflineUniversal";
+import { OfflineStatusIndicator } from "@/components/offline/OfflineStatusIndicator";
 
 type Props = PropsWithChildren<{
   title: string;
@@ -52,6 +54,13 @@ export function TeacherShell({ title, subtitle, schoolSlug, children }: Props) {
   
   const badges = useTeacherBadges(schoolId, user?.id ?? null);
   const { unreadCount: unreadAdminMessages } = useUnreadMessagesOptimized(schoolId, user?.id ?? null);
+
+  // Offline support
+  const offline = useOfflineUniversal({
+    schoolId,
+    userId: user?.id ?? null,
+    role: "teacher",
+  });
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -100,6 +109,16 @@ export function TeacherShell({ title, subtitle, schoolSlug, children }: Props) {
           <p className="text-xs text-muted-foreground">/{schoolSlug} • Teacher</p>
         </div>
         <div className="flex items-center gap-2">
+          <OfflineStatusIndicator
+            isOnline={offline.isOnline}
+            isSyncing={offline.isSyncing}
+            stats={offline.stats}
+            lastSyncAt={offline.lastSyncAt}
+            syncProgress={offline.syncProgress}
+            storageInfo={offline.storageInfo}
+            onSync={offline.syncPendingItems}
+            variant="compact"
+          />
           <NotificationsBell schoolId={schoolId} schoolSlug={schoolSlug} role="teacher" />
           <Button
             variant="soft"
@@ -177,6 +196,16 @@ export function TeacherShell({ title, subtitle, schoolSlug, children }: Props) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <OfflineStatusIndicator
+            isOnline={offline.isOnline}
+            isSyncing={offline.isSyncing}
+            stats={offline.stats}
+            lastSyncAt={offline.lastSyncAt}
+            syncProgress={offline.syncProgress}
+            storageInfo={offline.storageInfo}
+            onSync={offline.syncPendingItems}
+            variant="compact"
+          />
           <NotificationsBell schoolId={schoolId} schoolSlug={schoolSlug} role="teacher" />
           <Button
             variant="ghost"
@@ -188,7 +217,7 @@ export function TeacherShell({ title, subtitle, schoolSlug, children }: Props) {
         </div>
       </header>
 
-      <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-4 px-4 py-4 lg:grid-cols-[280px_1fr] lg:gap-6 lg:px-6 lg:py-6">
+      <div className="grid w-full grid-cols-1 gap-4 px-4 py-4 lg:grid-cols-[280px_1fr] lg:gap-6 lg:px-6 lg:py-6">
         {/* Desktop Sidebar */}
         <aside className="sticky top-6 hidden self-start max-h-[calc(100vh-3rem)] overflow-y-auto rounded-3xl bg-surface p-4 shadow-elevated lg:block">
           <NavContent />
@@ -231,6 +260,20 @@ export function TeacherShell({ title, subtitle, schoolSlug, children }: Props) {
           <span className="text-[10px] font-medium">More</span>
         </button>
       </nav>
+
+      {/* Floating offline indicator for desktop */}
+      <div className="hidden lg:block">
+        <OfflineStatusIndicator
+          isOnline={offline.isOnline}
+          isSyncing={offline.isSyncing}
+          stats={offline.stats}
+          lastSyncAt={offline.lastSyncAt}
+          syncProgress={offline.syncProgress}
+          storageInfo={offline.storageInfo}
+          onSync={offline.syncPendingItems}
+          variant="floating"
+        />
+      </div>
     </div>
   );
 }

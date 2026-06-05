@@ -5832,11 +5832,14 @@ export type Database = {
       schools: {
         Row: {
           address: string | null
+          altitude: number | null
           created_at: string | null
           email: string | null
           id: string
           is_active: boolean | null
+          latitude: number | null
           logo_url: string | null
+          longitude: number | null
           motto: string | null
           name: string
           phone: string | null
@@ -5846,11 +5849,14 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          altitude?: number | null
           created_at?: string | null
           email?: string | null
           id?: string
           is_active?: boolean | null
+          latitude?: number | null
           logo_url?: string | null
+          longitude?: number | null
           motto?: string | null
           name: string
           phone?: string | null
@@ -5860,11 +5866,14 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          altitude?: number | null
           created_at?: string | null
           email?: string | null
           id?: string
           is_active?: boolean | null
+          latitude?: number | null
           logo_url?: string | null
+          longitude?: number | null
           motto?: string | null
           name?: string
           phone?: string | null

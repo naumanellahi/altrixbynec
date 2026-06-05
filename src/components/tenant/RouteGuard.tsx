@@ -29,7 +29,16 @@ export function RouteGuard({ children, extraAllowedPaths }: RouteGuardProps) {
   const location = useLocation();
   const tenant = useTenantOptimized(schoolSlug);
   const schoolId = tenant.schoolId;
-  const fallbackRoles = useMemo(() => (isEduverseRole(role) ? [role] : []), [role]);
+
+  // Support route aliases that are nicer than DB enum values.
+  const resolvedRole = useMemo(() => {
+    if (!role) return null;
+    if (role === "hr") return "hr_manager";
+    if (role === "marketing") return "marketing_staff";
+    return role;
+  }, [role]);
+
+  const fallbackRoles = useMemo(() => (isEduverseRole(resolvedRole) ? [resolvedRole] : []), [resolvedRole]);
   const perms = usePermissions(schoolId, fallbackRoles);
 
   const base = `/${schoolSlug}/${role}`;

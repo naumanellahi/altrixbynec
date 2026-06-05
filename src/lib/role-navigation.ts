@@ -210,3 +210,44 @@ export function buildMergedNav(inputRoles: EduverseRole[]) {
   for (const it of items) grouped[it.group].push(it);
   return { items, grouped };
 }
+
+export const DROPDOWN_MAPPING: Record<string, { groupKey: string; label: string; icon: any }> = {
+  academic: { groupKey: "academic_setup", label: "Academic Setup", icon: GraduationCap },
+  exams: { groupKey: "academic_setup", label: "Academic Setup", icon: GraduationCap },
+  "report-cards": { groupKey: "academic_setup", label: "Academic Setup", icon: GraduationCap },
+
+  salaries: { groupKey: "hr_talent", label: "HR & Talent", icon: Users },
+  contracts: { groupKey: "hr_talent", label: "HR & Talent", icon: Users },
+  reviews: { groupKey: "hr_talent", label: "HR & Talent", icon: Users },
+  documents: { groupKey: "hr_talent", label: "HR & Talent", icon: Users },
+  recruitment: { groupKey: "hr_talent", label: "HR & Talent", icon: Users },
+  onboarding: { groupKey: "hr_talent", label: "HR & Talent", icon: Users },
+  offboarding: { groupKey: "hr_talent", label: "HR & Talent", icon: Users },
+  "hr-analytics": { groupKey: "hr_talent", label: "HR & Talent", icon: Users },
+
+  admissions: { groupKey: "admissions_crm", label: "Admissions & CRM", icon: KanbanSquare },
+  crm: { groupKey: "admissions_crm", label: "Admissions & CRM", icon: KanbanSquare },
+  leads: { groupKey: "admissions_crm", label: "Admissions & CRM", icon: KanbanSquare },
+  "follow-ups": { groupKey: "admissions_crm", label: "Admissions & CRM", icon: KanbanSquare },
+  calls: { groupKey: "admissions_crm", label: "Admissions & CRM", icon: KanbanSquare },
+  sources: { groupKey: "admissions_crm", label: "Admissions & CRM", icon: KanbanSquare },
+  campaigns: { groupKey: "admissions_crm", label: "Admissions & CRM", icon: KanbanSquare },
+
+  invoices: { groupKey: "financial_ops", label: "Financial Ops", icon: Coins },
+  payments: { groupKey: "financial_ops", label: "Financial Ops", icon: Coins },
+  expenses: { groupKey: "financial_ops", label: "Financial Ops", icon: Coins },
+  payroll: { groupKey: "financial_ops", label: "Financial Ops", icon: Coins },
+  ledger: { groupKey: "financial_ops", label: "Financial Ops", icon: Coins },
+  vendors: { groupKey: "financial_ops", label: "Financial Ops", icon: Coins },
+  tax: { groupKey: "financial_ops", label: "Financial Ops", icon: Coins },
+
+  notices: { groupKey: "school_ops", label: "School Ops", icon: ClipboardList },
+  holidays: { groupKey: "school_ops", label: "School Ops", icon: ClipboardList },
+  reports: { groupKey: "school_ops", label: "School Ops", icon: ClipboardList },
+  "ai-counselor": { groupKey: "school_ops", label: "School Ops", icon: ClipboardList },
+
+  admin: { groupKey: "system_admin", label: "System Admin", icon: ShieldCheck },
+  schools: { groupKey: "system_admin", label: "System Admin", icon: ShieldCheck },
+  support: { groupKey: "system_admin", label: "System Admin", icon: ShieldCheck },
+};
+

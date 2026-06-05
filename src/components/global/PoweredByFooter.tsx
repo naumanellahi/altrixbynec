@@ -1,6 +1,6 @@
 export function PoweredByFooter() {
   const content = (
-    <span className="pointer-events-auto rounded-full bg-background/70 px-2 py-1 backdrop-blur-sm border border-border/40">
+    <span className="pointer-events-auto text-[10px] text-muted-foreground/40 font-medium tracking-wide">
       AltRix - School Operating System
     </span>
   );

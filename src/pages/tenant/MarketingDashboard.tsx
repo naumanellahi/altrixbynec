@@ -14,7 +14,8 @@ import { MarketingSourcesModule } from "@/pages/tenant/marketing-modules/Marketi
 import { MarketingCampaignsModule } from "@/pages/tenant/marketing-modules/MarketingCampaignsModule";
 import { MarketingReportsModule } from "@/pages/tenant/marketing-modules/MarketingReportsModule";
 import { MarketingMessagesModule } from "@/pages/tenant/marketing-modules/MarketingMessagesModule";
-import { TimetableBuilderModule } from "@/pages/tenant/modules/TimetableBuilderModule";
+import { MarketingTemplatesModule } from "@/pages/tenant/marketing-modules/MarketingTemplatesModule";
+import { MarketingIntakeModule } from "@/pages/tenant/marketing-modules/MarketingIntakeModule";
 import { RouteGuard } from "@/components/tenant/RouteGuard";
 
 const MarketingDashboard = () => {
@@ -72,7 +73,7 @@ const MarketingDashboard = () => {
     <MarketingShell title={`${tenant.school?.name || "EDUVERSE"} • Marketing`} subtitle="CRM & campaigns" schoolSlug={tenant.slug}>
       <RouteGuard extraAllowedPaths={[
         "leads","follow-ups","calls","sources","campaigns","reports",
-        "messages","timetable",
+        "messages","templates","intake"
       ]}>
       <Routes>
         <Route index element={<MarketingHomeModule />} />
@@ -83,7 +84,8 @@ const MarketingDashboard = () => {
         <Route path="campaigns" element={<MarketingCampaignsModule />} />
         <Route path="reports" element={<MarketingReportsModule />} />
         <Route path="messages" element={<MarketingMessagesModule />} />
-        <Route path="timetable" element={<TimetableBuilderModule />} />
+        <Route path="templates" element={<MarketingTemplatesModule />} />
+        <Route path="intake" element={<MarketingIntakeModule />} />
         <Route path="*" element={<Navigate to={`/${tenant.slug}/marketing`} replace />} />
       </Routes>
       </RouteGuard>

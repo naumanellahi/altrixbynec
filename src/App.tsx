@@ -13,6 +13,17 @@ import PlatformDirectoryPage from "./pages/platform/PlatformDirectoryPage";
 import PlatformSchoolsPage from "./pages/platform/PlatformSchoolsPage";
 import PlatformUpdatePassword from "./pages/platform/PlatformUpdatePassword";
 import PlatformRecoverMaster from "./pages/platform/PlatformRecoverMaster";
+import PlatformBillingPage from "./pages/platform/PlatformBillingPage";
+import PlatformRevenuePage from "./pages/platform/PlatformRevenuePage";
+import PlatformAuditPage from "./pages/platform/PlatformAuditPage";
+import PlatformHealthPage from "./pages/platform/PlatformHealthPage";
+import PlatformSecurityPage from "./pages/platform/PlatformSecurityPage";
+import PlatformSettingsPage from "./pages/platform/PlatformSettingsPage";
+import PlatformSupportPage from "./pages/platform/PlatformSupportPage";
+import PlatformAddonsPage from "./pages/platform/PlatformAddonsPage";
+import PlatformDatabasePage from "./pages/platform/PlatformDatabasePage";
+import PlatformDomainsPage from "./pages/platform/PlatformDomainsPage";
+
 
 import TenantDashboard from "./pages/tenant/TenantDashboard";
 import TeacherDashboard from "./pages/tenant/TeacherDashboard";
@@ -23,6 +34,7 @@ import StudentDashboard from "./pages/tenant/StudentDashboard";
 import ParentDashboard from "./pages/tenant/ParentDashboard";
 import TenantBootstrap from "./pages/tenant/TenantBootstrap";
 import OwnerDashboard from "./pages/tenant/OwnerDashboard";
+import PublicInquiryPage from "./pages/tenant/PublicInquiryPage";
 import UnifiedHub from "./pages/tenant/UnifiedHub";
 import ResetPassword from "./pages/ResetPassword";
 import { PoweredByFooter } from "./components/global/PoweredByFooter";
@@ -98,6 +110,17 @@ export default function App() {
             <Route path="/super_admin" element={<PlatformDashboardPage />} />
             <Route path="/super_admin/directory" element={<PlatformDirectoryPage />} />
             <Route path="/super_admin/schools" element={<PlatformSchoolsPage />} />
+            <Route path="/super_admin/billing" element={<PlatformBillingPage />} />
+            <Route path="/super_admin/revenue" element={<PlatformRevenuePage />} />
+            <Route path="/super_admin/audit" element={<PlatformAuditPage />} />
+            <Route path="/super_admin/health" element={<PlatformHealthPage />} />
+            <Route path="/super_admin/security" element={<PlatformSecurityPage />} />
+            <Route path="/super_admin/settings" element={<PlatformSettingsPage />} />
+            <Route path="/super_admin/support" element={<PlatformSupportPage />} />
+            <Route path="/super_admin/addons" element={<PlatformAddonsPage />} />
+            <Route path="/super_admin/database" element={<PlatformDatabasePage />} />
+            <Route path="/super_admin/domains" element={<PlatformDomainsPage />} />
+
 
             {/* Back-compat aliases */}
             <Route path="/platform" element={<Navigate to="/super_admin" replace />} />
@@ -107,6 +130,7 @@ export default function App() {
             <Route path="/:schoolSlug/auth" element={<Index />} />
             <Route path="/:schoolSlug/hub" element={<UnifiedHub />} />
             <Route path="/:schoolSlug/bootstrap" element={<TenantBootstrap />} />
+            <Route path="/:schoolSlug/inquiry" element={<PublicInquiryPage />} />
             <Route path="/:schoolSlug/teacher/*" element={<TeacherDashboard />} />
             <Route path="/:schoolSlug/hr/*" element={<HrDashboard />} />
             <Route path="/:schoolSlug/accountant/*" element={<AccountantDashboard />} />

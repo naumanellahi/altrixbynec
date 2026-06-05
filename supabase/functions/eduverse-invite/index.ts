@@ -112,7 +112,7 @@ serve(async (req) => {
       const { data: created, error: createErr } = await admin.auth.admin.createUser({
         email: inviteEmail,
         password,
-        email_confirm: true,
+        email_confirm: false,
       });
       if (createErr) return json({ ok: false, error: createErr.message }, 400, traceId);
       userId = created.user?.id ?? null;

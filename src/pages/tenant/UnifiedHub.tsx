@@ -134,10 +134,10 @@ function HubContent({
                 <Link
                   key={item.key}
                   to={item.path ? `${base}/${item.path}` : base}
-                  className="flex items-center gap-2 rounded-2xl border border-border/50 bg-surface p-3 text-sm font-medium hover:bg-accent transition-colors"
+                  className="flex items-center gap-2 rounded-2xl border border-border/50 bg-surface p-3 text-sm font-medium hover:bg-accent transition-colors overflow-hidden text-ellipsis whitespace-nowrap min-w-0"
                 >
-                  <Icon className="h-4 w-4 text-primary" />
-                  {item.label}
+                  <Icon className="h-4 w-4 text-primary shrink-0" />
+                  <span className="truncate">{item.label}</span>
                 </Link>
               );
             })}

@@ -3,7 +3,7 @@ import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { BarChart3, ClipboardList, Megaphone, PhoneCall, Target, Users, CalendarDays, MessageSquare, Sparkles, LogOut, Menu, LayoutGrid } from "lucide-react";
+import { BarChart3, ClipboardList, Megaphone, PhoneCall, Target, Users, MessageSquare, Sparkles, LogOut, Menu, LayoutGrid, FileText, Settings2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GlobalCommandPalette } from "@/components/global/GlobalCommandPalette";
 import { NotificationsBell } from "@/components/global/NotificationsBell";
@@ -51,7 +51,8 @@ export function MarketingShell({ title, subtitle, schoolSlug, children }: Props)
     { to: `${basePath}/campaigns`, icon: Megaphone, label: "Campaigns", badge: 0 },
     { to: `${basePath}/reports`, icon: BarChart3, label: "Reports", badge: 0 },
     { to: `${basePath}/messages`, icon: MessageSquare, label: "Messages", badge: unreadCount },
-    { to: `${basePath}/timetable`, icon: CalendarDays, label: "Timetable Builder", badge: 0 },
+    { to: `${basePath}/templates`, icon: FileText, label: "Outreach Templates", badge: 0 },
+    { to: `${basePath}/intake`, icon: Settings2, label: "Intake Config", badge: 0 },
   ];
 
   const bottomNavItems = [
@@ -177,7 +178,7 @@ export function MarketingShell({ title, subtitle, schoolSlug, children }: Props)
         </div>
       </header>
 
-      <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-4 px-4 py-4 lg:grid-cols-[280px_1fr] lg:gap-6 lg:px-6 lg:py-6">
+      <div className="grid w-full grid-cols-1 gap-4 px-4 py-4 lg:grid-cols-[280px_1fr] lg:gap-6 lg:px-6 lg:py-6">
         {/* Desktop Sidebar */}
         <aside className="sticky top-6 hidden self-start max-h-[calc(100vh-3rem)] overflow-y-auto rounded-3xl bg-surface p-4 shadow-elevated lg:block">
           <NavContent />
