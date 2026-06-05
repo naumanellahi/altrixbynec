@@ -278,7 +278,7 @@ STRICT RULE CHECKLIST:
 4. Room Busy Slots: Do not schedule any room at a slot listed as BUSY for it in the "CLASH CONSTRAINTS" list.
 5. Break Slots: Do not schedule any class during a period index designated as [BREAK - DO NOT SCHEDULE]. Leave these slots empty (do not include them in the JSON timetable array).
 6. Subject Limits: Only schedule subjects that are listed in "Offered Subjects" for that section.
-7. Teacher Assignments: For each subject in a section, assign the exact teacher defined in the "TEACHER AVAILABILITY & ASSIGNMENTS" list. If a subject has no assigned teacher, set teacher_id: null and teacher_name: null (TBD).
+7. Teacher Assignments: For each subject in a section, assign the teacher defined in the "TEACHER AVAILABILITY & ASSIGNMENTS" list. If a subject has no pre-assigned teacher, you MUST dynamically assign one of the available school teachers from the school's teachers list who are available at that day and period, making sure they are not double-booked or busy.
 8. Target Weekly Frequency: Schedule the target weekly frequency for each subject (usually ${constraints?.subjectPeriodsPerWeek || 5} periods per week per subject per section).
 9. Even Distribution: Distribute the periods for a subject evenly across the days. Do not put multiple classes of the same subject on the same day unless target frequency exceeds active days.
 10. Valid Slots: Only schedule on days listed in "ACTIVE DAYS OF THE WEEK" and period indexes defined in "AVAILABLE PERIOD SLOTS PER DAY" (from 0 to ${periodDefs.length - 1}).
@@ -396,8 +396,21 @@ Return ONLY the valid JSON block. Do not add markdown explanation, code blocks, 
       // Get correct teacher assignment
       const subjectObj = subjects.find(s => s.name.toLowerCase() === offeredSubjectName.toLowerCase());
       const correctTeacher = subjectObj ? sectionSubjectTeacher.get(`${sId}:${subjectObj.id}`) : null;
-      const teacherId = correctTeacher?.id || null;
-      const teacherName = correctTeacher?.name || null;
+      
+      let teacherId = correctTeacher?.id || null;
+      let teacherName = correctTeacher?.name || null;
+
+      // If no pre-assigned teacher, resolve and use the AI's suggested teacher
+      if (!teacherId && entry.teacher_name && entry.teacher_name !== "—" && entry.teacher_name !== "null") {
+        const matched = teachers.find((t: any) => 
+          (t.profiles?.display_name && t.profiles.display_name.toLowerCase().trim() === entry.teacher_name.toLowerCase().trim()) ||
+          t.user_id === entry.teacher_id
+        );
+        if (matched) {
+          teacherId = matched.user_id;
+          teacherName = matched.profiles?.display_name || matched.user_id;
+        }
+      }
 
       // Check double-booking conflicts
       const slotKey = `${day}:${pIdx}`;
@@ -511,7 +524,23 @@ Return ONLY the valid JSON block. Do not add markdown explanation, code blocks, 
         const { day, pIdx } = slot;
         const slotKey = `${day}:${pIdx}`;
         const sectionSlotKey = `${sId}:${slotKey}`;
-        const teacherSlotKey = lesson.teacher_id ? `${String(lesson.teacher_id).toLowerCase()}:${slotKey}` : null;
+
+        // If lesson has no pre-assigned teacher, find an available teacher dynamically
+        let assignedTeacherId = lesson.teacher_id;
+        let assignedTeacherName = lesson.teacher_name;
+
+        if (!assignedTeacherId) {
+          const availableTeacher = teachers.find((t: any) => {
+            const teacherSlotKey = `${String(t.user_id).toLowerCase()}:${slotKey}`;
+            return !teacherOccupiedSlots.has(teacherSlotKey);
+          });
+          if (availableTeacher) {
+            assignedTeacherId = availableTeacher.user_id;
+            assignedTeacherName = availableTeacher.profiles?.display_name || availableTeacher.user_id;
+          }
+        }
+
+        const teacherSlotKey = assignedTeacherId ? `${String(assignedTeacherId).toLowerCase()}:${slotKey}` : null;
         const roomSlotKey = lesson.room && lesson.room !== "TBD" && lesson.room !== "none" && lesson.room !== "—"
           ? `${String(lesson.room).toLowerCase().trim()}:${slotKey}`
           : null;
@@ -534,8 +563,8 @@ Return ONLY the valid JSON block. Do not add markdown explanation, code blocks, 
           day,
           period_index: pIdx,
           subject_name: lesson.subject_name,
-          teacher_id: lesson.teacher_id,
-          teacher_name: lesson.teacher_name,
+          teacher_id: assignedTeacherId,
+          teacher_name: assignedTeacherName,
           room: lesson.room,
         });
 

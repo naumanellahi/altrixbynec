@@ -315,6 +315,15 @@ export function TimetableBuilderModule() {
     void refreshSection();
   }, [refreshSection]);
 
+  useEffect(() => {
+    const handleApplied = () => {
+      void refreshAllEntries();
+      if (sectionId) void refreshSection();
+    };
+    window.addEventListener("timetable:applied", handleApplied);
+    return () => window.removeEventListener("timetable:applied", handleApplied);
+  }, [refreshAllEntries, refreshSection, sectionId]);
+
   // Realtime subscription for live updates
   useRealtimeTable({
     channel: `timetable-entries-${schoolId}`,
