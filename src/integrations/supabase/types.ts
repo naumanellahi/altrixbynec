@@ -4793,6 +4793,9 @@ export type Database = {
           clock_out: string | null
           created_at: string
           id: string
+          latitude: number | null
+          longitude: number | null
+          altitude: number | null
           notes: string | null
           recorded_by: string | null
           school_id: string
@@ -4806,6 +4809,9 @@ export type Database = {
           clock_out?: string | null
           created_at?: string
           id?: string
+          latitude?: number | null
+          longitude?: number | null
+          altitude?: number | null
           notes?: string | null
           recorded_by?: string | null
           school_id: string
@@ -4819,6 +4825,9 @@ export type Database = {
           clock_out?: string | null
           created_at?: string
           id?: string
+          latitude?: number | null
+          longitude?: number | null
+          altitude?: number | null
           notes?: string | null
           recorded_by?: string | null
           school_id?: string

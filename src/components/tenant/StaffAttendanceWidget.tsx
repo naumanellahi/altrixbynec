@@ -217,9 +217,15 @@ export function StaffAttendanceWidget({ schoolId }: StaffAttendanceWidgetProps) 
     if (!user?.id) return;
     
     // Safety check for location boundaries
-    if (status !== "leave" && isLocationConfigured && !inRange) {
-      toast.error("Access Denied: You must be inside the 100m campus boundary.");
-      return;
+    if (status !== "leave" && isLocationConfigured) {
+      if (!userCoords) {
+        toast.error("Location Error: Unable to verify your location. Please check your GPS signal or enable location permissions.");
+        return;
+      }
+      if (!inRange) {
+        toast.error(`Verification Failed: You are currently ${distance ? `${distance}m` : "unknown distance"} away from the campus (allowable limit: 100m).`);
+        return;
+      }
     }
 
     setSaving(true);
@@ -236,6 +242,13 @@ export function StaffAttendanceWidget({ schoolId }: StaffAttendanceWidgetProps) 
 
       if (status === "present") {
         payload.clock_in = new Date().toISOString();
+      }
+
+      // Record check-in location details
+      if (userCoords) {
+        payload.latitude = userCoords.latitude;
+        payload.longitude = userCoords.longitude;
+        payload.altitude = userCoords.altitude;
       }
 
       const { error } = await supabase
@@ -257,20 +270,36 @@ export function StaffAttendanceWidget({ schoolId }: StaffAttendanceWidgetProps) 
   // Clock Out operation
   const handleClockOut = async () => {
     if (!attendance?.id || !user?.id) return;
-    if (isLocationConfigured && !inRange) {
-      toast.error("Access Denied: You must be inside the 100m campus boundary to clock out.");
-      return;
+    
+    if (isLocationConfigured) {
+      if (!userCoords) {
+        toast.error("Location Error: Unable to verify your location. Please enable location permissions to clock out.");
+        return;
+      }
+      if (!inRange) {
+        toast.error(`Verification Failed: You must be inside the 100m campus boundary to clock out (currently ${distance ? `${distance}m` : "unknown distance"} away).`);
+        return;
+      }
     }
 
     setSaving(true);
     
     try {
+      const updates: any = {
+        clock_out: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      // Record clock-out location details
+      if (userCoords) {
+        updates.latitude = userCoords.latitude;
+        updates.longitude = userCoords.longitude;
+        updates.altitude = userCoords.altitude;
+      }
+
       const { error } = await supabase
         .from("hr_staff_attendance")
-        .update({
-          clock_out: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
+        .update(updates)
         .eq("id", attendance.id);
 
       if (error) throw error;
@@ -390,6 +419,17 @@ export function StaffAttendanceWidget({ schoolId }: StaffAttendanceWidgetProps) 
           <AlertTriangle className="h-4 w-4" />
           GPS Error: {gpsError}. Please allow location access to verify campus coordinates.
         </p>
+      )}
+
+      {/* Active User Geolocation coordinates preview */}
+      {userCoords && (
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground font-mono bg-muted/20 px-3 py-2 rounded-xl border border-border/30">
+          <span>Lat: {userCoords.latitude.toFixed(6)}</span>
+          <span>Lng: {userCoords.longitude.toFixed(6)}</span>
+          {userCoords.altitude !== null && (
+            <span>Alt: {Math.round(userCoords.altitude)}m</span>
+          )}
+        </div>
       )}
 
       {!isLocationConfigured && (
