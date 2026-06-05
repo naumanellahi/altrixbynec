@@ -11,10 +11,20 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useParams } from "react-router-dom";
-import { Upload, ExternalLink, Trash2, FileText } from "lucide-react";
+import { Upload, ExternalLink, Trash2, FileText, Eye, Download, Loader2 } from "lucide-react";
 
 const DOC_TYPES = ["contract", "id_proof", "cv_resume", "certification", "offer_letter", "policy", "general"];
 const ALL = "__all";
+
+const isImage = (filename: string) => {
+  const ext = filename.split('.').pop()?.toLowerCase();
+  return ext ? ["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext) : false;
+};
+
+const isPdf = (filename: string) => {
+  const ext = filename.split('.').pop()?.toLowerCase();
+  return ext === "pdf";
+};
 
 export function HrDocumentsModule() {
   const { schoolSlug } = useParams();
@@ -27,6 +37,8 @@ export function HrDocumentsModule() {
   const [filterType, setFilterType] = useState<string>(ALL);
   const [form, setForm] = useState<{ user_id: string; document_type: string; file?: File | null; document_name: string }>({ user_id: "", document_type: "general", file: null, document_name: "" });
   const [uploading, setUploading] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<{ url: string; name: string; type: string; path: string } | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
 
   const { data: docs = [] } = useQuery({
     queryKey: ["hr_documents_full", schoolId],
@@ -73,21 +85,28 @@ export function HrDocumentsModule() {
     } finally { setUploading(false); }
   };
 
-  const openDoc = async (path: string) => {
+  const openDoc = async (path: string, name: string, type: string) => {
     if (!path) return;
-    // Backward-compat: if an old row still has a full URL, just open it.
-    if (/^https?:\/\//i.test(path)) {
-      window.open(path, "_blank", "noopener");
-      return;
+    setLoadingPreview(true);
+    try {
+      // Backward-compat: if an old row still has a full URL, just open it.
+      if (/^https?:\/\//i.test(path)) {
+        setPreviewDoc({ url: path, name, type, path });
+        return;
+      }
+      const { data, error } = await supabase.storage
+        .from("hr-documents")
+        .createSignedUrl(path, 3600);
+      if (error || !data?.signedUrl) {
+        toast.error(error?.message || "Unable to open document");
+        return;
+      }
+      setPreviewDoc({ url: data.signedUrl, name, type, path });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to load document");
+    } finally {
+      setLoadingPreview(false);
     }
-    const { data, error } = await supabase.storage
-      .from("hr-documents")
-      .createSignedUrl(path, 300);
-    if (error || !data?.signedUrl) {
-      toast.error(error?.message || "Unable to open document");
-      return;
-    }
-    window.open(data.signedUrl, "_blank", "noopener");
   };
 
 
@@ -161,12 +180,90 @@ export function HrDocumentsModule() {
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="capitalize">{(d.document_type || "general").replace(/_/g, " ")}</Badge>
-              <Button size="icon" variant="ghost" onClick={() => openDoc(d.file_url)}><ExternalLink className="h-4 w-4" /></Button>
+              <Button size="icon" variant="ghost" disabled={loadingPreview} onClick={() => openDoc(d.file_url, d.document_name, d.document_type || "general")}>
+                {loadingPreview && previewDoc?.path === d.file_url ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                ) : (
+                  <Eye className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors" />
+                )}
+              </Button>
               <Button size="icon" variant="ghost" onClick={() => del.mutate(d.id)}><Trash2 className="h-4 w-4" /></Button>
             </div>
           </CardContent></Card>
         ))}
       </div>
+
+      {/* Inline Document Viewer Modal */}
+      <Dialog open={!!previewDoc} onOpenChange={(open) => !open && setPreviewDoc(null)}>
+        <DialogContent className="max-w-5xl w-[90vw] h-[85vh] p-0 flex flex-col bg-surface/90 backdrop-blur-md border border-primary/10 rounded-3xl overflow-hidden shadow-premium">
+          <div className="flex items-center justify-between gap-4 p-5 border-b border-primary/5 bg-primary/5 sticky top-0 z-10">
+            <div>
+              <DialogTitle className="font-display text-base font-bold flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                {previewDoc?.name}
+              </DialogTitle>
+              <p className="text-xs text-muted-foreground capitalize mt-0.5">
+                Type: {previewDoc?.type.replace(/_/g, " ")}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(previewDoc?.url, "_blank")}
+                className="rounded-xl border-primary/10 h-8 text-xs gap-1.5 bg-background/50 hover:bg-background/80 transition-all"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                Open in New Tab
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const a = document.createElement("a");
+                  a.href = previewDoc?.url || "";
+                  a.download = previewDoc?.name || "document";
+                  a.click();
+                }}
+                className="rounded-xl border-primary/10 h-8 text-xs gap-1.5 bg-background/50 hover:bg-background/80 transition-all"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Download
+              </Button>
+            </div>
+          </div>
+          <div className="flex-1 bg-muted/20 relative p-4 flex items-center justify-center overflow-hidden">
+            {previewDoc && (
+              isImage(previewDoc.path) ? (
+                <div className="w-full h-full flex items-center justify-center overflow-auto">
+                  <img
+                    src={previewDoc.url}
+                    alt={previewDoc.name}
+                    className="max-w-full max-h-full object-contain rounded-xl shadow-lg border border-primary/5 bg-background"
+                  />
+                </div>
+              ) : isPdf(previewDoc.path) ? (
+                <iframe
+                  src={`${previewDoc.url}#toolbar=1`}
+                  title={previewDoc.name}
+                  className="w-full h-full border-none rounded-xl bg-background shadow-lg"
+                />
+              ) : (
+                <div className="text-center p-8 space-y-4 max-w-sm">
+                  <FileText className="h-16 w-16 text-muted-foreground mx-auto opacity-40" />
+                  <div className="space-y-1">
+                    <p className="font-semibold text-sm">No Preview Available</p>
+                    <p className="text-xs text-muted-foreground">This file type cannot be previewed inline. Please open or download it.</p>
+                  </div>
+                  <div className="flex justify-center gap-2">
+                    <Button onClick={() => window.open(previewDoc.url, "_blank")}>Open File</Button>
+                  </div>
+                </div>
+              )
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

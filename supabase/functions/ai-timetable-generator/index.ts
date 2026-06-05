@@ -297,41 +297,265 @@ Return ONLY the valid JSON block. Do not add markdown explanation, code blocks, 
     const aiResponse = await response.json();
     const content = aiResponse.choices?.[0]?.message?.content || "{}";
     
-    let timetableData;
+    let timetableData: any;
     try {
       const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) || content.match(/```\s*([\s\S]*?)\s*```/);
       const jsonStr = jsonMatch ? jsonMatch[1] : content;
       timetableData = JSON.parse(jsonStr.trim());
     } catch {
-      timetableData = { error: "Failed to parse AI response", raw: content };
+      timetableData = { timetable: [] };
     }
 
-    // Save the suggestion
-    if (timetableData && !timetableData.error) {
-      const timetable = timetableData.timetable || [];
-      let calculatedConflicts = 0;
+    if (!timetableData || typeof timetableData !== "object" || !Array.isArray(timetableData.timetable)) {
+      timetableData = { timetable: [] };
+    }
 
-      // Group all entries (AI generated + existing other sections) by slot (day+period)
-      const slotMap = new Map<string, Array<{ section_id: string, teacher_id: string | null, teacher_name: string | null, room: string | null }>>();
+    // --- Programmatic CSP Repair Solver ---
+    const activeDaysList = targetDays.map(d => d.toLowerCase());
+    const nonBreakPeriods = periodDefs.filter(p => !p.isBreak);
 
-      // 1. Add AI generated ones
-      for (const row of timetable) {
-        const day = String(row.day || "").toLowerCase().trim();
-        const periodIdx = Number(row.period_index);
-        if (!day || !Number.isFinite(periodIdx)) continue;
+    // Map section subject correct teachers
+    const sectionSubjectTeacher = new Map<string, { id: string | null; name: string | null }>();
+    mergedAssignments.forEach((a) => {
+      const correctTeacherId = a.teacherId;
+      const tName = teacherNameMap.get(correctTeacherId) || correctTeacherId;
+      sectionSubjectTeacher.set(`${a.sectionId}:${a.subjectId}`, { id: correctTeacherId, name: tName });
+    });
 
-        const key = `${day}:${periodIdx}`;
-        const list = slotMap.get(key) || [];
-        list.push({
-          section_id: row.section_id,
-          teacher_id: row.teacher_id || null,
-          teacher_name: row.teacher_name || null,
-          room: row.room || null
-        });
-        slotMap.set(key, list);
+    const scheduledEntries: Array<{
+      section_id: string;
+      day: string;
+      period_index: number;
+      subject_name: string;
+      teacher_id: string | null;
+      teacher_name: string | null;
+      room: string;
+    }> = [];
+
+    // Trackers
+    const sectionOccupiedSlots = new Set<string>(); // "sectionId:day:periodIndex"
+    const teacherOccupiedSlots = new Set<string>(); // "teacherId:day:periodIndex"
+    const roomOccupiedSlots = new Set<string>();    // "room:day:periodIndex"
+    const subjectWeeklyCount = new Map<string, number>(); // "sectionId:subjectName" -> count
+
+    // Initialize trackers with busy slots from other sections (if single section scheduling)
+    if (classSectionId) {
+      const otherEntries = (existingEntriesRes.data || []).filter(
+        (e: any) => e.class_section_id !== classSectionId
+      );
+      otherEntries.forEach((e: any) => {
+        const dayLabel = dayNames[e.day_of_week]?.toLowerCase();
+        const pIndex = periods.findIndex((p: any) => p.id === e.period_id);
+        if (!dayLabel || pIndex < 0) return;
+
+        const slotKey = `${dayLabel}:${pIndex}`;
+        if (e.teacher_user_id) {
+          teacherOccupiedSlots.add(`${String(e.teacher_user_id).toLowerCase()}:${slotKey}`);
+        }
+        if (e.room) {
+          roomOccupiedSlots.add(`${String(e.room).toLowerCase().trim()}:${slotKey}`);
+        }
+      });
+    }
+
+    const sectionsToSchedule = sections.filter((s: any) => !classSectionId || s.id === classSectionId);
+
+    // 1. Process and filter the AI suggestions to keep only the valid ones
+    const rawEntries = timetableData.timetable || [];
+    for (const entry of rawEntries) {
+      const sId = entry.section_id;
+      const day = String(entry.day || "").toLowerCase().trim();
+      const pIdx = Number(entry.period_index);
+      const subjName = String(entry.subject_name || "").trim();
+
+      if (!sId || !day || !Number.isFinite(pIdx) || !subjName) continue;
+      const sect = sectionsToSchedule.find(s => s.id === sId);
+      if (!sect) continue;
+
+      if (!activeDaysList.includes(day)) continue;
+      const periodDef = nonBreakPeriods.find(p => p.index === pIdx);
+      if (!periodDef) continue; // Skip break periods or invalid index
+
+      // Check if subject is offered in section
+      const offered = sectionSubjectsMap.get(sId) || [];
+      const offeredSubjectName = offered.find(sName => sName.toLowerCase() === subjName.toLowerCase());
+      if (!offeredSubjectName) continue; // Subject is not offered in this section
+
+      // Get correct teacher assignment
+      const subjectObj = subjects.find(s => s.name.toLowerCase() === offeredSubjectName.toLowerCase());
+      const correctTeacher = subjectObj ? sectionSubjectTeacher.get(`${sId}:${subjectObj.id}`) : null;
+      const teacherId = correctTeacher?.id || null;
+      const teacherName = correctTeacher?.name || null;
+
+      // Check double-booking conflicts
+      const slotKey = `${day}:${pIdx}`;
+      const sectionSlotKey = `${sId}:${slotKey}`;
+      const teacherSlotKey = teacherId ? `${String(teacherId).toLowerCase()}:${slotKey}` : null;
+      const roomVal = sect.room || entry.room || "TBD";
+      const roomSlotKey = roomVal && roomVal !== "TBD" && roomVal !== "none" && roomVal !== "—"
+        ? `${String(roomVal).toLowerCase().trim()}:${slotKey}`
+        : null;
+
+      if (sectionOccupiedSlots.has(sectionSlotKey)) continue;
+      if (teacherSlotKey && teacherOccupiedSlots.has(teacherSlotKey)) continue;
+      if (roomSlotKey && roomOccupiedSlots.has(roomSlotKey)) continue;
+
+      // Check weekly frequency limit
+      const subjectKey = `${sId}:${offeredSubjectName.toLowerCase()}`;
+      const currentCount = subjectWeeklyCount.get(subjectKey) || 0;
+      const targetFrequency = constraints?.subjectPeriodsPerWeek || 5;
+      if (currentCount >= targetFrequency) continue;
+
+      // Accept this suggestion
+      scheduledEntries.push({
+        section_id: sId,
+        day,
+        period_index: pIdx,
+        subject_name: offeredSubjectName,
+        teacher_id: teacherId,
+        teacher_name: teacherName,
+        room: roomVal,
+      });
+
+      sectionOccupiedSlots.add(sectionSlotKey);
+      if (teacherSlotKey) teacherOccupiedSlots.add(teacherSlotKey);
+      if (roomSlotKey) roomOccupiedSlots.add(roomSlotKey);
+      subjectWeeklyCount.set(subjectKey, currentCount + 1);
+    }
+
+    // 2. Identify missing classes to schedule
+    const unplacedLessons: Array<{
+      section_id: string;
+      subject_name: string;
+      teacher_id: string | null;
+      teacher_name: string | null;
+      room: string;
+    }> = [];
+
+    for (const sect of sectionsToSchedule) {
+      const offered = sectionSubjectsMap.get(sect.id) || [];
+      for (const subjName of offered) {
+        const subjectKey = `${sect.id}:${subjName.toLowerCase()}`;
+        const scheduledCount = subjectWeeklyCount.get(subjectKey) || 0;
+        const targetFrequency = constraints?.subjectPeriodsPerWeek || 5;
+        const missingCount = Math.max(0, targetFrequency - scheduledCount);
+
+        const subjectObj = subjects.find(s => s.name.toLowerCase() === subjName.toLowerCase());
+        const correctTeacher = subjectObj ? sectionSubjectTeacher.get(`${sect.id}:${subjectObj.id}`) : null;
+        const roomVal = sect.room || "TBD";
+
+        for (let i = 0; i < missingCount; i++) {
+          unplacedLessons.push({
+            section_id: sect.id,
+            subject_name: subjName,
+            teacher_id: correctTeacher?.id || null,
+            teacher_name: correctTeacher?.name || null,
+            room: roomVal,
+          });
+        }
+      }
+    }
+
+    // Sort unplaced lessons: schedule lessons with teachers first (they are more constrained)
+    unplacedLessons.sort((a, b) => {
+      if (a.teacher_id && !b.teacher_id) return -1;
+      if (!a.teacher_id && b.teacher_id) return 1;
+      return 0;
+    });
+
+    // Backtracking CSP solver
+    let backtrackCount = 0;
+    const MAX_BACKTRACKS = 1000;
+
+    function solve(index: number, allowDoubleSubjectPerDay = false): boolean {
+      if (index >= unplacedLessons.length) {
+        return true;
       }
 
-      // 2. If single section, add other sections' existing entries from DB to check for double bookings
+      backtrackCount++;
+      if (backtrackCount > MAX_BACKTRACKS) {
+        return false;
+      }
+
+      const lesson = unplacedLessons[index];
+      const sId = lesson.section_id;
+
+      // Find all empty slots for this section
+      const emptySlots: Array<{ day: string; pIdx: number }> = [];
+      for (const day of activeDaysList) {
+        for (const periodDef of nonBreakPeriods) {
+          const pIdx = periodDef.index;
+          const sectionSlotKey = `${sId}:${day}:${pIdx}`;
+          if (!sectionOccupiedSlots.has(sectionSlotKey)) {
+            emptySlots.push({ day, pIdx });
+          }
+        }
+      }
+
+      // Shuffle empty slots to find balanced schedules
+      emptySlots.sort(() => Math.random() - 0.5);
+
+      for (const slot of emptySlots) {
+        const { day, pIdx } = slot;
+        const slotKey = `${day}:${pIdx}`;
+        const sectionSlotKey = `${sId}:${slotKey}`;
+        const teacherSlotKey = lesson.teacher_id ? `${String(lesson.teacher_id).toLowerCase()}:${slotKey}` : null;
+        const roomSlotKey = lesson.room && lesson.room !== "TBD" && lesson.room !== "none" && lesson.room !== "—"
+          ? `${String(lesson.room).toLowerCase().trim()}:${slotKey}`
+          : null;
+
+        // Double-booking check
+        if (teacherSlotKey && teacherOccupiedSlots.has(teacherSlotKey)) continue;
+        if (roomSlotKey && roomOccupiedSlots.has(roomSlotKey)) continue;
+
+        // Soft constraint check: spread subjects evenly (no double subject per day unless relaxed)
+        if (!allowDoubleSubjectPerDay) {
+          const sameSubjectOnDay = scheduledEntries.some(
+            e => e.section_id === sId && e.day === day && e.subject_name.toLowerCase() === lesson.subject_name.toLowerCase()
+          );
+          if (sameSubjectOnDay) continue;
+        }
+
+        // Place lesson
+        scheduledEntries.push({
+          section_id: sId,
+          day,
+          period_index: pIdx,
+          subject_name: lesson.subject_name,
+          teacher_id: lesson.teacher_id,
+          teacher_name: lesson.teacher_name,
+          room: lesson.room,
+        });
+
+        sectionOccupiedSlots.add(sectionSlotKey);
+        if (teacherSlotKey) teacherOccupiedSlots.add(teacherSlotKey);
+        if (roomSlotKey) roomOccupiedSlots.add(roomSlotKey);
+
+        if (solve(index + 1, allowDoubleSubjectPerDay)) {
+          return true;
+        }
+
+        // Backtrack
+        scheduledEntries.pop();
+        sectionOccupiedSlots.delete(sectionSlotKey);
+        if (teacherSlotKey) teacherOccupiedSlots.delete(teacherSlotKey);
+        if (roomSlotKey) roomOccupiedSlots.delete(roomSlotKey);
+      }
+
+      return false;
+    }
+
+    // Run solver
+    backtrackCount = 0;
+    let solved = solve(0, false);
+
+    if (!solved) {
+      console.log("CSP solver under strict constraints failed. Retrying with relaxed day-spread constraint...");
+      // Re-populate solvers with kept entries
+      sectionOccupiedSlots.clear();
+      teacherOccupiedSlots.clear();
+      roomOccupiedSlots.clear();
+
       if (classSectionId) {
         const otherEntries = (existingEntriesRes.data || []).filter(
           (e: any) => e.class_section_id !== classSectionId
@@ -341,71 +565,44 @@ Return ONLY the valid JSON block. Do not add markdown explanation, code blocks, 
           const pIndex = periods.findIndex((p: any) => p.id === e.period_id);
           if (!dayLabel || pIndex < 0) return;
 
-          const key = `${dayLabel}:${pIndex}`;
-          const list = slotMap.get(key) || [];
-          const name = teacherNameMap.get(e.teacher_user_id || "") || null;
-          list.push({
-            section_id: e.class_section_id,
-            teacher_id: e.teacher_user_id || null,
-            teacher_name: name,
-            room: e.room || null
-          });
-          slotMap.set(key, list);
+          const slotKey = `${dayLabel}:${pIndex}`;
+          if (e.teacher_user_id) {
+            teacherOccupiedSlots.add(`${String(e.teacher_user_id).toLowerCase()}:${slotKey}`);
+          }
+          if (e.room) {
+            roomOccupiedSlots.add(`${String(e.room).toLowerCase().trim()}:${slotKey}`);
+          }
         });
       }
 
-      // 3. Scan for clashes
-      for (const [_, items] of slotMap.entries()) {
-        // Teacher double bookings
-        const teacherAssigned = new Map<string, string[]>(); // teacher -> list of sections
-        // Room double bookings
-        const roomAssigned = new Map<string, string[]>(); // room -> list of sections
-
-        for (const item of items) {
-          const teacherKey = item.teacher_id ? String(item.teacher_id).toLowerCase() : item.teacher_name ? String(item.teacher_name).toLowerCase() : null;
-          if (teacherKey && teacherKey !== "—" && teacherKey !== "tbd") {
-            const list = teacherAssigned.get(teacherKey) || [];
-            if (!list.includes(item.section_id)) {
-              list.push(item.section_id);
-              teacherAssigned.set(teacherKey, list);
-            }
-          }
-
-          const roomKey = item.room ? String(item.room).trim().toLowerCase() : null;
-          if (roomKey && roomKey !== "—" && roomKey !== "tbd" && roomKey !== "none") {
-            const list = roomAssigned.get(roomKey) || [];
-            if (!list.includes(item.section_id)) {
-              list.push(item.section_id);
-              roomAssigned.set(roomKey, list);
-            }
-          }
+      for (const entry of scheduledEntries) {
+        const slotKey = `${entry.day}:${entry.period_index}`;
+        sectionOccupiedSlots.add(`${entry.section_id}:${slotKey}`);
+        if (entry.teacher_id) {
+          teacherOccupiedSlots.add(`${String(entry.teacher_id).toLowerCase()}:${slotKey}`);
         }
-
-        for (const [_, sectionsList] of teacherAssigned.entries()) {
-          if (sectionsList.length > 1) {
-            calculatedConflicts += (sectionsList.length - 1);
-          }
-        }
-
-        for (const [_, sectionsList] of roomAssigned.entries()) {
-          if (sectionsList.length > 1) {
-            calculatedConflicts += (sectionsList.length - 1);
-          }
+        if (entry.room && entry.room !== "TBD" && entry.room !== "none" && entry.room !== "—") {
+          roomOccupiedSlots.add(`${String(entry.room).toLowerCase().trim()}:${slotKey}`);
         }
       }
 
-      // Overwrite conflicts_found with true calculated conflicts
-      timetableData.conflicts_found = calculatedConflicts;
-
-      await supabase.from("ai_timetable_suggestions").insert({
-        school_id: schoolId,
-        class_section_id: classSectionId,
-        suggestion_data: timetableData,
-        conflicts_found: calculatedConflicts,
-        optimization_score: timetableData.optimization_score || 0,
-        status: "draft",
-      });
+      backtrackCount = 0;
+      solved = solve(0, true);
     }
+
+    // Complete suggestion data overwrite
+    timetableData.timetable = scheduledEntries;
+    timetableData.conflicts_found = 0;
+    timetableData.optimization_score = solved ? 100 : Math.round((scheduledEntries.length / (scheduledEntries.length + unplacedLessons.length)) * 100);
+
+    await supabase.from("ai_timetable_suggestions").insert({
+      school_id: schoolId,
+      class_section_id: classSectionId,
+      suggestion_data: timetableData,
+      conflicts_found: 0,
+      optimization_score: timetableData.optimization_score || 0,
+      status: "draft",
+    });
 
     return new Response(JSON.stringify({ success: true, timetableData }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

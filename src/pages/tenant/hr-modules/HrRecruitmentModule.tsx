@@ -12,12 +12,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Briefcase, Users, Calendar as CalendarIcon, Trash2, Pencil, FileText } from "lucide-react";
+import { Plus, Briefcase, Users, Calendar as CalendarIcon, Trash2, Pencil, FileText, Eye, Download, Loader2, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { useRef, useState as useRState } from "react";
 import { RecruitmentPostingDocument } from "@/components/hr/RecruitmentPostingDocument";
 import { ExportPdfButton } from "@/components/pdf/ExportPdfButton";
 import { useSchoolDocument } from "@/hooks/useSchoolDocument";
+
+const isImage = (filename: string) => {
+  const ext = filename.split('.').pop()?.toLowerCase();
+  return ext ? ["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext) : false;
+};
+
+const isPdf = (filename: string) => {
+  const ext = filename.split('.').pop()?.toLowerCase();
+  return ext === "pdf";
+};
 
 type JobPosting = {
   id: string; title: string; department: string | null; location: string | null;
@@ -50,6 +60,40 @@ export function HrRecruitmentModule() {
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [loading, setLoading] = useState(true);
+  const [previewDoc, setPreviewDoc] = useState<{ url: string; name: string; type: string; path: string } | null>(null);
+  const [loadingResume, setLoadingResume] = useState<string | null>(null); // store applicant ID
+
+  const openResume = async (applicantId: string, path: string, name: string) => {
+    if (!path) return;
+    setLoadingResume(applicantId);
+    try {
+      if (/^https?:\/\//i.test(path)) {
+        setPreviewDoc({ url: path, name: `${name}'s Resume`, type: "cv_resume", path });
+        return;
+      }
+      const cleanPath = path.replace(/^[^\/]+\//, "");
+      const { data, error } = await supabase.storage
+        .from("hr-documents")
+        .createSignedUrl(cleanPath, 3600);
+      
+      if (error || !data?.signedUrl) {
+        const { data: data2, error: error2 } = await supabase.storage
+          .from("hr-documents")
+          .createSignedUrl(path, 3600);
+        if (error2 || !data2?.signedUrl) {
+          toast.error(error2?.message || "Unable to load resume");
+          return;
+        }
+        setPreviewDoc({ url: data2.signedUrl, name: `${name}'s Resume`, type: "cv_resume", path });
+        return;
+      }
+      setPreviewDoc({ url: data.signedUrl, name: `${name}'s Resume`, type: "cv_resume", path });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to load resume");
+    } finally {
+      setLoadingResume(null);
+    }
+  };
 
   const refresh = useCallback(async () => {
     if (!schoolId) return;
@@ -106,7 +150,14 @@ export function HrRecruitmentModule() {
         </TabsContent>
 
         <TabsContent value="pipeline" className="mt-4">
-          <PipelineTab applicants={applicants} postings={postings} schoolId={schoolId} onChange={refresh} />
+          <PipelineTab 
+            applicants={applicants} 
+            postings={postings} 
+            schoolId={schoolId} 
+            onChange={refresh}
+            onPreviewResume={openResume}
+            loadingResume={loadingResume}
+          />
         </TabsContent>
 
         <TabsContent value="interviews" className="mt-4">
@@ -260,11 +311,97 @@ function PostingsTab({ postings, schoolId, onChange, loading }: { postings: JobP
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Inline Resume Viewer Modal */}
+      <Dialog open={!!previewDoc} onOpenChange={(open) => !open && setPreviewDoc(null)}>
+        <DialogContent className="max-w-5xl w-[90vw] h-[85vh] p-0 flex flex-col bg-surface/90 backdrop-blur-md border border-primary/10 rounded-3xl overflow-hidden shadow-premium">
+          <div className="flex items-center justify-between gap-4 p-5 border-b border-primary/5 bg-primary/5 sticky top-0 z-10">
+            <div>
+              <DialogTitle className="font-display text-base font-bold flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                {previewDoc?.name}
+              </DialogTitle>
+              <p className="text-xs text-muted-foreground capitalize mt-0.5">
+                Applicant Attachment
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(previewDoc?.url, "_blank")}
+                className="rounded-xl border-primary/10 h-8 text-xs gap-1.5 bg-background/50 hover:bg-background/80 transition-all"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                Open in New Tab
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const a = document.createElement("a");
+                  a.href = previewDoc?.url || "";
+                  a.download = previewDoc?.name || "resume";
+                  a.click();
+                }}
+                className="rounded-xl border-primary/10 h-8 text-xs gap-1.5 bg-background/50 hover:bg-background/80 transition-all"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Download
+              </Button>
+            </div>
+          </div>
+          <div className="flex-1 bg-muted/20 relative p-4 flex items-center justify-center overflow-hidden">
+            {previewDoc && (
+              isImage(previewDoc.path) ? (
+                <div className="w-full h-full flex items-center justify-center overflow-auto">
+                  <img
+                    src={previewDoc.url}
+                    alt={previewDoc.name}
+                    className="max-w-full max-h-full object-contain rounded-xl shadow-lg border border-primary/5 bg-background"
+                  />
+                </div>
+              ) : isPdf(previewDoc.path) ? (
+                <iframe
+                  src={`${previewDoc.url}#toolbar=1`}
+                  title={previewDoc.name}
+                  className="w-full h-full border-none rounded-xl bg-background shadow-lg"
+                />
+              ) : (
+                <div className="text-center p-8 space-y-4 max-w-sm">
+                  <FileText className="h-16 w-16 text-muted-foreground mx-auto opacity-40" />
+                  <div className="space-y-1">
+                    <p className="font-semibold text-sm">No Preview Available</p>
+                    <p className="text-xs text-muted-foreground">This file type cannot be previewed inline. Please open or download it.</p>
+                  </div>
+                  <div className="flex justify-center gap-2">
+                    <Button onClick={() => window.open(previewDoc.url, "_blank")}>Open File</Button>
+                  </div>
+                </div>
+              )
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-function PipelineTab({ applicants, postings, schoolId, onChange }: { applicants: Applicant[]; postings: JobPosting[]; schoolId: string; onChange: () => void }) {
+function PipelineTab({ 
+  applicants, 
+  postings, 
+  schoolId, 
+  onChange,
+  onPreviewResume,
+  loadingResume
+}: { 
+  applicants: Applicant[]; 
+  postings: JobPosting[]; 
+  schoolId: string; 
+  onChange: () => void;
+  onPreviewResume: (applicantId: string, path: string, name: string) => void;
+  loadingResume: string | null;
+}) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ full_name: "", email: "", phone: "", posting_id: "", notes: "" });
 
@@ -321,8 +458,27 @@ function PipelineTab({ applicants, postings, schoolId, onChange }: { applicants:
                   <p className="font-medium text-sm">{a.full_name}</p>
                   {a.email && <p className="text-muted-foreground truncate">{a.email}</p>}
                   <p className="text-muted-foreground">{postings.find(p => p.id === a.posting_id)?.title ?? "—"}</p>
+                  {a.resume_url && (
+                    <Button 
+                      size="sm" 
+                      variant="link" 
+                      disabled={loadingResume === a.id}
+                      onClick={() => onPreviewResume(a.id, a.resume_url!, a.full_name)}
+                      className="p-0 h-auto text-primary text-[10px] mt-1.5 flex items-center gap-1 justify-start font-medium hover:no-underline"
+                    >
+                      {loadingResume === a.id ? (
+                        <span className="flex items-center gap-1">
+                          <Loader2 className="h-3 w-3 animate-spin" /> Loading...
+                        </span>
+                      ) : (
+                        <>
+                          <Eye className="h-3 w-3" /> View CV/Resume
+                        </>
+                      )}
+                    </Button>
+                  )}
                   <Select value={a.stage} onValueChange={v => moveStage(a.id, v)}>
-                    <SelectTrigger className="h-7 mt-1 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-7 mt-1.5 text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent>{STAGES.map(x => <SelectItem key={x} value={x}>{STAGE_LABEL[x]}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
