@@ -7,6 +7,7 @@ import { Briefcase, Calendar, Coins, FileText, LayoutGrid, Megaphone, PartyPoppe
 import { supabase } from "@/integrations/supabase/client";
 import { GlobalCommandPalette } from "@/components/global/GlobalCommandPalette";
 import { NotificationsBell } from "@/components/global/NotificationsBell";
+import { StaffAttendanceWidget } from "./StaffAttendanceWidget";
 import { useUnreadMessagesOptimized } from "@/hooks/useUnreadMessagesOptimized";
 import { useTenantOptimized } from "@/hooks/useTenantOptimized";
 import { useSession } from "@/hooks/useSession";
@@ -87,6 +88,7 @@ export function HrShell({ title, subtitle, schoolSlug, children }: Props) {
             onSync={offline.syncPendingItems}
             variant="compact"
           />
+          {schoolId && <StaffAttendanceWidget schoolId={schoolId} />}
           <NotificationsBell schoolId={schoolId} schoolSlug={schoolSlug} role="hr_manager" />
           <Button
             variant="soft"
@@ -174,6 +176,7 @@ export function HrShell({ title, subtitle, schoolSlug, children }: Props) {
             onSync={offline.syncPendingItems}
             variant="compact"
           />
+          {schoolId && <StaffAttendanceWidget schoolId={schoolId} />}
           <NotificationsBell schoolId={schoolId} schoolSlug={schoolSlug} role="hr_manager" />
           <Button
             variant="ghost"

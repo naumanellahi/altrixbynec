@@ -30,6 +30,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { GlobalCommandPalette } from "@/components/global/GlobalCommandPalette";
 import { NotificationsBell } from "@/components/global/NotificationsBell";
+import { StaffAttendanceWidget } from "./StaffAttendanceWidget";
 import { useTeacherBadges } from "@/hooks/useTeacherBadges";
 import { useUnreadMessagesOptimized } from "@/hooks/useUnreadMessagesOptimized";
 import { useSession } from "@/hooks/useSession";
@@ -119,6 +120,7 @@ export function TeacherShell({ title, subtitle, schoolSlug, children }: Props) {
             onSync={offline.syncPendingItems}
             variant="compact"
           />
+          {schoolId && <StaffAttendanceWidget schoolId={schoolId} />}
           <NotificationsBell schoolId={schoolId} schoolSlug={schoolSlug} role="teacher" />
           <Button
             variant="soft"
@@ -206,6 +208,7 @@ export function TeacherShell({ title, subtitle, schoolSlug, children }: Props) {
             onSync={offline.syncPendingItems}
             variant="compact"
           />
+          {schoolId && <StaffAttendanceWidget schoolId={schoolId} />}
           <NotificationsBell schoolId={schoolId} schoolSlug={schoolSlug} role="teacher" />
           <Button
             variant="ghost"

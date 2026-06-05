@@ -7,6 +7,7 @@ import { BarChart3, ClipboardList, Megaphone, PhoneCall, Target, Users, MessageS
 import { supabase } from "@/integrations/supabase/client";
 import { GlobalCommandPalette } from "@/components/global/GlobalCommandPalette";
 import { NotificationsBell } from "@/components/global/NotificationsBell";
+import { StaffAttendanceWidget } from "./StaffAttendanceWidget";
 import { useUnreadMessagesOptimized } from "@/hooks/useUnreadMessagesOptimized";
 import { useTenantOptimized } from "@/hooks/useTenantOptimized";
 import { useSession } from "@/hooks/useSession";
@@ -80,6 +81,7 @@ export function MarketingShell({ title, subtitle, schoolSlug, children }: Props)
             onSync={offline.syncPendingItems}
             variant="compact"
           />
+          {schoolId && <StaffAttendanceWidget schoolId={schoolId} />}
           <NotificationsBell schoolId={schoolId} schoolSlug={schoolSlug} role="marketing_staff" />
           <Button
             variant="soft"
@@ -167,6 +169,7 @@ export function MarketingShell({ title, subtitle, schoolSlug, children }: Props)
             onSync={offline.syncPendingItems}
             variant="compact"
           />
+          {schoolId && <StaffAttendanceWidget schoolId={schoolId} />}
           <NotificationsBell schoolId={schoolId} schoolSlug={schoolSlug} role="marketing_staff" />
           <Button
             variant="ghost"

@@ -7,6 +7,7 @@ import { LayoutGrid, LogOut, Sparkles, MessageSquare, Menu, FileText, CreditCard
 import { supabase } from "@/integrations/supabase/client";
 import { GlobalCommandPalette } from "@/components/global/GlobalCommandPalette";
 import { NotificationsBell } from "@/components/global/NotificationsBell";
+import { StaffAttendanceWidget } from "./StaffAttendanceWidget";
 import { useUnreadMessagesOptimized } from "@/hooks/useUnreadMessagesOptimized";
 import { useTenantOptimized } from "@/hooks/useTenantOptimized";
 import { useSession } from "@/hooks/useSession";
@@ -98,6 +99,7 @@ export function AccountantShell({ title, subtitle, schoolSlug, children }: Props
             onSync={offline.syncPendingItems}
             variant="compact"
           />
+          {schoolId && <StaffAttendanceWidget schoolId={schoolId} />}
           <NotificationsBell schoolId={schoolId} schoolSlug={schoolSlug} role="accountant" />
           <Button
             variant="soft"
@@ -185,6 +187,7 @@ export function AccountantShell({ title, subtitle, schoolSlug, children }: Props
             onSync={offline.syncPendingItems}
             variant="compact"
           />
+          {schoolId && <StaffAttendanceWidget schoolId={schoolId} />}
           <NotificationsBell schoolId={schoolId} schoolSlug={schoolSlug} role="accountant" />
           <Button
             variant="ghost"

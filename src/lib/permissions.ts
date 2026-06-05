@@ -113,6 +113,12 @@ export function resolvePermissions(inputRoles: EduverseRole[]): PermissionBundle
   ];
   for (const p of INTRA_MODULE) allowedPaths.add(p);
 
+  // Redirect sub-paths for fees
+  if (allowedPaths.has("fees")) {
+    allowedPaths.add("fees-pro");
+    allowedPaths.add("fee-vouchers");
+  }
+
   const canAccess = (raw: string) => {
     // Normalize: strip leading slash, query, and pick first segment only.
     const first = (raw || "").replace(/^\/+/, "").split(/[/?#]/)[0];

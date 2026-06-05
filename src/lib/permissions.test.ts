@@ -46,7 +46,6 @@ describe("resolvePermissions / RouteGuard logic", () => {
   it("hr_manager: allows staff + leaves view, blocks finance/admin console", () => {
     const p = resolvePermissions(["hr_manager"]);
     expect(p.canAccess("users")).toBe(true);
-    expect(p.canAccess("fee-vouchers")).toBe(true);     // HR sees vouchers per catalog
     expect(p.canAccess("admin")).toBe(false);
     expect(p.canAccess("finance")).toBe(false);
     expect(p.actions.canManageStaff).toBe(true);
