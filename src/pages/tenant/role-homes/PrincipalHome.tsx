@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { HrLeavesModule } from "@/pages/tenant/hr-modules/HrLeavesModule";
+import { HrAttendanceModule } from "@/pages/tenant/hr-modules/HrAttendanceModule";
 import { ParentChildLinkingTab } from "@/components/principal/ParentChildLinkingTab";
 import PrincipalComplaintsModule from "@/pages/tenant/modules/PrincipalComplaintsModule";
 import PrincipalParentNotesModule from "@/pages/tenant/modules/PrincipalParentNotesModule";
@@ -85,6 +86,7 @@ export function PrincipalHome() {
       { value: "teachers",     label: "Teachers",     visible: perms.actions.canManageStaff },
       { value: "students",     label: "Students",     visible: perms.actions.canManageStudents },
       { value: "leaves",       label: "Leaves",       visible: perms.actions.canManageStaff },
+      { value: "staff-attendance", label: "Staff Attendance", visible: perms.actions.canManageStaff },
       { value: "parents",      label: "Parents",      visible: perms.actions.canManageStudents },
       { value: "complaints",   label: "Complaints",   visible: perms.actions.canModerateComplaints },
       { value: "parent-notes", label: "Parent Notes", visible: perms.actions.canManageStudents },
@@ -677,6 +679,13 @@ export function PrincipalHome() {
       {tabValues.has("leaves") && (
         <TabsContent value="leaves">
           <HrLeavesModule />
+        </TabsContent>
+      )}
+
+      {/* Staff Attendance Tab */}
+      {tabValues.has("staff-attendance") && (
+        <TabsContent value="staff-attendance">
+          <HrAttendanceModule />
         </TabsContent>
       )}
 
