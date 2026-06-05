@@ -124,6 +124,18 @@ serve(async (req) => {
       }
     });
 
+    // Also include subjects that have teacher assignments in that section
+    mergedAssignments.forEach((a) => {
+      const subject = subjects.find((s: any) => s.id === a.subjectId);
+      if (subject) {
+        const list = sectionSubjectsMap.get(a.sectionId) || [];
+        if (!list.includes(subject.name)) {
+          list.push(subject.name);
+          sectionSubjectsMap.set(a.sectionId, list);
+        }
+      }
+    });
+
     // Busy slots mapping for clash prevention
     const busyTeachers = new Map<string, string[]>();
     const busyRooms = new Map<string, string[]>();

@@ -80,6 +80,12 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
 
   // Preview section state for school-wide suggestion display
   const [previewSectionId, setPreviewSectionId] = useState<string | null>(null);
+  const [localSuggestion, setLocalSuggestion] = useState<TimetableSuggestion | null>(null);
+
+  // Clear localSuggestion on section change
+  useEffect(() => {
+    setLocalSuggestion(null);
+  }, [selectedSection]);
 
   // AI Generation Constraints states
   const [maxClassesPerTeacher, setMaxClassesPerTeacher] = useState<number>(6);
@@ -195,8 +201,23 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
     onMutate: () => {
       setGenerating(true);
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       toast.success("Timetable generated successfully!");
+      if (data && data.timetableData) {
+        const mockSuggestion: TimetableSuggestion = {
+          id: data.timetableData.id || "local-draft",
+          class_section_id: selectedSection || null,
+          suggestion_data: data.timetableData,
+          optimization_score: data.timetableData.optimization_score ?? 100,
+          conflicts_found: data.timetableData.conflicts_found ?? 0,
+          status: "draft",
+          version_number: 1,
+          created_at: new Date().toISOString(),
+          approved_at: null,
+          approved_by: null,
+        };
+        setLocalSuggestion(mockSuggestion);
+      }
       qc.invalidateQueries({ queryKey: ["ai_timetable_suggestions", schoolId] });
     },
     onError: (error: unknown) => {
@@ -236,7 +257,7 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
     },
   });
 
-  const latestSuggestion = useMemo(() => suggestions?.[0], [suggestions]);
+  const latestSuggestion = useMemo(() => localSuggestion || suggestions?.[0], [localSuggestion, suggestions]);
 
   // Synchronize previewSectionId when latestSuggestion updates
   useEffect(() => {
