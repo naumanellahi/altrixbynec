@@ -421,24 +421,39 @@ export function StaffAttendanceWidget({ schoolId }: StaffAttendanceWidgetProps) 
         </p>
       )}
 
-      {/* Active User Geolocation coordinates preview */}
-      {userCoords && (
-        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground font-mono bg-muted/20 px-3 py-2 rounded-xl border border-border/30">
-          <span>Lat: {userCoords.latitude.toFixed(6)}</span>
-          <span>Lng: {userCoords.longitude.toFixed(6)}</span>
-          {userCoords.altitude !== null && (
-            <span>Alt: {Math.round(userCoords.altitude)}m</span>
+      {/* Geofence Status Alert Container */}
+      {!attendance && (
+        <div className="mt-4">
+          {!isLocationConfigured ? (
+            <p className="text-xs text-muted-foreground bg-muted/40 border rounded-2xl p-4 flex items-start gap-2">
+              <InfoIcon className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+              <span>
+                <strong>Campus Geofence coordinates not configured by Principal.</strong> Attendance check-ins will operate in offline/global mode. To configure settings, log in as the school principal.
+              </span>
+            </p>
+          ) : !userCoords ? (
+            <p className="text-xs text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex items-start gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5 animate-pulse" />
+              <span>
+                <strong>Acquiring GPS Signal...</strong> Calibrating live distance verification. Please ensure location permissions are enabled.
+              </span>
+            </p>
+          ) : !inRange ? (
+            <p className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-2xl p-4 flex items-start gap-2">
+              <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+              <span>
+                <strong>Verification Failed:</strong> You are currently <strong>{distance}m</strong> away from the campus center. Attendance check-ins are restricted to a <strong>100m</strong> geofence.
+              </span>
+            </p>
+          ) : (
+            <p className="text-xs text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 flex items-start gap-2">
+              <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
+              <span>
+                <strong>Location Verified:</strong> You are within the 100m campus boundary. Ready to check in.
+              </span>
+            </p>
           )}
         </div>
-      )}
-
-      {!isLocationConfigured && (
-        <p className="mt-4 text-xs text-muted-foreground bg-muted/40 border rounded-2xl p-4 flex items-start gap-2">
-          <InfoIcon className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-          <span>
-            <strong>Campus Geofence coordinates not configured by Principal.</strong> Attendance check-ins will operate in offline/global mode. To configure settings, log in as the school principal.
-          </span>
-        </p>
       )}
 
       {/* Main Buttons Console */}
