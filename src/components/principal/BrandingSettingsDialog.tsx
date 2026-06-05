@@ -224,6 +224,11 @@ export function BrandingSettingsDialog({ schoolId, trigger }: BrandingSettingsDi
     toast.success("Settings updated successfully!");
     setSaving(false);
     setOpen(false);
+    
+    // Refresh page after a short delay to refresh geofence coordinates and colors in all dashboard widgets
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
   };
 
   return (
