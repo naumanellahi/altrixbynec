@@ -145,16 +145,23 @@ export function BrandingSettingsDialog({ schoolId, trigger }: BrandingSettingsDi
     setSaving(true);
 
     // Validate coordinates
-    const latVal = latitude.trim() !== "" ? Number(latitude) : null;
-    const lngVal = longitude.trim() !== "" ? Number(longitude) : null;
-    const altVal = altitude.trim() !== "" ? Number(altitude) : null;
+    if (latitude.trim() === "") {
+      toast.error("Latitude is required to configure campus geofencing");
+      setSaving(false);
+      return;
+    }
+    if (longitude.trim() === "") {
+      toast.error("Longitude is required to configure campus geofencing");
+      setSaving(false);
+      return;
+    }
 
-    if (latitude.trim() !== "" && isNaN(Number(latitude))) {
+    if (isNaN(Number(latitude))) {
       toast.error("Latitude must be a valid number");
       setSaving(false);
       return;
     }
-    if (longitude.trim() !== "" && isNaN(Number(longitude))) {
+    if (isNaN(Number(longitude))) {
       toast.error("Longitude must be a valid number");
       setSaving(false);
       return;
@@ -164,6 +171,10 @@ export function BrandingSettingsDialog({ schoolId, trigger }: BrandingSettingsDi
       setSaving(false);
       return;
     }
+
+    const latVal = Number(latitude);
+    const lngVal = Number(longitude);
+    const altVal = altitude.trim() !== "" ? Number(altitude) : null;
 
     // 1. Update branding
     let brandingError = null;
