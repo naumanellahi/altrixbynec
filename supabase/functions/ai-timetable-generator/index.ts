@@ -260,15 +260,16 @@ JSON schema:
 }
 
 STRICT RULE CHECKLIST:
-1. Teacher Double-Booking: A teacher must NEVER be scheduled in two different sections at the same day/period_index.
-2. Teacher Availability: Do not schedule a teacher at any slot listed as BUSY for them.
-3. Room Availability: Do not schedule any room at a slot listed as BUSY for it.
-4. Breaks: Do not schedule any class during a period index designated as [BREAK - DO NOT SCHEDULE]. Leave these slots empty.
-5. Subject limits: Only schedule subjects listed as "Offered Subjects" for that section.
-6. Teacher assignments: Schedule the correct teacher for each subject according to the "TEACHER AVAILABILITY & ASSIGNMENTS" list. If a subject has no assigned teacher, schedule with teacher_id: null and teacher_name: null (TBD).
-7. Consecutive limit: A teacher should not teach more than ${constraints?.maxConsecutivePeriods || "No Limit"} periods consecutively without a break/free period.
-8. Day selection: Only schedule classes on the days listed in "ACTIVE DAYS OF THE WEEK".
-9. Valid period_index: Only schedule using period indexes that are defined in "AVAILABLE PERIOD SLOTS PER DAY" (from 0 up to ${periodDefs.length - 1}).
+1. Teacher Double-Booking (CRITICAL): A teacher must NEVER be scheduled in two different sections at the same day/period_index in your generated timetable. For example, if Teacher A is scheduled in Section X on Monday at Period 0, Teacher A CANNOT be scheduled in Section Y on Monday at Period 0.
+2. Room Double-Booking (CRITICAL): A room must NEVER be scheduled for two different sections at the same day/period_index.
+3. Teacher Busy Slots: Do not schedule a teacher at any slot listed as BUSY for them in the "CLASH CONSTRAINTS" list.
+4. Room Busy Slots: Do not schedule any room at a slot listed as BUSY for it in the "CLASH CONSTRAINTS" list.
+5. Break Slots: Do not schedule any class during a period index designated as [BREAK - DO NOT SCHEDULE]. Leave these slots empty (do not include them in the JSON timetable array).
+6. Subject Limits: Only schedule subjects that are listed in "Offered Subjects" for that section.
+7. Teacher Assignments: For each subject in a section, assign the exact teacher defined in the "TEACHER AVAILABILITY & ASSIGNMENTS" list. If a subject has no assigned teacher, set teacher_id: null and teacher_name: null (TBD).
+8. Target Weekly Frequency: Schedule the target weekly frequency for each subject (usually ${constraints?.subjectPeriodsPerWeek || 5} periods per week per subject per section).
+9. Even Distribution: Distribute the periods for a subject evenly across the days. Do not put multiple classes of the same subject on the same day unless target frequency exceeds active days.
+10. Valid Slots: Only schedule on days listed in "ACTIVE DAYS OF THE WEEK" and period indexes defined in "AVAILABLE PERIOD SLOTS PER DAY" (from 0 to ${periodDefs.length - 1}).
 
 Return ONLY the valid JSON block. Do not add markdown explanation, code blocks, or comments outside the JSON.`;
 
@@ -307,11 +308,100 @@ Return ONLY the valid JSON block. Do not add markdown explanation, code blocks, 
 
     // Save the suggestion
     if (timetableData && !timetableData.error) {
+      const timetable = timetableData.timetable || [];
+      let calculatedConflicts = 0;
+
+      // Group all entries (AI generated + existing other sections) by slot (day+period)
+      const slotMap = new Map<string, Array<{ section_id: string, teacher_id: string | null, teacher_name: string | null, room: string | null }>>();
+
+      // 1. Add AI generated ones
+      for (const row of timetable) {
+        const day = String(row.day || "").toLowerCase().trim();
+        const periodIdx = Number(row.period_index);
+        if (!day || !Number.isFinite(periodIdx)) continue;
+
+        const key = `${day}:${periodIdx}`;
+        const list = slotMap.get(key) || [];
+        list.push({
+          section_id: row.section_id,
+          teacher_id: row.teacher_id || null,
+          teacher_name: row.teacher_name || null,
+          room: row.room || null
+        });
+        slotMap.set(key, list);
+      }
+
+      // 2. If single section, add other sections' existing entries from DB to check for double bookings
+      if (classSectionId) {
+        const otherEntries = (existingEntriesRes.data || []).filter(
+          (e: any) => e.class_section_id !== classSectionId
+        );
+        otherEntries.forEach((e: any) => {
+          const dayLabel = dayNames[e.day_of_week]?.toLowerCase();
+          const pIndex = periods.findIndex((p: any) => p.id === e.period_id);
+          if (!dayLabel || pIndex < 0) return;
+
+          const key = `${dayLabel}:${pIndex}`;
+          const list = slotMap.get(key) || [];
+          const name = teacherNameMap.get(e.teacher_user_id || "") || null;
+          list.push({
+            section_id: e.class_section_id,
+            teacher_id: e.teacher_user_id || null,
+            teacher_name: name,
+            room: e.room || null
+          });
+          slotMap.set(key, list);
+        });
+      }
+
+      // 3. Scan for clashes
+      for (const [_, items] of slotMap.entries()) {
+        // Teacher double bookings
+        const teacherAssigned = new Map<string, string[]>(); // teacher -> list of sections
+        // Room double bookings
+        const roomAssigned = new Map<string, string[]>(); // room -> list of sections
+
+        for (const item of items) {
+          const teacherKey = item.teacher_id ? String(item.teacher_id).toLowerCase() : item.teacher_name ? String(item.teacher_name).toLowerCase() : null;
+          if (teacherKey && teacherKey !== "—" && teacherKey !== "tbd") {
+            const list = teacherAssigned.get(teacherKey) || [];
+            if (!list.includes(item.section_id)) {
+              list.push(item.section_id);
+              teacherAssigned.set(teacherKey, list);
+            }
+          }
+
+          const roomKey = item.room ? String(item.room).trim().toLowerCase() : null;
+          if (roomKey && roomKey !== "—" && roomKey !== "tbd" && roomKey !== "none") {
+            const list = roomAssigned.get(roomKey) || [];
+            if (!list.includes(item.section_id)) {
+              list.push(item.section_id);
+              roomAssigned.set(roomKey, list);
+            }
+          }
+        }
+
+        for (const [_, sectionsList] of teacherAssigned.entries()) {
+          if (sectionsList.length > 1) {
+            calculatedConflicts += (sectionsList.length - 1);
+          }
+        }
+
+        for (const [_, sectionsList] of roomAssigned.entries()) {
+          if (sectionsList.length > 1) {
+            calculatedConflicts += (sectionsList.length - 1);
+          }
+        }
+      }
+
+      // Overwrite conflicts_found with true calculated conflicts
+      timetableData.conflicts_found = calculatedConflicts;
+
       await supabase.from("ai_timetable_suggestions").insert({
         school_id: schoolId,
         class_section_id: classSectionId,
         suggestion_data: timetableData,
-        conflicts_found: timetableData.conflicts_found || 0,
+        conflicts_found: calculatedConflicts,
         optimization_score: timetableData.optimization_score || 0,
         status: "draft",
       });

@@ -472,17 +472,27 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
                     );
                   }
 
+                  const currentSection = previewSectionId || latestSuggestion.class_section_id;
+                  const cellKey = `${currentSection}:${day}:${periodKey}`;
+                  const cellConflicts = suggestionConflicts.byCell.get(cellKey) || [];
+                  const hasConflicts = cellConflicts.length > 0;
+
                   return (
                     <td
                       key={`${day}-${period}`}
                       className={`p-3 border-b border-primary/10 align-middle text-center transition-all ${
                         editMode ? "cursor-pointer hover:bg-primary/10" : ""
-                      }`}
+                      } ${hasConflicts ? "bg-red-500/5" : ""}`}
                       onClick={() => editMode && setEditingCell({ day, period: periodKey })}
+                      title={hasConflicts ? cellConflicts.join("\n") : undefined}
                     >
                       {cell && cell.subject !== "—" ? (
-                        <div className="p-2.5 rounded-2xl bg-gradient-to-br from-background to-primary/5 border border-primary/10 shadow-sm hover:scale-[1.02] transition-transform duration-200">
-                          <p className="font-bold text-primary flex items-center justify-center gap-1">
+                        <div className={`p-2.5 rounded-2xl bg-gradient-to-br border shadow-sm hover:scale-[1.02] transition-all duration-200 relative ${
+                          hasConflicts 
+                            ? "from-red-500/5 to-red-500/10 border-red-500/30 text-red-900" 
+                            : "from-background to-primary/5 border-primary/10"
+                        }`}>
+                          <p className={`font-bold flex items-center justify-center gap-1 ${hasConflicts ? "text-red-700" : "text-primary"}`}>
                             <BookOpen className="h-3 w-3 opacity-70" />
                             {cell.subject}
                           </p>
@@ -495,6 +505,11 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
                               <MapPin className="h-2.5 w-2.5 opacity-55" />
                               {cell.room}
                             </p>
+                          )}
+                          {hasConflicts && (
+                            <div className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[9px] font-bold text-white shadow-sm animate-pulse" title={cellConflicts.join(", ")}>
+                              !
+                            </div>
                           )}
                         </div>
                       ) : (
@@ -512,6 +527,91 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
       </div>
     );
   };
+
+  const suggestionConflicts = useMemo(() => {
+    if (!latestSuggestion?.suggestion_data) return { count: 0, byCell: new Map<string, string[]>() };
+    const dataObj = latestSuggestion.suggestion_data as any;
+    const timetable = dataObj.timetable || [];
+
+    const byCell = new Map<string, string[]>(); // key: "sectionId:day:periodKey" -> list of warning messages
+    let count = 0;
+
+    // Group rows by day and period_index to find double-bookings
+    const slotMap = new Map<string, any[]>(); // key: "day:periodIndex"
+    for (const row of timetable) {
+      const day = String(row.day || "").toLowerCase().trim();
+      const periodIndex = Number(row.period_index);
+      if (!day || !Number.isFinite(periodIndex)) continue;
+
+      const key = `${day}:${periodIndex}`;
+      const list = slotMap.get(key) || [];
+      list.push(row);
+      slotMap.set(key, list);
+    }
+
+    // Check teacher and room overlaps
+    for (const [slotKey, rows] of slotMap.entries()) {
+      const [day, periodStr] = slotKey.split(":");
+      const periodKey = `P${Number(periodStr) + 1}`;
+      const dayLabel = day.charAt(0).toUpperCase() + day.slice(1);
+
+      // Teacher overlaps
+      const teacherMap = new Map<string, any[]>();
+      for (const r of rows) {
+        const tId = r.teacher_id || r.teacher_name;
+        if (!tId || tId === "—") continue;
+        const list = teacherMap.get(String(tId).toLowerCase()) || [];
+        list.push(r);
+        teacherMap.set(String(tId).toLowerCase(), list);
+      }
+
+      for (const [tId, group] of teacherMap.entries()) {
+        if (group.length > 1) {
+          count += (group.length - 1);
+          for (const r of group) {
+            const others = group.filter(x => x.section_id !== r.section_id);
+            const otherSectionNames = others.map(x => {
+              const sect = sections?.find(s => s.id === x.section_id);
+              return sect ? `${(sect.academic_classes as any)?.name || ""} ${sect.name}` : "another section";
+            }).join(", ");
+            const cellKey = `${r.section_id}:${dayLabel}:${periodKey}`;
+            const list = byCell.get(cellKey) || [];
+            list.push(`Teacher already scheduled in ${otherSectionNames}`);
+            byCell.set(cellKey, list);
+          }
+        }
+      }
+
+      // Room overlaps
+      const roomMap = new Map<string, any[]>();
+      for (const r of rows) {
+        const room = String(r.room || "").trim().toLowerCase();
+        if (!room || room === "—" || room === "tbd") continue;
+        const list = roomMap.get(room) || [];
+        list.push(r);
+        roomMap.set(room, list);
+      }
+
+      for (const [room, group] of roomMap.entries()) {
+        if (group.length > 1) {
+          count += (group.length - 1);
+          for (const r of group) {
+            const others = group.filter(x => x.section_id !== r.section_id);
+            const otherSectionNames = others.map(x => {
+              const sect = sections?.find(s => s.id === x.section_id);
+              return sect ? `${(sect.academic_classes as any)?.name || ""} ${sect.name}` : "another section";
+            }).join(", ");
+            const cellKey = `${r.section_id}:${dayLabel}:${periodKey}`;
+            const list = byCell.get(cellKey) || [];
+            list.push(`Room "${r.room}" already used in ${otherSectionNames}`);
+            byCell.set(cellKey, list);
+          }
+        }
+      }
+    }
+
+    return { count, byCell };
+  }, [latestSuggestion, sections]);
 
   if (loadingSections) {
     return (
@@ -744,18 +844,18 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
               {/* Stats Grid */}
               <div className="grid grid-cols-3 gap-4">
                 <div className={`rounded-2xl border p-4 text-center transition-all ${
-                  (latestSuggestion.conflicts_found || 0) === 0
+                  suggestionConflicts.count === 0
                     ? "bg-emerald-500/10 border-emerald-500/25"
                     : "bg-red-500/10 border-red-500/25"
                 }`}>
-                  {(latestSuggestion.conflicts_found || 0) === 0 ? (
+                  {suggestionConflicts.count === 0 ? (
                     <CheckCircle2 className="mx-auto h-5 w-5 text-emerald-600 animate-bounce" />
                   ) : (
-                    <AlertTriangle className="mx-auto h-5 w-5 text-red-600" />
+                    <AlertTriangle className="mx-auto h-5 w-5 text-red-600 animate-pulse" />
                   )}
                   <p className="mt-1.5 text-xs text-muted-foreground font-medium">Clash Validation</p>
                   <p className="text-xl font-black mt-0.5">
-                    {(latestSuggestion.conflicts_found || 0) === 0 ? "0 Clashes" : `${latestSuggestion.conflicts_found} Clashes`}
+                    {suggestionConflicts.count === 0 ? "0 Clashes" : `${suggestionConflicts.count} Clashes`}
                   </p>
                 </div>
 
