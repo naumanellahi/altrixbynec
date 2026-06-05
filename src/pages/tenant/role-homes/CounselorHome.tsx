@@ -18,7 +18,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { StaffAttendanceWidget } from "@/components/tenant/StaffAttendanceWidget";
 
 const PRIORITY_CLS: Record<string, string> = {
   urgent: "bg-destructive/10 text-destructive border-destructive/20",
@@ -143,9 +142,6 @@ export function CounselorHome() {
           </div>
         </div>
       </div>
-
-      {/* Staff Attendance Widget */}
-      {schoolId && <StaffAttendanceWidget schoolId={schoolId} />}
 
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">

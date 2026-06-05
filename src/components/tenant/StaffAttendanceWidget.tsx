@@ -2,9 +2,15 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   MapPin,
   CheckCircle,
@@ -15,8 +21,9 @@ import {
   Wifi,
   Navigation,
   AlertTriangle,
-  Lock
+  UserCheck,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface StaffAttendanceWidgetProps {
   schoolId: string;
@@ -69,6 +76,7 @@ const formatClockTime = (timeStr: string | null) => {
 
 export function StaffAttendanceWidget({ schoolId }: StaffAttendanceWidgetProps) {
   const { user } = useSession();
+  const [open, setOpen] = useState(false);
   const [schoolLoc, setSchoolLoc] = useState<SchoolLocation | null>(null);
   const [attendance, setAttendance] = useState<AttendanceRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -259,6 +267,7 @@ export function StaffAttendanceWidget({ schoolId }: StaffAttendanceWidgetProps) 
 
       toast.success(`Attendance successfully logged as ${status.toUpperCase()}!`);
       await fetchData();
+      setOpen(false); // Close dialog on success
     } catch (e: any) {
       console.error("Upsert attendance error:", e);
       toast.error(e.message || "Failed to sync attendance.");
@@ -306,6 +315,7 @@ export function StaffAttendanceWidget({ schoolId }: StaffAttendanceWidgetProps) 
 
       toast.success("Clock-out successfully logged! Have a nice day.");
       await fetchData();
+      setOpen(false); // Close dialog on success
     } catch (e: any) {
       console.error("Clock out error:", e);
       toast.error(e.message || "Failed to log clock out.");
@@ -316,262 +326,221 @@ export function StaffAttendanceWidget({ schoolId }: StaffAttendanceWidgetProps) 
 
   if (loading) {
     return (
-      <Card className="border border-border/40 bg-card/60 backdrop-blur-md shadow-md animate-pulse">
-        <CardContent className="py-6 flex items-center justify-center">
-          <p className="text-xs text-muted-foreground">Initializing Geofencing Beacon...</p>
-        </CardContent>
-      </Card>
+      <Button variant="ghost" size="icon" className="rounded-xl opacity-60 cursor-not-allowed">
+        <UserCheck className="h-4.5 w-4.5 text-muted-foreground animate-pulse" />
+      </Button>
     );
   }
 
   return (
-    <Card className="relative overflow-hidden border border-primary/10 bg-gradient-to-b from-card/90 to-card/50 backdrop-blur-xl shadow-xl rounded-3xl p-5 sm:p-6 transition-all duration-300 hover:shadow-2xl">
-      {/* Dynamic Background Radar Glow */}
-      <div className="absolute top-0 right-0 -mt-10 -mr-10 h-32 w-32 rounded-full bg-primary/5 blur-2xl pointer-events-none" />
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button
+          variant="soft"
+          size="icon"
+          title="Staff Attendance Console"
+          aria-label="Staff Attendance Console"
+          className={cn(
+            "rounded-xl relative transition-all duration-300 hover:scale-105 active:scale-95",
+            attendance
+              ? (attendance.status === "present"
+                  ? "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/15"
+                  : "bg-blue-500/10 text-blue-600 hover:bg-blue-500/15")
+              : "bg-amber-500/10 text-amber-600 hover:bg-amber-500/15 animate-pulse"
+          )}
+        >
+          <UserCheck className="h-4.5 w-4.5" />
+          
+          {/* Status Indicator Dot */}
+          <span className={cn(
+            "absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full border border-background",
+            attendance
+              ? (attendance.status === "present"
+                  ? "bg-emerald-500"
+                  : "bg-blue-500")
+              : "bg-amber-500 animate-ping"
+          )} />
+        </Button>
+      </DialogTrigger>
 
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between relative z-10">
-        
-        {/* Left Side: Connection & GPS Radar State */}
-        <div className="flex items-center gap-4">
-          <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-muted/40 border">
-            {/* Live radar pulsing rings */}
-            {isLocationConfigured && gpsStatus !== "disabled" && (
-              <>
-                <div className={`absolute inset-0 rounded-2xl animate-ping opacity-25 ${inRange ? "bg-emerald-500" : "bg-amber-500"}`} style={{ animationDuration: "1.8s" }} />
-                <div className={`absolute inset-1 rounded-2xl animate-ping opacity-15 ${inRange ? "bg-emerald-500" : "bg-amber-500"}`} style={{ animationDuration: "2.8s", animationDelay: "0.4s" }} />
-              </>
-            )}
-            <Compass className={`h-6 w-6 transition-colors duration-500 ${
-              gpsStatus === "locked" ? (inRange ? "text-emerald-500" : "text-amber-500") : "text-muted-foreground animate-spin"
-            }`} />
+      <DialogContent className="w-[calc(100%-2rem)] sm:max-w-md bg-card/95 backdrop-blur-md border-border/80 shadow-2xl rounded-3xl p-6">
+        <DialogHeader>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-lg font-bold font-display tracking-tight flex items-center gap-2">
+              <UserCheck className="h-5 w-5 text-primary" />
+              Staff Attendance Console
+            </DialogTitle>
+            <span className="text-[11px] font-mono text-muted-foreground bg-muted/40 px-2 py-0.5 rounded border">
+              {new Date(todayDate).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+            </span>
           </div>
+        </DialogHeader>
 
-          <div className="space-y-1">
-            <h4 className="font-display text-sm sm:text-base font-semibold tracking-tight">
-              Campus Beacon Presence
-            </h4>
-            <div className="flex flex-wrap items-center gap-2">
-              {/* GPS Signal Strength Badge */}
-              <Badge variant="outline" className={`text-[10px] font-medium h-5 rounded-lg border-none flex items-center gap-1 ${
-                gpsStatus === "locked" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" :
-                gpsStatus === "weak" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" :
-                "bg-destructive/10 text-destructive dark:text-red-400"
-              }`}>
-                <Wifi className="h-3 w-3" />
-                {gpsStatus === "locked" ? `High Accuracy (±${userCoords?.accuracy ? Math.round(userCoords.accuracy) : 5}m)` :
-                 gpsStatus === "weak" ? "Weak Signal" : "No GPS Signal"}
-              </Badge>
-
-              {/* Geofence Status Badge */}
-              {isLocationConfigured ? (
-                <Badge variant="outline" className={`text-[10px] font-medium h-5 rounded-lg border-none flex items-center gap-1 ${
-                  inRange ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                }`}>
-                  <Navigation className="h-3 w-3" />
-                  {inRange ? "Within Range" : `${distance ? `${distance}m away` : "Out of bounds"}`}
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="text-[10px] font-medium h-5 rounded-lg border-none bg-muted text-muted-foreground">
-                  Perimeter Unconfigured
-                </Badge>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Side: Active Check-In status message */}
-        <div className="flex flex-col items-start sm:items-end gap-1.5 min-w-0">
-          <p className="text-xs text-muted-foreground font-mono">
-            {new Date(todayDate).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
-          </p>
-          {attendance ? (
-            <div className="flex items-center gap-2">
-              <span className={`h-2.5 w-2.5 rounded-full ${
-                attendance.status === "present" ? "bg-emerald-500 animate-pulse" :
-                attendance.status === "leave" ? "bg-blue-500" : "bg-destructive"
-              }`} />
-              <p className="text-sm font-semibold capitalize font-display">
-                Status: {attendance.status}
+        {/* Geofence Status Alert Panel */}
+        {!attendance && (
+          <div className="mt-3">
+            {!isLocationConfigured ? (
+              <p className="text-xs text-muted-foreground bg-muted/40 border rounded-2xl p-4 flex items-start gap-2 leading-relaxed">
+                <Compass className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                <span>
+                  <strong>Campus Geofence coordinates not configured by Principal.</strong> Attendance check-ins will operate in offline/global mode. To configure settings, log in as the school principal.
+                </span>
               </p>
-              {attendance.clock_in && (
-                <p className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-0.5 rounded border border-border/40">
-                  Clock-in: {formatClockTime(attendance.clock_in)}
-                </p>
+            ) : !userCoords ? (
+              <p className="text-xs text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex items-start gap-2 leading-relaxed">
+                <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5 animate-pulse" />
+                <span>
+                  <strong>Acquiring GPS Signal...</strong> Calibrating live distance verification. Please ensure location permissions are enabled.
+                </span>
+              </p>
+            ) : !inRange ? (
+              <p className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-2xl p-4 flex items-start gap-2 leading-relaxed">
+                <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5 animate-bounce" />
+                <span>
+                  <strong>Verification Failed:</strong> You are currently <strong>{distance}m</strong> away from the campus center. Attendance check-ins are restricted to a <strong>100m</strong> geofence.
+                </span>
+              </p>
+            ) : (
+              <p className="text-xs text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 flex items-start gap-2 leading-relaxed">
+                <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
+                <span>
+                  <strong>Location Verified:</strong> You are within the 100m campus boundary. Ready to check in.
+                </span>
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* GPS Signal Strength Badge if configured */}
+        {isLocationConfigured && (
+          <div className="mt-2.5 flex items-center justify-between bg-muted/30 border border-border/40 rounded-xl px-3 py-2 text-[10px] text-muted-foreground">
+            <span className="flex items-center gap-1.5 font-medium">
+              <Wifi className="h-3.5 w-3.5 text-primary" /> GPS Sensor Status
+            </span>
+            <Badge variant="outline" className={cn(
+              "text-[9px] font-semibold border-none px-2 h-5 rounded-md",
+              gpsStatus === "locked" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" :
+              gpsStatus === "weak" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" :
+              "bg-destructive/10 text-destructive dark:text-red-400"
+            )}>
+              {gpsStatus === "locked" ? `High Accuracy (±${userCoords?.accuracy ? Math.round(userCoords.accuracy) : 5}m)` :
+               gpsStatus === "weak" ? "Weak Signal" : "No GPS Signal"}
+            </Badge>
+          </div>
+        )}
+
+        {/* GPS Error Alert */}
+        {gpsError && (
+          <p className="mt-3 text-[11px] text-destructive bg-destructive/10 border border-destructive/20 rounded-xl p-2.5 flex items-center gap-1.5 leading-tight">
+            <AlertTriangle className="h-4 w-4" />
+            GPS: {gpsError}
+          </p>
+        )}
+
+        {/* Interactive Clickable Icons Console */}
+        <div className="mt-5 border-t border-b border-dashed border-border/80 py-6 flex justify-around items-center">
+          
+          {/* PRESENT ICON */}
+          <div className="flex flex-col items-center gap-2">
+            <button
+              onClick={() => logAttendance("present")}
+              disabled={saving || (isLocationConfigured && !inRange) || (attendance && attendance.status === "present")}
+              className={cn(
+                "h-16 w-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-md hover:shadow-lg active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed",
+                attendance?.status === "present"
+                  ? "bg-emerald-500 text-white cursor-default shadow-emerald-500/20"
+                  : "bg-emerald-500/10 text-emerald-600 border border-emerald-500/30 hover:bg-emerald-500/20"
               )}
-              {attendance.clock_out && (
-                <p className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-0.5 rounded border border-border/40">
-                  Clock-out: {formatClockTime(attendance.clock_out)}
-                </p>
+            >
+              <CheckCircle className="h-8 w-8" />
+            </button>
+            <span className="text-[11px] font-semibold tracking-tight">Present</span>
+          </div>
+
+          {/* ABSENT ICON */}
+          <div className="flex flex-col items-center gap-2">
+            <button
+              onClick={() => logAttendance("absent")}
+              disabled={saving || (isLocationConfigured && !inRange) || (attendance && attendance.status === "absent")}
+              className={cn(
+                "h-16 w-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-md hover:shadow-lg active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed",
+                attendance?.status === "absent"
+                  ? "bg-destructive text-white cursor-default shadow-destructive/20"
+                  : "bg-destructive/10 text-destructive border border-destructive/30 hover:bg-destructive/20"
               )}
+            >
+              <XCircle className="h-8 w-8" />
+            </button>
+            <span className="text-[11px] font-semibold tracking-tight">Absent</span>
+          </div>
+
+          {/* LEAVE ICON */}
+          <div className="flex flex-col items-center gap-2">
+            <button
+              onClick={() => logAttendance("leave")}
+              disabled={saving || (attendance && attendance.status === "leave")}
+              className={cn(
+                "h-16 w-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-md hover:shadow-lg active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed",
+                attendance?.status === "leave"
+                  ? "bg-blue-500 text-white cursor-default shadow-blue-500/20"
+                  : "bg-blue-500/10 text-blue-600 border border-blue-500/30 hover:bg-blue-500/20"
+              )}
+            >
+              <FileText className="h-8 w-8" />
+            </button>
+            <span className="text-[11px] font-semibold tracking-tight">Leave</span>
+          </div>
+
+        </div>
+
+        {/* Bottom Status Panel */}
+        <div className="mt-4 flex flex-col gap-2">
+          {attendance ? (
+            <div className="flex flex-wrap items-center justify-between text-xs bg-muted/40 p-3 rounded-2xl border font-mono">
+              <div className="flex items-center gap-2">
+                <span className={cn(
+                  "h-2.5 w-2.5 rounded-full",
+                  attendance.status === "present" ? "bg-emerald-500 animate-pulse" :
+                  attendance.status === "leave" ? "bg-blue-500" : "bg-destructive"
+                )} />
+                <span className="font-semibold capitalize text-foreground">Logged: {attendance.status}</span>
+              </div>
+              <div className="flex gap-2">
+                {attendance.clock_in && (
+                  <span className="bg-muted/80 px-2 py-0.5 rounded border text-[10px]">In: {formatClockTime(attendance.clock_in)}</span>
+                )}
+                {attendance.clock_out && (
+                  <span className="bg-muted/80 px-2 py-0.5 rounded border text-[10px]">Out: {formatClockTime(attendance.clock_out)}</span>
+                )}
+              </div>
             </div>
           ) : (
-            <p className="text-sm font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+            <div className="flex items-center justify-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 bg-amber-500/5 p-3 rounded-2xl border border-dashed border-amber-500/30">
               <AlertTriangle className="h-4 w-4 text-amber-500" />
-              Not marked today
-            </p>
+              <span>You have not recorded your attendance for today yet.</span>
+            </div>
+          )}
+
+          {/* Clock Out triggers inside the modal */}
+          {attendance && attendance.status === "present" && !attendance.clock_out && (
+            <div className="flex items-center justify-between bg-muted/20 border border-dashed rounded-2xl p-3 mt-1">
+              <span className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                <Clock className="h-4 w-4 animate-pulse text-emerald-500" /> Duty active
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleClockOut}
+                disabled={saving || (isLocationConfigured && !inRange)}
+                className="rounded-xl text-[11px] font-semibold border-amber-500/30 text-amber-600 hover:bg-amber-500/10 h-8 active:scale-95"
+              >
+                Clock Out
+              </Button>
+            </div>
           )}
         </div>
-      </div>
-
-      {/* Warning if GPS fails or not configured */}
-      {gpsError && (
-        <p className="mt-3 text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-xl p-2.5 flex items-center gap-1.5">
-          <AlertTriangle className="h-4 w-4" />
-          GPS Error: {gpsError}. Please allow location access to verify campus coordinates.
-        </p>
-      )}
-
-      {/* Geofence Status Alert Container */}
-      {!attendance && (
-        <div className="mt-4">
-          {!isLocationConfigured ? (
-            <p className="text-xs text-muted-foreground bg-muted/40 border rounded-2xl p-4 flex items-start gap-2">
-              <InfoIcon className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-              <span>
-                <strong>Campus Geofence coordinates not configured by Principal.</strong> Attendance check-ins will operate in offline/global mode. To configure settings, log in as the school principal.
-              </span>
-            </p>
-          ) : !userCoords ? (
-            <p className="text-xs text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex items-start gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5 animate-pulse" />
-              <span>
-                <strong>Acquiring GPS Signal...</strong> Calibrating live distance verification. Please ensure location permissions are enabled.
-              </span>
-            </p>
-          ) : !inRange ? (
-            <p className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-2xl p-4 flex items-start gap-2">
-              <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
-              <span>
-                <strong>Verification Failed:</strong> You are currently <strong>{distance}m</strong> away from the campus center. Attendance check-ins are restricted to a <strong>100m</strong> geofence.
-              </span>
-            </p>
-          ) : (
-            <p className="text-xs text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 flex items-start gap-2">
-              <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
-              <span>
-                <strong>Location Verified:</strong> You are within the 100m campus boundary. Ready to check in.
-              </span>
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Main Buttons Console */}
-      <div className="mt-6 grid grid-cols-3 gap-3">
-        {/* PRESENT BUTTON */}
-        <Button
-          type="button"
-          onClick={() => logAttendance("present")}
-          disabled={saving || (isLocationConfigured && !inRange) || (attendance && attendance.status === "present")}
-          className={`h-12 gap-2 text-xs sm:text-sm font-semibold rounded-2xl transition-all shadow-sm ${
-            attendance?.status === "present"
-              ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10 cursor-default"
-              : "bg-emerald-600 text-white hover:bg-emerald-500 hover:shadow-md hover:scale-[1.01] active:scale-95 disabled:opacity-50"
-          }`}
-        >
-          {attendance?.status === "present" ? (
-            <>
-              <CheckCircle className="h-4 w-4" />
-              Present Checked
-            </>
-          ) : (
-            <>
-              {isLocationConfigured && !inRange && <Lock className="h-3.5 w-3.5" />}
-              Mark Present
-            </>
-          )}
-        </Button>
-
-        {/* ABSENT BUTTON */}
-        <Button
-          type="button"
-          onClick={() => logAttendance("absent")}
-          disabled={saving || (isLocationConfigured && !inRange) || (attendance && attendance.status === "absent")}
-          className={`h-12 gap-2 text-xs sm:text-sm font-semibold rounded-2xl transition-all shadow-sm ${
-            attendance?.status === "absent"
-              ? "bg-destructive/10 border border-destructive/30 text-destructive hover:bg-destructive/10 cursor-default"
-              : "bg-destructive text-white hover:bg-red-500 hover:shadow-md hover:scale-[1.01] active:scale-95 disabled:opacity-50"
-          }`}
-        >
-          {attendance?.status === "absent" ? (
-            <>
-              <XCircle className="h-4 w-4" />
-              Absent Logged
-            </>
-          ) : (
-            <>
-              {isLocationConfigured && !inRange && <Lock className="h-3.5 w-3.5" />}
-              Mark Absent
-            </>
-          )}
-        </Button>
-
-        {/* LEAVE BUTTON */}
-        <Button
-          type="button"
-          onClick={() => logAttendance("leave")}
-          disabled={saving || (attendance && attendance.status === "leave")}
-          className={`h-12 gap-2 text-xs sm:text-sm font-semibold rounded-2xl transition-all shadow-sm ${
-            attendance?.status === "leave"
-              ? "bg-blue-500/10 border border-blue-500/30 text-blue-600 hover:bg-blue-500/10 cursor-default"
-              : "bg-blue-600 text-white hover:bg-blue-500 hover:shadow-md hover:scale-[1.01] active:scale-95"
-          }`}
-        >
-          {attendance?.status === "leave" ? (
-            <>
-              <FileText className="h-4 w-4" />
-              On Leave
-            </>
-          ) : (
-            <>
-              Request Leave
-            </>
-          )}
-        </Button>
-      </div>
-
-      {/* Clock Out Console for active Present staff */}
-      {attendance && attendance.status === "present" && !attendance.clock_out && (
-        <div className="mt-4 pt-4 border-t border-dashed border-border/80 flex justify-between items-center animate-fade-in">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Clock className="h-4 w-4 animate-pulse text-emerald-500" />
-            <span>Duty active. Don't forget to clock out before leaving.</span>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleClockOut}
-            disabled={saving || (isLocationConfigured && !inRange)}
-            className="rounded-xl text-xs font-semibold gap-1.5 border-amber-500/30 text-amber-600 hover:bg-amber-500/10 active:scale-95"
-          >
-            {isLocationConfigured && !inRange && <Lock className="h-3 w-3" />}
-            Clock Out
-          </Button>
-        </div>
-      )}
-    </Card>
-  );
-}
-
-// Simple Helper Info SVG component to avoid warnings
-function InfoIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <path d="M12 16v-4" />
-      <path d="M12 8h.01" />
-    </svg>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -17,6 +17,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { buildMergedNav, GROUP_LABELS, GROUP_ORDER, DROPDOWN_MAPPING } from "@/lib/role-navigation";
 import { resolvePermissions } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
+import { StaffAttendanceWidget } from "./StaffAttendanceWidget";
 
 
 type Props = PropsWithChildren<{
@@ -51,6 +52,10 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
   // Use optimized tenant hook that caches and applies branding automatically
   const tenant = useTenantOptimized(schoolSlug);
   const schoolId = tenant.schoolId;
+
+  const isStaff = useMemo(() => {
+    return ["teacher", "principal", "vice_principal", "academic_coordinator", "counselor", "hr_manager", "accountant", "marketing_staff"].includes(role);
+  }, [role]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -123,6 +128,7 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
           </p>
         </div>
         <div className="flex items-center gap-1.5">
+          {schoolId && isStaff && <StaffAttendanceWidget schoolId={schoolId} />}
           <NotificationsBell schoolId={schoolId} schoolSlug={schoolSlug} role={role} />
           <Button
             variant="soft"
@@ -315,6 +321,7 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
           </div>
         </div>
         <div className="flex items-center gap-1">
+          {schoolId && isStaff && <StaffAttendanceWidget schoolId={schoolId} />}
           <NotificationsBell schoolId={schoolId} schoolSlug={schoolSlug} role={role} />
           <Button
             variant="ghost"

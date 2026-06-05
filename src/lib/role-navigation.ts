@@ -47,6 +47,8 @@ export const NAV_CATALOG: NavItem[] = [
   // People
   { key: "users", label: "Staff", icon: Users, group: "people", path: "users",
     roles: ["super_admin","school_owner","principal","vice_principal","school_admin","hr_manager"] },
+  { key: "staff-attendance", label: "Staff Attendance", icon: ClipboardList, group: "people", path: "staff-attendance",
+    roles: ["super_admin","school_owner","principal","vice_principal","school_admin","hr_manager"] },
   { key: "leaves", label: "Leaves", icon: FileSignature, group: "people", path: "leaves",
     roles: ["super_admin","school_owner","principal","vice_principal","school_admin","hr_manager"] },
   { key: "salaries", label: "Salaries", icon: Wallet, group: "people", path: "salaries",
@@ -217,6 +219,7 @@ export const DROPDOWN_MAPPING: Record<string, { groupKey: string; label: string;
   "report-cards": { groupKey: "academic_setup", label: "Academic Setup", icon: GraduationCap },
 
   salaries: { groupKey: "hr_talent", label: "HR & Talent", icon: Users },
+  "staff-attendance": { groupKey: "hr_talent", label: "HR & Talent", icon: Users },
   contracts: { groupKey: "hr_talent", label: "HR & Talent", icon: Users },
   reviews: { groupKey: "hr_talent", label: "HR & Talent", icon: Users },
   documents: { groupKey: "hr_talent", label: "HR & Talent", icon: Users },

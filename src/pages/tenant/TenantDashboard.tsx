@@ -35,6 +35,7 @@ import { HrSalariesModule } from "@/pages/tenant/hr-modules/HrSalariesModule";
 import { HrContractsModule } from "@/pages/tenant/hr-modules/HrContractsModule";
 import { HrReviewsModule } from "@/pages/tenant/hr-modules/HrReviewsModule";
 import { HrDocumentsModule } from "@/pages/tenant/hr-modules/HrDocumentsModule";
+import { HrAttendanceModule } from "@/pages/tenant/hr-modules/HrAttendanceModule";
 import { MarketingLeadsModule } from "@/pages/tenant/marketing-modules/MarketingLeadsModule";
 import { MarketingFollowUpsModule } from "@/pages/tenant/marketing-modules/MarketingFollowUpsModule";
 import { MarketingCallsModule } from "@/pages/tenant/marketing-modules/MarketingCallsModule";
@@ -502,6 +503,7 @@ const TenantDashboard = () => {
             <Route path="admissions" element={<AdmissionsModule />} />
             <Route path="reports" element={<ReportsModule />} />
             <Route path="leaves" element={<HrLeavesModule />} />
+            <Route path="staff-attendance" element={<HrAttendanceModule />} />
             <Route path="salaries" element={<HrSalariesModule />} />
             <Route path="contracts" element={<HrContractsModule />} />
             <Route path="reviews" element={<HrReviewsModule />} />
@@ -524,7 +526,7 @@ const TenantDashboard = () => {
                 "leads","follow-ups","calls","sources","campaigns","academic","timetable",
                 "attendance","finance","fees","fees-pro","fee-vouchers","invoices","payments",
                 "expenses","payroll","ledger","vendors","tax","admissions","reports","leaves",
-                "salaries","contracts","reviews","documents","notices","holidays","diary",
+                "staff-attendance","salaries","contracts","reviews","documents","notices","holidays","diary",
                 "exams","report-cards","support","complaints","parent-notes","counseling",
               ],
             })}

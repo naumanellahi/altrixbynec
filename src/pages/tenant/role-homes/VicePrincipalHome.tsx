@@ -23,7 +23,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DashboardAlertsPanel, AlertsSummaryBadge } from "@/components/dashboard/DashboardAlertsPanel";
 import { AlertSettingsDialog } from "@/components/dashboard/AlertSettingsDialog";
-import { StaffAttendanceWidget } from "@/components/tenant/StaffAttendanceWidget";
 
 import {
   ResponsiveContainer,
@@ -249,9 +248,6 @@ export function VicePrincipalHome() {
 
   return (
     <div className="space-y-6">
-      {/* Staff Attendance Widget */}
-      {schoolId && <StaffAttendanceWidget schoolId={schoolId} />}
-
       {/* Real-time Alerts Panel */}
       {alerts.length > 0 && (
         <DashboardAlertsPanel

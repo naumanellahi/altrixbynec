@@ -38,7 +38,6 @@ import { LiveTeacherPresenceCard } from "@/components/principal/LiveTeacherPrese
 import { PrincipalStudentsTab } from "@/components/principal/PrincipalStudentsTab";
 import { SendMessageDialog } from "@/components/principal/SendMessageDialog";
 import { BrandingSettingsDialog } from "@/components/principal/BrandingSettingsDialog";
-import { StaffAttendanceWidget } from "@/components/tenant/StaffAttendanceWidget";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -259,9 +258,6 @@ export function PrincipalHome() {
       </div>
 
       <TabsContent value="overview" className="space-y-4 lg:space-y-6">
-        {/* Staff Attendance Widget */}
-        {schoolId && <StaffAttendanceWidget schoolId={schoolId} />}
-
         {/* Live Teacher Presence */}
         <LiveTeacherPresenceCard schoolId={schoolId} />
 

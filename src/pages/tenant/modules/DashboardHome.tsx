@@ -11,7 +11,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { StaffAttendanceWidget } from "@/components/tenant/StaffAttendanceWidget";
 
 export function DashboardHome() {
   const { schoolSlug } = useParams();
@@ -40,9 +39,6 @@ export function DashboardHome() {
           Use the sidebar to navigate, or jump into a common workspace below.
         </p>
       </div>
-
-      {/* Staff Attendance Widget */}
-      {schoolId && <StaffAttendanceWidget schoolId={schoolId} />}
 
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">Quick links</CardTitle></CardHeader>
