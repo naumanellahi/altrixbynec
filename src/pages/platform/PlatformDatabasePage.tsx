@@ -31,6 +31,8 @@ import {
   FolderArchive,
 } from "lucide-react";
 import { PlatformFilesAndBackup } from "@/components/super-admin/PlatformFilesAndBackup";
+import { MigrationsBackupCard } from "@/components/super-admin/MigrationsBackupCard";
+import { FileCode2 } from "lucide-react";
 
 type DbTable = {
   name: string;
@@ -160,7 +162,7 @@ const calculateNextBackupTime = (frequency: string, hour: string, minute: string
 };
 
 export default function PlatformDatabasePage() {
-  const [activeTab, setActiveTab] = useState<"global" | "schedules" | "hub" | "files">("global");
+  const [activeTab, setActiveTab] = useState<"global" | "schedules" | "hub" | "files" | "migrations">("global");
   const [schools, setSchools] = useState<SchoolRow[]>([]);
   const [schedules, setSchedules] = useState<BackupSchedule[]>([]);
   const [backups, setBackups] = useState<BackupLog[]>([]);
@@ -801,7 +803,22 @@ export default function PlatformDatabasePage() {
             <FolderArchive className="h-4 w-4" />
             Files & Full Backup
           </button>
+          <button
+            onClick={() => { setActiveTab("migrations"); setSelectedSchool(null); }}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all -mb-px ${
+              activeTab === "migrations" && !selectedSchool
+                ? "border-amber-500 text-amber-400 font-semibold"
+                : "border-transparent text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+            }`}
+          >
+            <FileCode2 className="h-4 w-4" />
+            SQL Migrations
+          </button>
         </div>
+
+        {activeTab === "migrations" && !selectedSchool && (
+          <MigrationsBackupCard />
+        )}
 
         {activeTab === "files" && !selectedSchool && (
           <PlatformFilesAndBackup />
