@@ -345,17 +345,17 @@ const [voiceListening, setVoiceListening] = useState(false);
                       </div>
                     </div>
                   );
-                })}
-              </div>
-            </div>
-          );
-        })}
-        <NavLink
-          to={`/${schoolSlug}/${role}?settings=1`}
-          end
-          className="group flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-150"
-          activeClassName="bg-primary text-primary-foreground shadow-soft"
-          onClick={() => setMobileNavOpen(false)}
+}, [role, schoolSlug, unreadCount]);
+
+  const NavContent = () => (
+    <>
+      <div className="flex items-center justify-between">
+        <div className="min-w-0">
+          <p className="font-display text-lg font-semibold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            AltRix
+          </p>
+          <p className="text-[11px] text-muted-foreground truncate">
+            /{schoolSlug} • {role}
           </p>
         </div>
         <div className="flex items-center gap-1.5">
