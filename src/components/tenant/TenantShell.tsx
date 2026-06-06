@@ -504,6 +504,6 @@ const [voiceListening, setVoiceListening] = useState(false);
           <span className="text-[9px] font-medium leading-tight">More</span>
         </button>
       </nav>
+      {voiceListening && <VoiceController onCommand={handleVoiceCommand} onClose={() => setVoiceListening(false)} />}
     </div>
-{voiceListening && <VoiceController onCommand={handleVoiceCommand} onClose={() => setVoiceListening(false)} />}
-}
+  );
