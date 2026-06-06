@@ -356,13 +356,13 @@ const [voiceListening, setVoiceListening] = useState(false);
           className="group flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-150"
           activeClassName="bg-primary text-primary-foreground shadow-soft"
           onClick={() => setMobileNavOpen(false)}
-        >
-          <Settings className="h-4 w-4 shrink-0" /> Settings
-        </NavLink>
-      </nav>
-
-      <div className="mt-5 rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/10 via-accent/40 to-transparent p-4">
-        <p className="text-sm font-semibold text-foreground">All systems online</p>
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <NotificationsBell schoolId={schoolId} schoolSlug={schoolSlug} role={role} />
+            {/* Voice Button */}
+            <Button
+              variant="ghost"
               size="icon"
               aria-label="Voice command"
               onClick={() => setVoiceListening((prev) => !prev)}
