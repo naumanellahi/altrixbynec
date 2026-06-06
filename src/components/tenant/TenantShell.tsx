@@ -479,5 +479,5 @@ const [voiceOpen, setVoiceOpen] = useState(false);
         </button>
       </nav>
     </div>
-  );
+{voiceOpen && <VoiceNavOverlay onClose={() => setVoiceOpen(false)} />}
 }
