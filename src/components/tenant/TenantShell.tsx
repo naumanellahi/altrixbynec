@@ -151,6 +151,44 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
 
       <nav className="mt-5 space-y-3">
         {GROUP_ORDER.map((g) => {
+          // Insert principal-only groups after the "operations" group
+          if (g === "operations" && role === "principal") {
+            return (
+              <div key="principal-extras" className="space-y-0.5">
+                {/* Attendance Heatmap */}
+                <NavLink
+                  to={`/${schoolSlug}/${role}/attendance-heatmap`}
+                  className="group flex items-center rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  activeClassName="bg-primary text-primary-foreground shadow-soft"
+                >
+                  <span className="flex items-center gap-2.5">
+                    <Activity className="h-4 w-4 shrink-0" /> Attendance Heatmap
+                  </span>
+                </NavLink>
+                {/* Collaboration Hub */}
+                <NavLink
+                  to={`/${schoolSlug}/${role}/collaboration`}
+                  className="group flex items-center rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  activeClassName="bg-primary text-primary-foreground shadow-soft"
+                >
+                  <span className="flex items-center gap-2.5">
+                    <MessageSquare className="h-4 w-4 shrink-0" /> Collaboration Hub
+                  </span>
+                </NavLink>
+                {/* Budget Simulator */}
+                <NavLink
+                  to={`/${schoolSlug}/${role}/budget-simulator`}
+                  className="group flex items-center rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  activeClassName="bg-primary text-primary-foreground shadow-soft"
+                >
+                  <span className="flex items-center gap-2.5">
+                    <FileSpreadsheet className="h-4 w-4 shrink-0" /> Budget Simulator
+                  </span>
+                </NavLink>
+              </div>
+            );
+          }
+
           const items = grouped[g];
           if (!items?.length) return null;
 
