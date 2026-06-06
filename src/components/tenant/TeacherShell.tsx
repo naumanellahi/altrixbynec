@@ -4,6 +4,9 @@ import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { VoiceController } from "@/components/common/VoiceController";
+import { VOICE_COMMANDS } from "@/utils/voiceCommands";
+import { toast } from "sonner";
 import {
   BookCheck,
   BookOpen,
@@ -47,6 +50,7 @@ type Props = PropsWithChildren<{
 export function TeacherShell({ title, subtitle, schoolSlug, children }: Props) {
   const navigate = useNavigate();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [voiceListening, setVoiceListening] = useState(false);
   const { user } = useSession();
   
   // Use optimized tenant hook that caches and applies branding automatically
@@ -62,10 +66,32 @@ export function TeacherShell({ title, subtitle, schoolSlug, children }: Props) {
     userId: user?.id ?? null,
     role: "teacher",
   });
+        {voiceListening && <VoiceController onCommand={handleVoiceCommand} onClose={() => setVoiceListening(false)} />}
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate(`/${schoolSlug}/auth`);
+  };
+
+  const handleVoiceCommand = (cmd: string) => {
+    const cfg = VOICE_COMMANDS[cmd.toLowerCase().trim()];
+    if (!cfg) {
+      toast.error(`Unrecognized command: ${cmd}`);
+      // audible feedback
+      new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=').play();
+      return;
+    }
+    if (cfg.roles && !cfg.roles.includes("teacher")) {
+      toast.warn('Command not allowed for your role');
+      return;
+    }
+    if (cfg.action === 'logout') {
+      handleLogout();
+      return;
+    }
+    if (cfg.route) {
+      navigate(cfg.route);
+    }
   };
 
   const basePath = `/${schoolSlug}/teacher`;
@@ -121,6 +147,15 @@ export function TeacherShell({ title, subtitle, schoolSlug, children }: Props) {
             variant="compact"
           />
           <NotificationsBell schoolId={schoolId} schoolSlug={schoolSlug} role="teacher" />
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Voice command"
+            onClick={() => setVoiceListening((prev) => !prev)}
+            className={voiceListening ? "animate-pulse" : ""}
+          >
+            <Mic className="h-5 w-5" />
+          </Button>
           <Button
             variant="soft"
             size="icon"
