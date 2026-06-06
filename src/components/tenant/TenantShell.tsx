@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { LogOut, Menu, Settings, Sparkles, Mic, GraduationCap, MessageSquare, Users, LayoutGrid, CalendarDays, ClipboardCheck, FileSpreadsheet, HeartHandshake, ChevronDown } from "lucide-react";
 import type { EduverseRole } from "@/lib/eduverse-roles";
@@ -86,7 +87,7 @@ const [voiceListening, setVoiceListening] = useState(false);
       return;
     }
     if (cfg.route) {
-      router.push(cfg.route);
+      navigate(cfg.route);
     }
   };
 
