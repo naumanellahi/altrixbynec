@@ -660,14 +660,18 @@ Return ONLY the valid JSON block. Do not add markdown explanation, code blocks, 
     timetableData.conflicts_found = 0;
     timetableData.optimization_score = solved ? 100 : Math.round((scheduledEntries.length / (scheduledEntries.length + unplacedLessons.length)) * 100);
 
-    await supabase.from("ai_timetable_suggestions").insert({
-      school_id: schoolId,
-      class_section_id: classSectionId,
-      suggestion_data: timetableData,
-      conflicts_found: 0,
-      optimization_score: timetableData.optimization_score || 0,
-      status: "draft",
-    });
+    try {
+      await supabase.from("ai_timetable_suggestions").insert({
+        school_id: schoolId,
+        class_section_id: classSectionId,
+        suggestion_data: timetableData,
+        conflicts_found: 0,
+        optimization_score: timetableData.optimization_score || 0,
+        status: "draft",
+      });
+    } catch (dbErr) {
+      console.warn("Failed to insert suggestion into database:", dbErr);
+    }
 
     return new Response(JSON.stringify({ success: true, timetableData }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
