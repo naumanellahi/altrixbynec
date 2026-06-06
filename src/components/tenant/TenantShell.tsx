@@ -10,6 +10,7 @@ import type { EduverseRole } from "@/lib/eduverse-roles";
 import { supabase } from "@/integrations/supabase/client";
 import { GlobalCommandPalette } from "@/components/global/GlobalCommandPalette";
 import { NotificationsBell } from "@/components/global/NotificationsBell";
+import { VoiceNavOverlay } from "@/components/common/VoiceNavOverlay";
 import { DashboardNotificationsBanner } from "@/components/global/DashboardNotificationsBanner";
 import { useUnreadMessagesOptimized } from "@/hooks/useUnreadMessagesOptimized";
 import { useTenantOptimized } from "@/hooks/useTenantOptimized";
@@ -138,6 +139,16 @@ const [voiceOpen, setVoiceOpen] = useState(false);
         </div>
         <div className="flex items-center gap-1.5">
           <NotificationsBell schoolId={schoolId} schoolSlug={schoolSlug} role={role} />
+            {/* Voice Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Voice command"
+              onClick={() => setVoiceOpen(true)}
+              className="rounded-xl"
+            >
+              <Mic className="h-5 w-5" />
+            </Button>
           <Button
             variant="soft"
             size="icon"
