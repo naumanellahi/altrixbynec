@@ -340,7 +340,7 @@ const TenantDashboard = () => {
   };
 
   return (
-    <TenantShell title={title} subtitle="Role-isolated workspace" role={role} schoolSlug={tenant.slug}>
+    <TenantShell title={title} role={role} schoolSlug={tenant.slug}>
       <div className="flex flex-col gap-6">
         {/* Offline indicator */}
         {!isOnline && (
@@ -424,34 +424,9 @@ const TenantDashboard = () => {
           </div>
         </div>
 
-        <div className="rounded-3xl bg-surface p-6 shadow-elevated">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="font-display text-xl font-semibold tracking-tight">Workspace</p>
-              <p className="text-sm text-muted-foreground">You are signed in as {user.email}</p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="soft"
-                onClick={() => navigate(`/${tenant.slug}/auth`)}
-                className="justify-start"
-              >
-                <UserRound className="mr-2 h-4 w-4" /> Switch role
-              </Button>
-              <Button
-                variant="outline"
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  navigate(`/${tenant.slug}/auth`);
-                }}
-              >
-                <LogOut className="mr-2 h-4 w-4" /> Logout
-              </Button>
-            </div>
-          </div>
-
-          {authzState === "denied" && (
-            <div className="mt-5 rounded-2xl bg-destructive/10 p-4 text-sm">
+        {authzState === "denied" && (
+          <div className="rounded-3xl bg-surface p-6 shadow-elevated">
+            <div className="rounded-2xl bg-destructive/10 p-4 text-sm">
               <p className="font-medium text-destructive">Access Denied</p>
               <p className="mt-1">{authzMessage ?? "You do not have access to this role."}</p>
               <div className="mt-3">
@@ -466,8 +441,8 @@ const TenantDashboard = () => {
                 </Button>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {authzState !== "denied" && (
           <RouteGuard>

@@ -89,35 +89,8 @@ const TeacherDashboard = () => {
   const title = tenant.status === "ready" ? `${tenant.school?.name} • Teacher` : "AltRix";
 
   return (
-    <TeacherShell title={title} subtitle="Teacher workspace" schoolSlug={tenant.slug}>
+    <TeacherShell title={title} schoolSlug={tenant.slug}>
       <div className="flex flex-col gap-6">
-        {/* User info bar */}
-        <div className="rounded-2xl bg-accent/50 p-4">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Signed in as {user.email}</p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="soft"
-                size="sm"
-                onClick={() => navigate(`/${tenant.slug}/auth`)}
-              >
-                <UserRound className="mr-2 h-4 w-4" /> Switch role
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  navigate(`/${tenant.slug}/auth`);
-                }}
-              >
-                <LogOut className="mr-2 h-4 w-4" /> Logout
-              </Button>
-            </div>
-          </div>
-        </div>
 
         {/* Access check - only show if denied (not while checking with cache) */}
         {authzState === "denied" && (

@@ -28,7 +28,8 @@ import {
   RefreshCw,
   FileJson,
   History,
-  FolderArchive,
+FolderArchive,
+Activity
 } from "lucide-react";
 import { PlatformFilesAndBackup } from "@/components/super-admin/PlatformFilesAndBackup";
 import { MigrationsBackupCard } from "@/components/super-admin/MigrationsBackupCard";
@@ -162,7 +163,7 @@ const calculateNextBackupTime = (frequency: string, hour: string, minute: string
 };
 
 export default function PlatformDatabasePage() {
-  const [activeTab, setActiveTab] = useState<"global" | "schedules" | "hub" | "files" | "migrations">("global");
+const [activeTab, setActiveTab] = useState<"global" | "schedules" | "hub" | "files" | "migrations" | "health">("global");
   const [schools, setSchools] = useState<SchoolRow[]>([]);
   const [schedules, setSchedules] = useState<BackupSchedule[]>([]);
   const [backups, setBackups] = useState<BackupLog[]>([]);
@@ -758,7 +759,7 @@ export default function PlatformDatabasePage() {
       <div className="space-y-6 text-zinc-100">
         
         {/* Navigation Tabs */}
-        <div className="flex flex-wrap gap-2 border-b border-zinc-800 pb-px">
+<div className="flex flex-wrap gap-2 border-b border-zinc-800 pb-px">
           <button
             onClick={() => { setActiveTab("global"); setSelectedSchool(null); }}
             className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all -mb-px ${
@@ -1195,6 +1196,15 @@ export default function PlatformDatabasePage() {
             </Card>
 
           </div>
+        )}
+
+        {/* Tab content: System Health */}
+        {activeTab === "health" && (
+          <Card className="bg-zinc-950 border-amber-500/10 shadow-[0_4px_20px_rgba(0,0,0,0.5)] p-8 text-center space-y-4">
+            <Activity className="h-16 w-16 mx-auto text-amber-500/20" />
+            <CardTitle className="text-xl text-white">System Health Monitor</CardTitle>
+            <p className="text-zinc-400 max-w-lg mx-auto">Database health monitoring tools and real-time connectivity diagnostics are currently being initialized for your environment.</p>
+          </Card>
         )}
 
         {/* Selected School Dashboard Control Center */}

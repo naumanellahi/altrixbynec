@@ -114,7 +114,7 @@ export default function App() {
         <Sonner />
         <ArrowKeyAccelerator />
         <KeyboardShortcutsOverlay />
-        <BrowserRouter>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Suspense fallback={<LazyFallback />}>
             <Routes>
               <Route path="/" element={<Index />} />

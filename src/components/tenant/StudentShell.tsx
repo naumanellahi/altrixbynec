@@ -193,10 +193,27 @@ export function StudentShell({ title, subtitle, schoolSlug, children }: Props) {
 
         {/* Main Content */}
         <section className="rounded-2xl bg-surface p-4 shadow-elevated lg:rounded-3xl lg:p-6">
-          <header className="mb-4 hidden lg:mb-6 lg:block">
-            <p className="font-display text-2xl font-semibold tracking-tight">{title}</p>
-            {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
-          </header>
+          {/* Desktop Header */}
+      <header className="mb-4 hidden lg:mb-6 lg:block">
+        <div className="flex items-center justify-between">
+          <div className="min-w-0">
+            <h1 className="font-display text-2xl font-semibold tracking-tight">{title}</h1>
+            {user?.email && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                You are signed in as {user.email}
+              </p>
+            )}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleLogout}
+            className="rounded-xl"
+          >
+            <LogOut className="mr-2 h-4 w-4" /> Logout
+          </Button>
+        </div>
+      </header>
           {children}
         </section>
       </div>

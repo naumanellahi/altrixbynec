@@ -120,7 +120,6 @@ export function TeacherShell({ title, subtitle, schoolSlug, children }: Props) {
             onSync={offline.syncPendingItems}
             variant="compact"
           />
-          {schoolId && <StaffAttendanceWidget schoolId={schoolId} />}
           <NotificationsBell schoolId={schoolId} schoolSlug={schoolSlug} role="teacher" />
           <Button
             variant="soft"
@@ -181,7 +180,7 @@ export function TeacherShell({ title, subtitle, schoolSlug, children }: Props) {
 
       {/* Mobile Header */}
       <header className="sticky top-0 z-40 flex items-center justify-between border-b bg-background/95 px-4 py-3 backdrop-blur lg:hidden">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon">
@@ -192,12 +191,16 @@ export function TeacherShell({ title, subtitle, schoolSlug, children }: Props) {
               <NavContent />
             </SheetContent>
           </Sheet>
-          <div>
-            <p className="font-display text-base font-semibold tracking-tight">{title}</p>
-            {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+          <div className="min-w-0">
+            <p className="font-display text-base font-semibold tracking-tight truncate">{title}</p>
+            {user?.email && (
+              <p className="text-[11px] text-muted-foreground truncate">
+                You are signed in as {user.email}
+              </p>
+            )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
           <OfflineStatusIndicator
             isOnline={offline.isOnline}
             isSyncing={offline.isSyncing}
@@ -208,7 +211,6 @@ export function TeacherShell({ title, subtitle, schoolSlug, children }: Props) {
             onSync={offline.syncPendingItems}
             variant="compact"
           />
-          {schoolId && <StaffAttendanceWidget schoolId={schoolId} />}
           <NotificationsBell schoolId={schoolId} schoolSlug={schoolSlug} role="teacher" />
           <Button
             variant="ghost"
@@ -216,6 +218,16 @@ export function TeacherShell({ title, subtitle, schoolSlug, children }: Props) {
             onClick={() => window.dispatchEvent(new Event("eduverse:open-search"))}
           >
             <Sparkles className="h-5 w-5" />
+          </Button>
+          {schoolId && <StaffAttendanceWidget schoolId={schoolId} />}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-destructive"
+            onClick={handleLogout}
+            aria-label="Logout"
+          >
+            <LogOut className="h-5 w-5" />
           </Button>
         </div>
       </header>
@@ -229,8 +241,27 @@ export function TeacherShell({ title, subtitle, schoolSlug, children }: Props) {
         {/* Main Content */}
         <section className="rounded-2xl bg-surface p-4 shadow-elevated lg:rounded-3xl lg:p-6">
           <header className="mb-4 hidden lg:mb-6 lg:block">
-            <p className="font-display text-2xl font-semibold tracking-tight">{title}</p>
-            {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
+            <div className="flex items-center justify-between">
+              <div className="min-w-0">
+                <h1 className="font-display text-2xl font-semibold tracking-tight">{title}</h1>
+                {user?.email && (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    You are signed in as {user.email}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                {schoolId && <StaffAttendanceWidget schoolId={schoolId} />}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="rounded-xl"
+                >
+                  <LogOut className="mr-2 h-4 w-4" /> Logout
+                </Button>
+              </div>
+            </div>
           </header>
           {children}
         </section>

@@ -1,4 +1,5 @@
 import { PropsWithChildren, useMemo, useState } from "react";
+import { OfflineStatusIndicator } from "@/components/offline/OfflineStatusIndicator";
 import { useNavigate, useLocation } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { useUnreadMessagesOptimized } from "@/hooks/useUnreadMessagesOptimized";
 import { useTenantOptimized } from "@/hooks/useTenantOptimized";
 import { useSession } from "@/hooks/useSession";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useOfflineUniversal } from "@/hooks/useOfflineUniversal";
 import { buildMergedNav, GROUP_LABELS, GROUP_ORDER, DROPDOWN_MAPPING } from "@/lib/role-navigation";
 import { resolvePermissions } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
@@ -62,6 +64,12 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
     navigate(`/${schoolSlug}/auth`);
   };
 
+  // Offline support
+  const offline = useOfflineUniversal({
+    schoolId,
+    userId: user?.id ?? null,
+    role,
+  });
   const { unreadCount } = useUnreadMessagesOptimized(schoolId, user?.id ?? null);
 
   // WordPress-style permission-driven sidebar.
@@ -128,7 +136,6 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
           </p>
         </div>
         <div className="flex items-center gap-1.5">
-          {schoolId && isStaff && <StaffAttendanceWidget schoolId={schoolId} />}
           <NotificationsBell schoolId={schoolId} schoolSlug={schoolSlug} role={role} />
           <Button
             variant="soft"
@@ -297,17 +304,16 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
       </div>
     </>
   );
-
   return (
     <div className="min-h-screen bg-background pb-20 lg:pb-0">
       <GlobalCommandPalette basePath={`/${schoolSlug}/${role}`} />
 
       {/* Mobile Header */}
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border/60 bg-background/85 px-4 py-3 backdrop-blur-xl lg:hidden">
-        <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-40 flex items-center justify-between border-b bg-background/95 px-4 py-3 backdrop-blur lg:hidden">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-xl">
+              <Button variant="ghost" size="icon">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
@@ -317,34 +323,76 @@ export function TenantShell({ title, subtitle, role, schoolSlug, children }: Pro
           </Sheet>
           <div className="min-w-0">
             <p className="font-display text-base font-semibold tracking-tight truncate">{title}</p>
-            {subtitle && <p className="text-[11px] text-muted-foreground truncate">{subtitle}</p>}
+            {user?.email && (
+              <p className="text-[11px] text-muted-foreground truncate">
+                You are signed in as {user.email}
+              </p>
+            )}
           </div>
         </div>
-        <div className="flex items-center gap-1">
-          {schoolId && isStaff && <StaffAttendanceWidget schoolId={schoolId} />}
-          <NotificationsBell schoolId={schoolId} schoolSlug={schoolSlug} role={role} />
+        <div className="flex items-center gap-1.5 shrink-0">
+          <OfflineStatusIndicator
+            isOnline={offline.isOnline}
+            isSyncing={offline.isSyncing}
+            stats={offline.stats}
+            lastSyncAt={offline.lastSyncAt}
+            syncProgress={offline.syncProgress}
+            storageInfo={offline.storageInfo}
+            onSync={offline.syncPendingItems}
+            variant="compact"
+          />
+          {schoolId && <StaffAttendanceWidget schoolId={schoolId} />}
+          <NotificationsBell schoolId={schoolId} schoolSlug={schoolSlug} role="tenant" />
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-xl"
+            aria-label="Search"
             onClick={() => window.dispatchEvent(new Event("eduverse:open-search"))}
           >
             <Sparkles className="h-5 w-5" />
           </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-destructive"
+            onClick={handleLogout}
+            aria-label="Logout"
+          >
+            <LogOut className="h-5 w-5" />
+          </Button>
         </div>
       </header>
 
-      <div className="grid w-full grid-cols-1 gap-4 px-3 py-4 sm:px-4 lg:grid-cols-[280px_1fr] lg:gap-6 lg:px-6 lg:py-6">
+      <div className="grid w-full grid-cols-1 gap-4 px-4 py-4 lg:grid-cols-[280px_1fr] lg:gap-6 lg:px-6 lg:py-6">
         {/* Desktop Sidebar */}
-        <aside className="sticky top-6 hidden self-start max-h-[calc(100vh-3rem)] overflow-y-auto rounded-3xl border border-border/60 bg-surface/80 p-4 shadow-soft backdrop-blur-sm lg:block no-scrollbar">
+        <aside className="sticky top-6 hidden self-start max-h-[calc(100vh-3rem)] overflow-y-auto rounded-3xl bg-surface p-4 shadow-elevated lg:block">
           <NavContent />
         </aside>
 
         {/* Main Content */}
-        <section className="rounded-2xl border border-border/40 bg-surface p-4 shadow-soft sm:p-5 lg:rounded-3xl lg:p-6">
-          <header className="mb-5 hidden lg:mb-6 lg:block">
-            <p className="font-display text-2xl font-semibold tracking-tight">{title}</p>
-            {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
+        <section className="rounded-2xl bg-surface p-4 shadow-elevated lg:rounded-3xl lg:p-6">
+          <header className="mb-4 hidden lg:mb-6 lg:block">
+            <div className="flex items-center justify-between">
+              <div className="min-w-0">
+                <h1 className="font-display text-2xl font-semibold tracking-tight">{title}</h1>
+                {user?.email && (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    You are signed in as {user.email}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                {schoolId && isStaff && <StaffAttendanceWidget schoolId={schoolId} />}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="rounded-xl"
+                >
+                  <LogOut className="mr-2 h-4 w-4" /> Logout
+                </Button>
+              </div>
+            </div>
           </header>
           <div className="mb-4 lg:mb-5">
             <DashboardNotificationsBanner schoolId={schoolId} schoolSlug={schoolSlug} role={role} />
