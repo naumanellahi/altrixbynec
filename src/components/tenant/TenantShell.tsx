@@ -363,18 +363,18 @@ const [voiceListening, setVoiceListening] = useState(false);
 
       <div className="mt-5 rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/10 via-accent/40 to-transparent p-4">
         <p className="text-sm font-semibold text-foreground">All systems online</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Modules light up as your school activates them.
-        </p>
-      </div>
-
-      <div className="mt-4">
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-2 rounded-xl text-muted-foreground hover:text-destructive"
-          onClick={handleLogout}
-        >
-          <LogOut className="h-4 w-4" />
+              size="icon"
+              aria-label="Voice command"
+              onClick={() => setVoiceListening((prev) => !prev)}
+              className="rounded-xl"
+            >
+              <Mic className="h-5 w-5" />
+            </Button>
+          <Button
+            variant="soft"
+            size="icon"
+            aria-label="Search"
+            className="rounded-xl"
             onClick={() => window.dispatchEvent(new Event("eduverse:open-search"))}
           >
             <Sparkles className="h-4 w-4" />
