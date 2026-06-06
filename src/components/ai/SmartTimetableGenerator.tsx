@@ -1102,7 +1102,7 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
           <div>
             <h2 className="font-display text-2xl font-black tracking-tight text-foreground flex items-center gap-1.5">
               Smart Timetable Generator
-              <Badge variant="soft" className="bg-[#8b5cf6]/10 text-[#8b5cf6] font-semibold border border-[#8b5cf6]/20">AI v3.0</Badge>
+              <Badge variant="secondary" className="bg-[#8b5cf6]/10 text-[#8b5cf6] font-semibold border border-[#8b5cf6]/20">AI v3.0</Badge>
             </h2>
             <p className="text-sm text-muted-foreground">
               Intelligent scheduler with zero clashes, balance validation, and custom rules

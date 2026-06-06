@@ -4788,6 +4788,7 @@ export type Database = {
       }
       hr_staff_attendance: {
         Row: {
+          altitude: number | null
           attendance_date: string
           clock_in: string | null
           clock_out: string | null
@@ -4795,7 +4796,6 @@ export type Database = {
           id: string
           latitude: number | null
           longitude: number | null
-          altitude: number | null
           notes: string | null
           recorded_by: string | null
           school_id: string
@@ -4804,6 +4804,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          altitude?: number | null
           attendance_date?: string
           clock_in?: string | null
           clock_out?: string | null
@@ -4811,7 +4812,6 @@ export type Database = {
           id?: string
           latitude?: number | null
           longitude?: number | null
-          altitude?: number | null
           notes?: string | null
           recorded_by?: string | null
           school_id: string
@@ -4820,6 +4820,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          altitude?: number | null
           attendance_date?: string
           clock_in?: string | null
           clock_out?: string | null
@@ -4827,7 +4828,6 @@ export type Database = {
           id?: string
           latitude?: number | null
           longitude?: number | null
-          altitude?: number | null
           notes?: string | null
           recorded_by?: string | null
           school_id?: string

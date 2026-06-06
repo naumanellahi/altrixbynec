@@ -54,9 +54,9 @@ export function StaffAttendanceHistoryDialog({
         .select("attendance_date")
         .eq("school_id", schoolId);
       if (error) throw error;
-      const unique = Array.from(new Set(data?.map((d: any) => d.attendance_date) || []))
-        .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
-      setDates(unique);
+      const unique = Array.from(new Set((data ?? []).map((d: any) => String(d.attendance_date))))
+        .sort((a: string, b: string) => new Date(b).getTime() - new Date(a).getTime());
+      setDates(unique as string[]);
     } catch (e: any) {
       toast.error(e.message || "Failed to load history dates");
     } finally {

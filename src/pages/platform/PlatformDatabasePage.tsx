@@ -27,8 +27,10 @@ import {
   Settings2,
   RefreshCw,
   FileJson,
-  History
+  History,
+  FolderArchive,
 } from "lucide-react";
+import { PlatformFilesAndBackup } from "@/components/super-admin/PlatformFilesAndBackup";
 
 type DbTable = {
   name: string;
@@ -158,7 +160,7 @@ const calculateNextBackupTime = (frequency: string, hour: string, minute: string
 };
 
 export default function PlatformDatabasePage() {
-  const [activeTab, setActiveTab] = useState<"global" | "schedules" | "hub">("global");
+  const [activeTab, setActiveTab] = useState<"global" | "schedules" | "hub" | "files">("global");
   const [schools, setSchools] = useState<SchoolRow[]>([]);
   const [schedules, setSchedules] = useState<BackupSchedule[]>([]);
   const [backups, setBackups] = useState<BackupLog[]>([]);
@@ -788,7 +790,22 @@ export default function PlatformDatabasePage() {
             <History className="h-4 w-4" />
             Backup & Restore Hub
           </button>
+          <button
+            onClick={() => { setActiveTab("files"); setSelectedSchool(null); }}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all -mb-px ${
+              activeTab === "files" && !selectedSchool
+                ? "border-amber-500 text-amber-400 font-semibold"
+                : "border-transparent text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+            }`}
+          >
+            <FolderArchive className="h-4 w-4" />
+            Files & Full Backup
+          </button>
         </div>
+
+        {activeTab === "files" && !selectedSchool && (
+          <PlatformFilesAndBackup />
+        )}
 
         {/* Tab content: Global */}
         {activeTab === "global" && !selectedSchool && (
