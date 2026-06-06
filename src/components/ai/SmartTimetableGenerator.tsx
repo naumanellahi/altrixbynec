@@ -144,19 +144,33 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
   const { data: teachers } = useQuery({
     queryKey: ["teachers_list", schoolId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: rolesData, error: rolesError } = await supabase
         .from("user_roles")
-        .select(`
-          user_id,
-          profiles!inner (
-            display_name
-          )
-        `)
+        .select("user_id")
         .eq("school_id", schoolId)
         .eq("role", "teacher");
 
-      if (error) throw error;
-      return data;
+      if (rolesError) throw rolesError;
+      
+      const teacherIds = (rolesData || []).map((r) => r.user_id);
+      if (teacherIds.length === 0) return [];
+
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .in("id", teacherIds);
+
+      if (profilesError) throw profilesError;
+
+      return (rolesData || []).map((r) => {
+        const prof = (profilesData || []).find((p) => p.id === r.user_id);
+        return {
+          user_id: r.user_id,
+          profiles: {
+            display_name: prof?.display_name || r.user_id,
+          },
+        };
+      });
     },
     enabled: !!schoolId,
   });
@@ -353,15 +367,31 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
         if (delErr) throw delErr;
       }
 
-      // Resolve teachers by display_name → user_id from directory
-      const { data: dir } = await supabase
-        .from("school_user_directory")
-        .select("user_id,display_name,email")
-        .eq("school_id", schoolId);
+      // Resolve teachers by display_name → user_id
+      const { data: rolesData, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("school_id", schoolId)
+        .eq("role", "teacher");
+
+      if (rolesError) throw rolesError;
+      
+      const teacherIds = (rolesData || []).map((r) => r.user_id);
+      let teacherProfiles: any[] = [];
+      if (teacherIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, display_name")
+          .in("id", teacherIds);
+        if (profilesError) throw profilesError;
+        teacherProfiles = profilesData || [];
+      }
+
       const teacherIdByName = new Map<string, string>();
-      (dir || []).forEach((d: any) => {
-        if (d.display_name) teacherIdByName.set(String(d.display_name).toLowerCase(), d.user_id);
-        if (d.email) teacherIdByName.set(String(d.email).toLowerCase(), d.user_id);
+      teacherProfiles.forEach((p: any) => {
+        if (p.display_name) {
+          teacherIdByName.set(String(p.display_name).toLowerCase().trim(), p.id);
+        }
       });
 
       const inserts: any[] = [];
@@ -381,11 +411,14 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
           const period = periodByIndex.get(idx);
           if (!period || period.is_break) continue;
 
-          const teacherUserId = row.teacher_name && row.teacher_name !== "—" 
-            ? teacherIdByName.get(row.teacher_name.toLowerCase()) ?? null 
-            : row.teacher_id && row.teacher_id !== "—" 
-            ? teacherIdByName.get(row.teacher_id.toLowerCase()) ?? null
-            : null;
+          let teacherUserId: string | null = null;
+          if (row.teacher_id && teacherIds.includes(row.teacher_id)) {
+            teacherUserId = row.teacher_id;
+          } else if (row.teacher_name && row.teacher_name !== "—" && row.teacher_name !== "null") {
+            teacherUserId = teacherIdByName.get(String(row.teacher_name).toLowerCase().trim()) ?? null;
+          } else if (row.teacher_id && row.teacher_id !== "—" && row.teacher_id !== "null") {
+            teacherUserId = teacherIdByName.get(String(row.teacher_id).toLowerCase().trim()) ?? null;
+          }
 
           inserts.push({
             school_id: schoolId,
@@ -409,7 +442,16 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
             const idx = Number(periodKey.replace("P", "")) - 1;
             const period = periodByIndex.get(idx);
             if (!period || period.is_break) continue;
-            const teacherUserId = cell.teacher && cell.teacher !== "—" ? teacherIdByName.get(cell.teacher.toLowerCase()) ?? null : null;
+
+            let teacherUserId: string | null = null;
+            if (cell.teacher && cell.teacher !== "—" && cell.teacher !== "null") {
+              if (teacherIds.includes(cell.teacher)) {
+                teacherUserId = cell.teacher;
+              } else {
+                teacherUserId = teacherIdByName.get(cell.teacher.toLowerCase().trim()) ?? null;
+              }
+            }
+
             inserts.push({
               school_id: schoolId,
               class_section_id: suggestion.class_section_id,

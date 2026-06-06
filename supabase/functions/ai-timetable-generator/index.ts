@@ -30,7 +30,7 @@ serve(async (req) => {
     const [
       sectionsRes,
       subjectsRes,
-      teachersRes,
+      userRolesRes,
       periodsRes,
       sectionSubjectsRes,
       subjectAssignmentsRes,
@@ -47,7 +47,7 @@ serve(async (req) => {
         .eq("school_id", schoolId),
       supabase
         .from("user_roles")
-        .select("user_id, profiles(display_name)")
+        .select("user_id")
         .eq("school_id", schoolId)
         .eq("role", "teacher"),
       supabase
@@ -75,7 +75,7 @@ serve(async (req) => {
 
     if (sectionsRes.error) throw sectionsRes.error;
     if (subjectsRes.error) throw subjectsRes.error;
-    if (teachersRes.error) throw teachersRes.error;
+    if (userRolesRes.error) throw userRolesRes.error;
     if (periodsRes.error) throw periodsRes.error;
     if (sectionSubjectsRes.error) throw sectionSubjectsRes.error;
     if (subjectAssignmentsRes.error) throw subjectAssignmentsRes.error;
@@ -84,8 +84,26 @@ serve(async (req) => {
 
     const sections = sectionsRes.data || [];
     const subjects = subjectsRes.data || [];
-    const teachers = teachersRes.data || [];
+    const teacherUserIds = (userRolesRes.data || []).map((t: any) => t.user_id);
     const periods = periodsRes.data || [];
+
+    // Fetch profiles for the teacher user IDs
+    let teachers: Array<{ user_id: string; profiles: { display_name: string | null } | null }> = [];
+    if (teacherUserIds.length > 0) {
+      const profilesRes = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .in("id", teacherUserIds);
+      if (profilesRes.error) throw profilesRes.error;
+      const profileMap = new Map<string, string>();
+      (profilesRes.data || []).forEach((p: any) => {
+        profileMap.set(p.id, p.display_name || "");
+      });
+      teachers = teacherUserIds.map((uid) => ({
+        user_id: uid,
+        profiles: { display_name: profileMap.get(uid) || null }
+      }));
+    }
 
     // Map teacher display name
     const teacherNameMap = new Map<string, string>();
@@ -230,13 +248,19 @@ ${periodDefs
   )
   .join("\n")}
 
+ALL AVAILABLE TEACHERS IN THE SCHOOL:
+${teachers.map((t: any) => `- Teacher Name: "${t.profiles?.display_name || t.user_id}" [ID: ${t.user_id}]`).join("\n")}
+
+ALL OFFERED SUBJECTS IN THE SCHOOL:
+${subjects.map((s: any) => `- Subject Name: "${s.name}" [ID: ${s.id}]`).join("\n")}
+
 TEACHER AVAILABILITY & ASSIGNMENTS:
 ${mergedAssignments
   .map((a: any) => {
     const tName = teacherNameMap.get(a.teacherId) || a.teacherId;
     const subj = subjects.find((s: any) => s.id === a.subjectId);
     const sect = sections.find((s: any) => s.id === a.sectionId);
-    return `- Teacher "${tName}" [ID: ${a.teacherId}] is assigned to teach "${subj?.name}" in section "${sect?.academic_classes?.name || ""} ${sect?.name || ""}" [Section ID: ${a.sectionId}]`;
+    return `- Teacher "${tName}" [ID: ${a.teacherId}] is assigned to teach "${subj?.name || a.subjectId}" in section "${sect?.academic_classes?.name || ""} ${sect?.name || ""}" [Section ID: ${a.sectionId}]`;
   })
   .join("\n")}
 
