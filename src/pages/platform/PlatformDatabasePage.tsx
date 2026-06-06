@@ -31,6 +31,8 @@ import {
   FolderArchive,
 } from "lucide-react";
 import { PlatformFilesAndBackup } from "@/components/super-admin/PlatformFilesAndBackup";
+import { MigrationsBackupCard } from "@/components/super-admin/MigrationsBackupCard";
+import { FileCode2 } from "lucide-react";
 
 type DbTable = {
   name: string;
