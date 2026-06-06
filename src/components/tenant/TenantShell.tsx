@@ -365,8 +365,13 @@ const [voiceListening, setVoiceListening] = useState(false);
               variant="ghost"
               size="icon"
               aria-label="Voice command"
-              onClick={() => setVoiceListening((prev) => !prev)}
-              className="rounded-xl"
+              onClick={() => {
+                setVoiceListening((prev) => !prev);
+                // Play feedback tone when toggling listening
+                const feedback = new Audio(require('@/assets/voice_feedback.wav'));
+                feedback.play();
+              }}
+              className={cn("rounded-xl", voiceListening && "animate-pulse")}
             >
               <Mic className="h-5 w-5" />
             </Button>
@@ -577,17 +582,44 @@ const [voiceListening, setVoiceListening] = useState(false);
   );
 
 
-  return (
-    <div className="flex h-screen">
-      {/* Sidebar */}
-      <aside className="w-64 bg-primary/5 border-r overflow-y-auto">
-        <NavContent />
-      </aside>
-      {/* Main content */}
-      <main className="flex-1 overflow-y-auto p-4">
-        {children}
-      </main>
-      {voiceListening && <VoiceController onCommand={handleVoiceCommand} onClose={() => setVoiceListening(false)} />}
-    </div>
-  );
+<>
+  {/* Mobile navigation */}
+  <Sheet>
+    <SheetTrigger asChild>
+      <Button variant="ghost" size="icon" className="md:hidden mr-2">
+        <Menu className="h-5 w-5" />
+      </Button>
+    </SheetTrigger>
+    <SheetContent side="left" className="p-0 w-64">
+      <NavContent />
+      <div className="p-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Voice command"
+          onClick={() => {
+            setVoiceListening((prev) => !prev);
+            const feedback = new Audio(require('@/assets/voice_feedback.wav'));
+            feedback.play();
+          }}
+          className={cn("rounded-xl", voiceListening && "animate-pulse")}
+        >
+          <Mic className="h-5 w-5" />
+        </Button>
+      </div>
+    </SheetContent>
+  </Sheet>
+
+  <div className="flex h-screen">
+    {/* Sidebar for desktop */}
+    <aside className="hidden md:block w-64 bg-primary/5 border-r overflow-y-auto">
+      <NavContent />
+    </aside>
+    {/* Main content */}
+    <main className="flex-1 overflow-y-auto p-4">
+      {children}
+    </main>
+    {voiceListening && <VoiceController onCommand={handleVoiceCommand} onClose={() => setVoiceListening(false)} />}
+  </div>
+</>
 }
