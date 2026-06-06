@@ -27,8 +27,10 @@ import {
   Settings2,
   RefreshCw,
   FileJson,
-  History
+  History,
+  FolderArchive,
 } from "lucide-react";
+import { PlatformFilesAndBackup } from "@/components/super-admin/PlatformFilesAndBackup";
 
 type DbTable = {
   name: string;
