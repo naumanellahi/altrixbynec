@@ -1,7 +1,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { DndContext, type DragEndEvent, useDraggable, useDroppable, TouchSensor, MouseSensor, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import { useParams } from "react-router-dom";
-import { CalendarDays, Coffee, Download, Pencil, Plus, Printer, Trash2, Wrench, User, MapPin, Sparkles } from "lucide-react";
+import { CalendarDays, Coffee, Download, Pencil, Plus, Printer, Trash2, Wrench, User, MapPin, Sparkles, BookOpen } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
@@ -130,27 +130,32 @@ function TimetableCell({
     <div
       ref={setNodeRef}
       className={
-        "group relative min-h-[76px] rounded-2xl border transition-all duration-300 p-3 flex flex-col justify-between " +
-        (isOver ? "ring-2 ring-primary/30 border-primary bg-primary/5 shadow-premium" : "bg-background/40 border-primary/5 hover:border-primary/20 hover:bg-background/80 hover:shadow-md") +
-        (hasConflicts ? " border-red-500/40 bg-red-500/5 hover:border-red-500/60" : "")
+        "group relative min-h-[76px] rounded-2xl border transition-all duration-300 p-2.5 flex flex-col justify-between shadow-sm hover:scale-[1.02] " +
+        (isOver ? "ring-2 ring-primary/30 border-primary bg-primary/5 shadow-premium" : "") +
+        (title
+          ? hasConflicts
+            ? " bg-gradient-to-br from-red-500/5 to-red-500/10 border-red-500/30 text-red-900"
+            : " bg-gradient-to-br from-background to-primary/5 border-primary/10 text-foreground"
+          : " bg-background/40 border-primary/5 hover:border-primary/20 hover:bg-background/80 hover:shadow-md")
       }
     >
       {title ? (
-        <div className="space-y-1.5 pr-6 h-full flex flex-col justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-black tracking-tight text-foreground leading-none">{title}</span>
+        <div className="space-y-1 pr-6 h-full flex flex-col justify-between w-full">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-1">
+              <BookOpen className={`h-3 w-3 ${hasConflicts ? "text-red-600" : "text-primary/70"}`} />
+              <span className={`text-[11px] font-bold tracking-tight leading-none ${hasConflicts ? "text-red-700" : "text-primary"}`}>{title}</span>
               <ConflictBadge conflicts={conflicts} />
             </div>
             {subtitle && (
-              <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium">
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium mt-0.5">
                 <User className="h-2.5 w-2.5 text-primary/60" />
                 <span className="truncate max-w-[120px]">{subtitle}</span>
               </div>
             )}
           </div>
           {meta && (
-            <div className="inline-flex items-center gap-1 self-start rounded-md bg-primary/5 border border-primary/10 px-1.5 py-0.5 text-[9px] font-semibold text-primary uppercase">
+            <div className="inline-flex items-center gap-1 self-start rounded-md bg-primary/5 border border-primary/10 px-1.5 py-0.5 text-[9px] font-semibold text-primary uppercase mt-0.5">
               <MapPin className="h-2.5 w-2.5 text-primary/70" />
               <span>{meta}</span>
             </div>
@@ -292,7 +297,10 @@ export function TimetableBuilderModule() {
         .eq("class_section_id", sectionId),
     ]);
 
-    const allowedSubjectIds = new Set((css ?? []).map((r) => (r as ClassSectionSubjectRow).subject_id));
+    const allowedSubjectIds = new Set([
+      ...(css ?? []).map((r) => (r as ClassSectionSubjectRow).subject_id),
+      ...(tsa ?? []).map((r) => (r as TeacherSubjectAssignmentRow).subject_id)
+    ]);
     setSubjects(((subj ?? []) as SubjectRow[]).filter((s) => allowedSubjectIds.has(s.id)));
     setTeacherAssignments((tsa ?? []) as TeacherSubjectAssignmentRow[]);
     setEntries((tte ?? []) as EntryRow[]);
@@ -621,91 +629,99 @@ export function TimetableBuilderModule() {
                 <p className="text-xs text-muted-foreground">Drop subject tiles into day × period slots.</p>
               </CardHeader>
               <CardContent className="pt-6">
-                <div className="overflow-auto">
-                  <div
-                    className="grid gap-3"
-                    style={{ gridTemplateColumns: `160px repeat(${Math.max(periods.length, 1)}, minmax(180px, 1fr))` }}
-                  >
-                    <div className="sticky left-0 z-10 rounded-2xl bg-surface/60 border border-primary/10 px-3 py-2.5 text-xs font-semibold text-muted-foreground flex items-center justify-center">
-                      Day
-                    </div>
-                    {periods.map((p) => (
-                      <div key={p.id} className={`rounded-2xl border px-3 py-2.5 flex flex-col justify-center transition-all ${p.is_break ? "bg-amber-500/5 border-amber-500/10" : "bg-surface/50 border-primary/10"}`}>
-                        <p className="flex items-center gap-1.5 text-sm font-bold text-foreground">
-                          {p.is_break && <Coffee className="h-3.5 w-3.5 text-amber-500" />}
-                          {p.label}
-                        </p>
-                        <p className="text-xs text-muted-foreground font-medium mt-0.5">
-                          {timeLabel(p.start_time)}{p.start_time && p.end_time ? "–" : ""}{timeLabel(p.end_time)}
-                        </p>
-                      </div>
-                    ))}
-
-                    {DAYS.map((d) => (
-                      <Fragment key={`row:${d.id}`}>
-                        <div className="sticky left-0 z-10 flex items-center justify-center rounded-2xl bg-surface/60 border border-primary/10 px-3 py-3 text-sm font-bold text-foreground">
-                          {d.label}
-                        </div>
-                        {periods.map((p) => {
-                          const isBreak = breakPeriodIds.has(p.id);
-                          
-                          // Break periods show a special cell
-                          if (isBreak) {
-                            return (
-                              <div
-                                key={`cell:${d.id}:${p.id}`}
-                                className="flex min-h-[76px] items-center justify-center rounded-2xl border border-dashed border-amber-500/20 bg-amber-500/5 p-3"
-                              >
-                                <div className="flex flex-col items-center gap-1 text-center">
-                                  <Coffee className="h-4 w-4 text-amber-500 animate-pulse" />
-                                  <p className="text-[11px] font-semibold text-amber-600/80 uppercase tracking-wider">{p.label}</p>
-                                </div>
+                <div className="overflow-auto rounded-2xl border border-primary/10 shadow-inner bg-background/50">
+                  <table className="w-full text-xs border-collapse">
+                    <thead>
+                      <tr>
+                        <th className="p-3 border-b border-r border-primary/10 bg-primary/5 font-semibold text-primary text-center">Period</th>
+                        {DAYS.map((d) => (
+                          <th key={d.id} className="p-3 border-b border-primary/10 bg-primary/5 font-semibold text-primary text-center min-w-[150px]">
+                            {d.label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {periods.map((p) => {
+                        const isBreak = breakPeriodIds.has(p.id);
+                        return (
+                          <tr key={p.id} className="hover:bg-primary/5 transition-colors">
+                            <td className={`p-3 border-r border-b border-primary/10 bg-primary/5 text-center font-bold transition-all ${isBreak ? "bg-amber-500/5 text-amber-600/80" : "text-primary/80"}`}>
+                              <div className="flex flex-col items-center justify-center gap-0.5">
+                                <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
+                                  {isBreak && <Coffee className="h-3.5 w-3.5 text-amber-500" />}
+                                  {p.label}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground font-medium">
+                                  {timeLabel(p.start_time)}{p.start_time && p.end_time ? "–" : ""}{timeLabel(p.end_time)}
+                                </p>
                               </div>
-                            );
-                          }
-
-                          const slotKey = `${d.id}:${p.id}`;
-                          const e = entryBySlot.get(slotKey) ?? null;
-                          const teacherLabel = e?.teacher_user_id
-                            ? teacherLabelByUserId.get(e.teacher_user_id) ?? e.teacher_user_id
-                            : null;
-
-                          const roomLabel = e?.room ? e.room : null;
-                          const subtitle = teacherLabel ? teacherLabel : null;
-                          const entryConflicts = e ? conflictMap.get(e.id) ?? [] : [];
-
-                          return (
-                            <TimetableCell
-                              key={`cell:${slotKey}`}
-                              id={`cell:${d.id}:${p.id}`}
-                              title={e?.subject_name ?? null}
-                              subtitle={subtitle}
-                              meta={roomLabel}
-                              conflicts={entryConflicts}
-                              onClear={e ? () => void clearSlot(d.id, p.id) : null}
-                              onEdit={
-                                e
-                                  ? () => {
-                                      setEditEntryId(e.id);
-                                      setEditTeacherUserId(e.teacher_user_id ?? "");
-                                      setEditRoom(e.room ?? "");
-                                    }
-                                  : null
+                            </td>
+                            {DAYS.map((d) => {
+                              if (isBreak) {
+                                return (
+                                  <td
+                                    key={`cell:${d.id}:${p.id}`}
+                                    className="p-3 border-b border-primary/10 align-middle text-center bg-amber-500/[0.02]"
+                                  >
+                                    <div className="flex flex-col items-center gap-1 py-3 text-center opacity-60">
+                                      <Coffee className="h-4 w-4 text-amber-500 animate-pulse" />
+                                      <p className="text-[10px] font-semibold text-amber-600/80 uppercase tracking-wider">{p.label}</p>
+                                    </div>
+                                  </td>
+                                );
                               }
-                              onAdd={
-                                !e && canEdit
-                                  ? () => {
-                                      setAddSlot({ day: d.id, periodId: p.id });
-                                      setAddSubjectId("");
+
+                              const slotKey = `${d.id}:${p.id}`;
+                              const e = entryBySlot.get(slotKey) ?? null;
+                              const teacherLabel = e?.teacher_user_id
+                                ? teacherLabelByUserId.get(e.teacher_user_id) ?? e.teacher_user_id
+                                : null;
+
+                              const roomLabel = e?.room ? e.room : null;
+                              const subtitle = teacherLabel ? teacherLabel : null;
+                              const entryConflicts = e ? conflictMap.get(e.id) ?? [] : [];
+
+                              return (
+                                <td
+                                  key={`cell:${slotKey}`}
+                                  className={`p-2 border-b border-primary/10 align-middle ${
+                                    entryConflicts.length > 0 ? "bg-red-500/[0.02]" : ""
+                                  }`}
+                                >
+                                  <TimetableCell
+                                    id={`cell:${d.id}:${p.id}`}
+                                    title={e?.subject_name ?? null}
+                                    subtitle={subtitle}
+                                    meta={roomLabel}
+                                    conflicts={entryConflicts}
+                                    onClear={e ? () => void clearSlot(d.id, p.id) : null}
+                                    onEdit={
+                                      e
+                                        ? () => {
+                                            setEditEntryId(e.id);
+                                            setEditTeacherUserId(e.teacher_user_id ?? "");
+                                            setEditRoom(e.room ?? "");
+                                          }
+                                        : null
                                     }
-                                  : null
-                              }
-                            />
-                          );
-                        })}
-                      </Fragment>
-                    ))}
-                  </div>
+                                    onAdd={
+                                      !e && canEdit
+                                        ? () => {
+                                            setAddSlot({ day: d.id, periodId: p.id });
+                                            setAddSubjectId("");
+                                          }
+                                        : null
+                                    }
+                                  />
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               </CardContent>
             </Card>

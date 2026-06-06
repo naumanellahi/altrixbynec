@@ -260,14 +260,30 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
 
       // Mappings
       const offeredMap = new Map<string, string[]>(); // sectionId -> array of subject names
-      (classSectionSubjectsRes.data || []).forEach((css) => {
-        const subj = subjects?.find((s) => s.id === css.subject_id);
+      
+      const addOfferedSubject = (sectionId: string, subjectId: string) => {
+        const subj = subjects?.find((s) => s.id === subjectId);
         if (subj) {
-          const list = offeredMap.get(css.class_section_id) || [];
-          list.push(subj.name);
-          offeredMap.set(css.class_section_id, list);
+          const list = offeredMap.get(sectionId) || [];
+          if (!list.includes(subj.name)) {
+            list.push(subj.name);
+            offeredMap.set(sectionId, list);
+          }
         }
+      };
+
+      (classSectionSubjectsRes.data || []).forEach((css) => {
+        addOfferedSubject(css.class_section_id, css.subject_id);
       });
+
+      (teacherSubjectAssignmentsRes.data || []).forEach((ta) => {
+        addOfferedSubject(ta.class_section_id, ta.subject_id);
+      });
+
+      (teacherAssignmentsRes.data || []).forEach((ta) => {
+        addOfferedSubject(ta.class_section_id, ta.subject_id);
+      });
+
 
       const teacherAssignmentsList = [
         ...(teacherSubjectAssignmentsRes.data || []),
@@ -1052,6 +1068,13 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
     return { count, byCell };
   }, [latestSuggestion, sections]);
 
+  const totalScheduled = useMemo(() => {
+    if (!latestSuggestion?.suggestion_data) return 0;
+    const dataObj = latestSuggestion.suggestion_data as any;
+    const timetable = dataObj.timetable || [];
+    return timetable.filter((r: any) => !previewSectionId || r.section_id === previewSectionId).length;
+  }, [latestSuggestion, previewSectionId]);
+
   if (loadingSections) {
     return (
       <div className="space-y-6">
@@ -1302,7 +1325,7 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
                   <Clock className="mx-auto h-5 w-5 text-blue-500" />
                   <p className="mt-1.5 text-xs text-muted-foreground font-medium">Scheduled Slots</p>
                   <p className="text-xl font-black mt-0.5">
-                    {PERIODS.length * DAYS.length} slots
+                    {totalScheduled} slots
                   </p>
                 </div>
 
