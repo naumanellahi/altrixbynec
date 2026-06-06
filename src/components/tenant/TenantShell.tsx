@@ -10,7 +10,7 @@ import type { EduverseRole } from "@/lib/eduverse-roles";
 import { supabase } from "@/integrations/supabase/client";
 import { GlobalCommandPalette } from "@/components/global/GlobalCommandPalette";
 import { NotificationsBell } from "@/components/global/NotificationsBell";
-import { VoiceNavOverlay } from "@/components/common/VoiceNavOverlay";
+import { VoiceController } from "@/components/common/VoiceController";
 import { DashboardNotificationsBanner } from "@/components/global/DashboardNotificationsBanner";
 import { useUnreadMessagesOptimized } from "@/hooks/useUnreadMessagesOptimized";
 import { useTenantOptimized } from "@/hooks/useTenantOptimized";
@@ -64,6 +64,30 @@ const [voiceListening, setVoiceListening] = useState(false);
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate(`/${schoolSlug}/auth`);
+  };
+
+  // Handle voice command
+  const handleVoiceCommand = (cmd: string) => {
+    const cfg = VOICE_COMMANDS[cmd.toLowerCase().trim()];
+    if (!cfg) {
+      // Assuming toast from some library is available
+      // Show error toast for unrecognized command
+      // @ts-ignore
+      toast.error(`Unrecognized command: ${cmd}`);
+      return;
+    }
+    if (cfg.roles && !cfg.roles.includes(role)) {
+      // @ts-ignore
+      toast.warn('Command not allowed for your role');
+      return;
+    }
+    if (cfg.action === 'logout') {
+      handleLogout();
+      return;
+    }
+    if (cfg.route) {
+      router.push(cfg.route);
+    }
   };
 
   // Offline support
@@ -144,7 +168,7 @@ const [voiceListening, setVoiceListening] = useState(false);
               variant="ghost"
               size="icon"
               aria-label="Voice command"
-              onClick={() => setVoiceOpen(true)}
+              onClick={() => setVoiceListening((prev) => !prev)}
               className="rounded-xl"
             >
               <Mic className="h-5 w-5" />
@@ -479,5 +503,5 @@ const [voiceListening, setVoiceListening] = useState(false);
         </button>
       </nav>
     </div>
-{voiceOpen && <VoiceNavOverlay onClose={() => setVoiceOpen(false)} />}
+{voiceListening && <VoiceController onCommand={handleVoiceCommand} onClose={() => setVoiceListening(false)} />}
 }
