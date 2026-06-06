@@ -576,3 +576,18 @@ const [voiceListening, setVoiceListening] = useState(false);
     </>
   );
 
+
+  return (
+    <div className="flex h-screen">
+      {/* Sidebar */}
+      <aside className="w-64 bg-primary/5 border-r overflow-y-auto">
+        <NavContent />
+      </aside>
+      {/* Main content */}
+      <main className="flex-1 overflow-y-auto p-4">
+        {children}
+      </main>
+      {voiceListening && <VoiceController onCommand={handleVoiceCommand} onClose={() => setVoiceListening(false)} />}
+    </div>
+  );
+}
