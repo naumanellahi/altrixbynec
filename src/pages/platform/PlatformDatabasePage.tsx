@@ -158,7 +158,7 @@ const calculateNextBackupTime = (frequency: string, hour: string, minute: string
 };
 
 export default function PlatformDatabasePage() {
-  const [activeTab, setActiveTab] = useState<"global" | "schedules" | "hub">("global");
+  const [activeTab, setActiveTab] = useState<"global" | "schedules" | "hub" | "files">("global");
   const [schools, setSchools] = useState<SchoolRow[]>([]);
   const [schedules, setSchedules] = useState<BackupSchedule[]>([]);
   const [backups, setBackups] = useState<BackupLog[]>([]);
