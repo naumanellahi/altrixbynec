@@ -340,11 +340,7 @@ const [voiceListening, setVoiceListening] = useState(false);
                                 )}
                               </NavLink>
                             );
-home,
-      messages,
-      { to: base("academic"), icon: GraduationCap, label: "Academic" },
-      { to: base("users"), icon: Users, label: "Staff" },
-    ];
+
   }, [role, schoolSlug, unreadCount]);
 
   const NavContent = () => (
