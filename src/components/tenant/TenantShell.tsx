@@ -33,7 +33,7 @@ type Props = PropsWithChildren<{
 export function TenantShell({ title, subtitle, role, schoolSlug, children }: Props) {
   const navigate = useNavigate();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-const [voiceOpen, setVoiceOpen] = useState(false);
+const [voiceListening, setVoiceListening] = useState(false);
   const location = useLocation();
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
