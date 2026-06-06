@@ -790,7 +790,22 @@ export default function PlatformDatabasePage() {
             <History className="h-4 w-4" />
             Backup & Restore Hub
           </button>
+          <button
+            onClick={() => { setActiveTab("files"); setSelectedSchool(null); }}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all -mb-px ${
+              activeTab === "files" && !selectedSchool
+                ? "border-amber-500 text-amber-400 font-semibold"
+                : "border-transparent text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+            }`}
+          >
+            <FolderArchive className="h-4 w-4" />
+            Files & Full Backup
+          </button>
         </div>
+
+        {activeTab === "files" && !selectedSchool && (
+          <PlatformFilesAndBackup />
+        )}
 
         {/* Tab content: Global */}
         {activeTab === "global" && !selectedSchool && (
