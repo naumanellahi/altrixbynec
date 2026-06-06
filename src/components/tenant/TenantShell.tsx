@@ -497,6 +497,201 @@ const [voiceListening, setVoiceListening] = useState(false);
           </NavLink>
         ))}
         <button
+                        </span>
+                        <ChevronDown
+                          className={cn(
+                            "h-4 w-4 shrink-0 transition-transform duration-200 text-muted-foreground/60",
+                            isOpen ? "rotate-180" : "rotate-0"
+                          )}
+                        />
+                      </button>
+
+                      <div
+                        className={cn(
+                          "overflow-hidden transition-all duration-200 ease-in-out",
+                          isOpen ? "max-h-[500px] opacity-100 mt-0.5" : "max-h-0 opacity-0 pointer-events-none"
+                        )}
+                      >
+                        <div className="pl-4 ml-3 border-l border-border/40 space-y-0.5">
+                          {groupInfo.items.map((item) => {
+                            const to = item.path ? `/${schoolSlug}/${role}/${item.path}` : `/${schoolSlug}/${role}`;
+                            const badge = item.key === "messages" ? unreadCount : 0;
+                            const Icon = item.icon;
+                            return (
+                              <NavLink
+                                key={item.key}
+                                to={to}
+                                className="group flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-150"
+                                activeClassName="bg-primary text-primary-foreground shadow-soft hover:bg-primary hover:text-primary-foreground"
+                                onClick={() => setMobileNavOpen(false)}
+                              >
+                                <span className="flex items-center gap-2.5">
+                                  <Icon className="h-4 w-4 shrink-0" /> {item.label}
+                                </span>
+                                {badge > 0 && (
+                                  <Badge variant="destructive" className="h-5 px-1.5 text-[10px] rounded-full">
+                                    {badge > 99 ? "99+" : badge}
+                                  </Badge>
+                                )}
+                              </NavLink>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+        <NavLink
+          to={`/${schoolSlug}/${role}?settings=1`}
+          end
+          className="group flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-150"
+          activeClassName="bg-primary text-primary-foreground shadow-soft"
+          onClick={() => setMobileNavOpen(false)}
+        >
+          <Settings className="h-4 w-4 shrink-0" /> Settings
+        </NavLink>
+      </nav>
+
+      <div className="mt-5 rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/10 via-accent/40 to-transparent p-4">
+        <p className="text-sm font-semibold text-foreground">All systems online</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Modules light up as your school activates them.
+        </p>
+      </div>
+
+      <div className="mt-4">
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-2 rounded-xl text-muted-foreground hover:text-destructive"
+          onClick={handleLogout}
+        >
+          <LogOut className="h-4 w-4" />
+          Sign Out
+        </Button>
+      </div>
+    </>
+  );
+  return (
+    <div className="min-h-screen bg-background pb-20 lg:pb-0">
+      <GlobalCommandPalette basePath={`/${schoolSlug}/${role}`} />
+
+      {/* Mobile Header */}
+      <header className="sticky top-0 z-40 flex items-center justify-between border-b bg-background/95 px-4 py-3 backdrop-blur lg:hidden">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[280px] p-4 overflow-y-auto">
+              <NavContent />
+            </SheetContent>
+          </Sheet>
+          <div className="min-w-0">
+            <p className="font-display text-base font-semibold tracking-tight truncate">{title}</p>
+            {user?.email && (
+              <p className="text-[11px] text-muted-foreground truncate">
+                You are signed in as {user.email}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <OfflineStatusIndicator
+            isOnline={offline.isOnline}
+            isSyncing={offline.isSyncing}
+            stats={offline.stats}
+            lastSyncAt={offline.lastSyncAt}
+            syncProgress={offline.syncProgress}
+            storageInfo={offline.storageInfo}
+            onSync={offline.syncPendingItems}
+            variant="compact"
+          />
+          {schoolId && <StaffAttendanceWidget schoolId={schoolId} />}
+          <NotificationsBell schoolId={schoolId} schoolSlug={schoolSlug} role="tenant" />
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Search"
+            onClick={() => window.dispatchEvent(new Event("eduverse:open-search"))}
+          >
+            <Sparkles className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-destructive"
+            onClick={handleLogout}
+            aria-label="Logout"
+          >
+            <LogOut className="h-5 w-5" />
+          </Button>
+        </div>
+      </header>
+
+      <div className="grid w-full grid-cols-1 gap-4 px-4 py-4 lg:grid-cols-[280px_1fr] lg:gap-6 lg:px-6 lg:py-6">
+        {/* Desktop Sidebar */}
+        <aside className="sticky top-6 hidden self-start max-h-[calc(100vh-3rem)] overflow-y-auto rounded-3xl bg-surface p-4 shadow-elevated lg:block">
+          <NavContent />
+        </aside>
+
+        {/* Main Content */}
+        <section className="rounded-2xl bg-surface p-4 shadow-elevated lg:rounded-3xl lg:p-6">
+          <header className="mb-4 hidden lg:mb-6 lg:block">
+            <div className="flex items-center justify-between">
+              <div className="min-w-0">
+                <h1 className="font-display text-2xl font-semibold tracking-tight">{title}</h1>
+                {user?.email && (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    You are signed in as {user.email}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                {schoolId && isStaff && <StaffAttendanceWidget schoolId={schoolId} />}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="rounded-xl"
+                >
+                  <LogOut className="mr-2 h-4 w-4" /> Logout
+                </Button>
+              </div>
+            </div>
+          </header>
+          <div className="mb-4 lg:mb-5">
+            <DashboardNotificationsBanner schoolId={schoolId} schoolSlug={schoolSlug} role={role} />
+          </div>
+          {children}
+        </section>
+      </div>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="fixed bottom-3 left-1/2 z-50 flex -translate-x-1/2 items-center justify-around gap-0.5 rounded-3xl border border-border/60 bg-background/90 px-1.5 py-1.5 shadow-elevated backdrop-blur-xl lg:hidden w-[calc(100%-1rem)] max-w-md">
+        {bottomNavItems.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.to === `/${schoolSlug}/${role}`}
+            className="relative flex flex-1 flex-col items-center gap-0.5 rounded-2xl px-1 py-1.5 text-muted-foreground transition-all duration-200 min-w-0"
+            activeClassName="text-primary-foreground bg-primary shadow-soft"
+          >
+            <item.icon className="h-[18px] w-[18px]" />
+            <span className="text-[9px] font-medium leading-tight truncate max-w-full">{item.label}</span>
+            {item.badge !== undefined && item.badge > 0 && (
+              <span className="absolute -top-0.5 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[8px] font-bold text-destructive-foreground">
+                {item.badge > 9 ? "9+" : item.badge}
+              </span>
+            )}
+          </NavLink>
+        ))}
+        <button
           onClick={() => setMobileNavOpen(true)}
           className="flex flex-1 flex-col items-center gap-0.5 rounded-2xl px-1 py-1.5 text-muted-foreground transition-colors min-w-0"
         >
