@@ -218,21 +218,22 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
         console.warn("Remote Edge Function invocation failed, falling back to local solver:", err);
       }
 
-      // Fetch all required data to repair/populate or completely generate the suggestion
       const [
         classSectionSubjectsRes,
         teacherSubjectAssignmentsRes,
         teacherAssignmentsRes,
         periodsRes,
         existingEntriesRes,
-        rolesRes
+        rolesRes,
+        subjectsRes
       ] = await Promise.all([
         supabase.from("class_section_subjects").select("*").eq("school_id", schoolId),
         supabase.from("teacher_subject_assignments").select("*").eq("school_id", schoolId),
         supabase.from("teacher_assignments").select("*").eq("school_id", schoolId),
         supabase.from("timetable_periods").select("*").eq("school_id", schoolId).order("sort_order"),
         supabase.from("timetable_entries").select("*").eq("school_id", schoolId),
-        supabase.from("user_roles").select("user_id").eq("school_id", schoolId).eq("role", "teacher")
+        supabase.from("user_roles").select("user_id").eq("school_id", schoolId).eq("role", "teacher"),
+        supabase.from("subjects").select("id, name, code").eq("school_id", schoolId)
       ]);
 
       if (classSectionSubjectsRes.error) throw classSectionSubjectsRes.error;
@@ -241,6 +242,9 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
       if (periodsRes.error) throw periodsRes.error;
       if (existingEntriesRes.error) throw existingEntriesRes.error;
       if (rolesRes.error) throw rolesRes.error;
+      if (subjectsRes.error) throw subjectsRes.error;
+
+      const subjectsList = subjectsRes.data || [];
 
       const teacherIds = (rolesRes.data || []).map(r => r.user_id);
       let teacherProfiles: any[] = [];
@@ -262,7 +266,7 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
       const offeredMap = new Map<string, string[]>(); // sectionId -> array of subject names
       
       const addOfferedSubject = (sectionId: string, subjectId: string) => {
-        const subj = subjects?.find((s) => s.id === subjectId);
+        const subj = subjectsList?.find((s) => s.id === subjectId);
         if (subj) {
           const list = offeredMap.get(sectionId) || [];
           if (!list.includes(subj.name)) {
@@ -363,7 +367,7 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
         const offeredSubjectName = offered.find(sName => sName.toLowerCase() === subjName.toLowerCase());
         if (!offeredSubjectName) continue;
 
-        const subjectObj = subjects?.find(s => s.name.toLowerCase() === offeredSubjectName.toLowerCase());
+        const subjectObj = subjectsList?.find(s => s.name.toLowerCase() === offeredSubjectName.toLowerCase());
         const correctTeacher = subjectObj ? sectionSubjectTeacher.get(`${sId}:${subjectObj.id}`) : null;
         
         const teacherId = correctTeacher?.id || null;
@@ -417,7 +421,7 @@ export function SmartTimetableGenerator({ schoolId }: Props) {
           const scheduledCount = subjectWeeklyCount.get(subjectKey) || 0;
           const missingCount = Math.max(0, subjectPeriodsPerWeek - scheduledCount);
 
-          const subjectObj = subjects?.find(s => s.name.toLowerCase() === subjName.toLowerCase());
+          const subjectObj = subjectsList?.find(s => s.name.toLowerCase() === subjName.toLowerCase());
           const correctTeacher = subjectObj ? sectionSubjectTeacher.get(`${sect.id}:${subjectObj.id}`) : null;
           const roomVal = sect.room || "TBD";
 
