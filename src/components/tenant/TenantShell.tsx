@@ -340,12 +340,12 @@ const [voiceListening, setVoiceListening] = useState(false);
                                 )}
                               </NavLink>
                             );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  );
-}, [role, schoolSlug, unreadCount]);
+home,
+      messages,
+      { to: base("academic"), icon: GraduationCap, label: "Academic" },
+      { to: base("users"), icon: Users, label: "Staff" },
+    ];
+  }, [role, schoolSlug, unreadCount]);
 
   const NavContent = () => (
     <>
