@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { GlobalCommandPalette } from "@/components/global/GlobalCommandPalette";
 import { NotificationsBell } from "@/components/global/NotificationsBell";
 import { VoiceController } from "@/components/common/VoiceController";
+import { VOICE_COMMANDS } from "@/utils/voiceCommands";
 import { DashboardNotificationsBanner } from "@/components/global/DashboardNotificationsBanner";
 import { useUnreadMessagesOptimized } from "@/hooks/useUnreadMessagesOptimized";
 import { useTenantOptimized } from "@/hooks/useTenantOptimized";
