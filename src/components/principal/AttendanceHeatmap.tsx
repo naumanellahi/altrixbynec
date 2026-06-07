@@ -42,7 +42,6 @@ export function AttendanceHeatmap() {
   const [school, setSchool] = useState<{ id: string; name: string; latitude: number | null; longitude: number | null } | null>(null);
   const [records, setRecords] = useState<any[]>([]);
   const [hoveredPoint, setHoveredPoint] = useState<ExtendedPoint | null>(null);
-  const [simulationActive, setSimulationActive] = useState(false);
   const [radarAngle, setRadarAngle] = useState(0);
 
   // Compute school center coords
@@ -388,47 +387,6 @@ export function AttendanceHeatmap() {
 
   }, [plottedPoints, radarAngle, schoolCenter]);
 
-  // Simulate a live check-in for demonstration/verification purposes
-  const handleSimulateCheckIn = () => {
-    setSimulationActive(true);
-    
-    // Generate simulated coordinates within or slightly outside the geofence
-    // 0.0001 deg is roughly 10 meters offset
-    const randomAngle = Math.random() * Math.PI * 2;
-    const randomDistanceMeters = 30 + Math.random() * 110; // 30m to 140m away
-    const latOffset = (randomDistanceMeters * Math.sin(randomAngle)) / 111139;
-    const lngOffset = (randomDistanceMeters * Math.cos(randomAngle)) / (111139 * Math.cos((schoolCenter.lat * Math.PI) / 180));
-    
-    const latVal = schoolCenter.lat + latOffset;
-    const lngVal = schoolCenter.lng + lngOffset;
-
-    // Names list
-    const names = ["Sarah Jenkins (Eng)", "David Miller (Math)", "Prof. Robert Chen", "Sophia Alvi", "Zainab Raza", "Kamran Baig"];
-    const name = names[Math.floor(Math.random() * names.length)];
-    const id = "sim-" + Math.floor(Math.random() * 10000);
-    const status = randomDistanceMeters <= 100 ? "present" : "absent"; // standard logic: absent/unverified if out of geofence
-
-    // Append mock record to state list immediately
-    const mockRecord = {
-      id,
-      user_id: "user-" + id,
-      school_id: school?.id || "",
-      status,
-      clock_in: new Date().toISOString(),
-      clock_out: null,
-      latitude: latVal,
-      longitude: lngVal,
-      created_at: new Date().toISOString(),
-      userName: `${name} [Simulated]`
-    };
-
-    setTimeout(() => {
-      setRecords(prev => [mockRecord, ...prev]);
-      setSimulationActive(false);
-      toast.success(`Simulation Alert: ${name} logged attendance (${Math.round(randomDistanceMeters)}m from center).`);
-    }, 800);
-  };
-
   const activeCheckIns = plottedPoints.length;
 
   return (
@@ -495,20 +453,6 @@ export function AttendanceHeatmap() {
                 <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
                 Fetch Status
               </Button>
-              <Button 
-                variant="hero" 
-                size="sm" 
-                onClick={handleSimulateCheckIn} 
-                className="h-8 text-[11px] font-medium rounded-lg"
-                disabled={simulationActive}
-              >
-                {simulationActive ? (
-                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                ) : (
-                  <Activity className="h-3 w-3 mr-1" />
-                )}
-                Simulate Live Check-in
-              </Button>
             </div>
           </div>
 
@@ -548,7 +492,7 @@ export function AttendanceHeatmap() {
                 </div>
                 <p className="font-display font-semibold text-sm">No Location Heatmaps Generated Today</p>
                 <p className="text-xs text-slate-400 mt-2 max-w-sm leading-relaxed">
-                  There are no verified coordinates logged for staff check-ins yet. Click "Simulate Live Check-in" above or have staff clock in using their GPS.
+                  There are no verified coordinates logged for staff check-ins yet. Live updates will sync here in real time as staff check in via the mobile app.
                 </p>
               </div>
             ) : null}

@@ -93,6 +93,12 @@ export const VOICE_COMMANDS: Record<string, VoiceCommandConfig> = {
   "open documents":           { route: "/documents", roles: ["principal", "vice_principal", "hr_manager", "school_owner", "super_admin"] },
   "go to documents":          { route: "/documents", roles: ["principal", "vice_principal", "hr_manager", "school_owner", "super_admin"] },
   "staff documents":          { route: "/documents", roles: ["principal", "vice_principal", "hr_manager", "school_owner", "super_admin"] },
+  "open onboarding":          { route: "/onboarding", roles: ["principal", "vice_principal", "hr_manager", "school_owner", "super_admin"] },
+  "go to onboarding":         { route: "/onboarding", roles: ["principal", "vice_principal", "hr_manager", "school_owner", "super_admin"] },
+  "onboarding":               { route: "/onboarding", roles: ["principal", "vice_principal", "hr_manager", "school_owner", "super_admin"] },
+  "open offboarding":         { route: "/offboarding", roles: ["principal", "vice_principal", "hr_manager", "school_owner", "super_admin"] },
+  "go to offboarding":        { route: "/offboarding", roles: ["principal", "vice_principal", "hr_manager", "school_owner", "super_admin"] },
+  "offboarding":              { route: "/offboarding", roles: ["principal", "vice_principal", "hr_manager", "school_owner", "super_admin"] },
 
   // ── Admissions & CRM / Marketing ─────────────────────────────────────────
   "open admissions":          { route: "/admissions", roles: [] },
@@ -241,3 +247,56 @@ export const VOICE_COMMANDS: Record<string, VoiceCommandConfig> = {
   "exit dashboard":           { action: "logout", roles: [] },
   "quit dashboard":           { action: "logout", roles: [] },
 };
+
+/**
+ * Parses a spoken transcript, strips filler/fluff words, and attempts to find 
+ * the best matching command key from our voice command registry.
+ */
+export function matchVoiceCommand(spoken: string): string | null {
+  const phrase = spoken.toLowerCase().trim();
+  if (!phrase) return null;
+
+  // Exact match check first
+  if (VOICE_COMMANDS[phrase]) return phrase;
+
+  // Strip filler prefixes
+  const cleanPhrase = phrase
+    .replace(/^(please|show|open|go\s+to|navigate\s+to|view|display|take\s+me\s+to|open\s+up|run)\s+/g, "")
+    .trim();
+
+  if (!cleanPhrase) return null;
+  if (VOICE_COMMANDS[cleanPhrase]) return cleanPhrase;
+
+  // Fuzzy matching check based on substring and word overlap
+  let bestMatch: string | null = null;
+  let maxScore = 0;
+
+  const commandKeys = Object.keys(VOICE_COMMANDS);
+  for (const cmdKey of commandKeys) {
+    // Substring contains
+    if (cmdKey.includes(cleanPhrase) || cleanPhrase.includes(cmdKey)) {
+      const score = Math.min(cleanPhrase.length, cmdKey.length) / Math.max(cleanPhrase.length, cmdKey.length);
+      if (score > maxScore) {
+        maxScore = score;
+        bestMatch = cmdKey;
+      }
+    }
+  }
+
+  // Word overlap fallback
+  if (!bestMatch || maxScore < 0.4) {
+    const phraseWords = new Set(cleanPhrase.split(/\s+/));
+    for (const cmdKey of commandKeys) {
+      const cmdWords = cmdKey.split(/\s+/);
+      const intersection = cmdWords.filter(w => phraseWords.has(w));
+      const score = intersection.length / Math.max(phraseWords.size, cmdWords.length);
+      if (score > maxScore && score >= 0.5) {
+        maxScore = score;
+        bestMatch = cmdKey;
+      }
+    }
+  }
+
+  return bestMatch;
+}
+

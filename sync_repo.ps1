@@ -7,7 +7,7 @@ Set-Location $repoPath
 
 Write-Host "--- Starting repository synchronization ---"
 
-# Auto‑stage & commit any uncommitted changes
+# Auto-stage & commit any uncommitted changes
 $gitStatus = git status --porcelain
 if ($gitStatus) {
     Write-Host "Uncommitted changes detected. Staging and committing automatically."
@@ -36,12 +36,12 @@ if ($remoteHash) { $baseHash = git merge-base HEAD "@{u}" 2>$null }
 if (-not $remoteHash) { $remoteHash = $localHash }
 
 if ($localHash -eq $remoteHash) {
-    Write-Host "Repository is up‑to‑date. No changes to pull or push."
+    Write-Host "Repository is up-to-date. No changes to pull or push."
 } elseif ($localHash -eq $baseHash) {
     Write-Host "Remote has new commits. Pulling with rebase..."
     git pull --rebase
     if ($LASTEXITCODE -ne 0) {
-        Write-Warning "Rebase failed – attempting automatic conflict resolution (remote wins)."
+        Write-Warning "Rebase failed - attempting automatic conflict resolution (remote wins)."
         # List conflicted files
         $conflicted = git diff --name-only --diff-filter=U
         foreach ($file in $conflicted) {
