@@ -3,12 +3,12 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import subscribeAttendance from "@/lib/realtime/attendance";
-import type { AttendanceRecord } from "@/integrations/supabase/types";
+type AttendanceRecord = any;
 import { 
   MapPin, 
   Users, 
   Clock, 
-  Map, 
+  Map as MapIcon, 
   Activity, 
   Loader2, 
   RefreshCw, 
@@ -159,7 +159,7 @@ export function AttendanceHeatmap() {
           .eq("attendance_date", todayDate);
 
         if (!fullErr && fullData) {
-          const enrichMap = new Map(fullData.map(r => [r.id, r]));
+          const enrichMap = new Map<string, any>(fullData.map((r: any) => [r.id, r]));
           enrichedData = baseData.map(r => ({
             ...r,
             clock_in: enrichMap.get(r.id)?.clock_in ?? null,
@@ -176,7 +176,7 @@ export function AttendanceHeatmap() {
             .eq("attendance_date", todayDate);
 
           if (legacyData) {
-            const legacyMap = new Map(legacyData.map(r => [r.id, r]));
+            const legacyMap = new Map<string, any>(legacyData.map((r: any) => [r.id, r]));
             enrichedData = baseData.map(r => ({
               ...r,
               clock_in: legacyMap.get(r.id)?.check_in_time ?? null,
@@ -563,7 +563,7 @@ export function AttendanceHeatmap() {
         <div className="lg:col-span-1 bg-card/65 backdrop-blur-md border border-border/80 rounded-3xl p-5 flex flex-col h-[560px] shadow-elevated">
           <div>
             <h3 className="font-display font-semibold text-sm flex items-center gap-2">
-              <Map className="h-4.5 w-4.5 text-primary" />
+              <MapIcon className="h-4.5 w-4.5 text-primary" />
               Recent Logs
             </h3>
             <p className="text-xs text-muted-foreground mt-1">Today's geo-referenced check-in trail</p>

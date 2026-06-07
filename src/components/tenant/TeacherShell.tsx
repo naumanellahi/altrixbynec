@@ -82,7 +82,7 @@ export function TeacherShell({ title, subtitle, schoolSlug, children }: Props) {
       return;
     }
     if (cfg.roles && !cfg.roles.includes("teacher")) {
-      toast.warn('Command not allowed for your role');
+      toast.warning('Command not allowed for your role');
       return;
     }
     if (cfg.action === 'logout') {
