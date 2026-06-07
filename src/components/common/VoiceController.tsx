@@ -44,7 +44,7 @@ export function VoiceController({ onCommand, onClose }: VoiceControllerProps) {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       import("sonner").then(({ toast }) => {
-        toast.warn("Speech recognition is not supported in this browser.");
+        toast.warning("Speech recognition is not supported in this browser.");
       });
       onClose();
       return;
