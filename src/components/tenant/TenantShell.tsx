@@ -336,18 +336,6 @@ const [voiceListening, setVoiceListening] = useState(false);
                                 {badge > 0 && (
                                   <Badge variant="destructive" className="h-5 px-1.5 text-[10px] rounded-full">
                                     {badge > 99 ? "99+" : badge}
-                                  </Badge>
-                                )}
-                              </NavLink>
-                            );
-
-  }, [role, schoolSlug, unreadCount]>
-  );
-
-
-<>
-  {/* Mobile navigation */}
-  <Sheet>
     <SheetTrigger asChild>
       <Button variant="ghost" size="icon" className="md:hidden mr-2">
         <Menu className="h-5 w-5" />
