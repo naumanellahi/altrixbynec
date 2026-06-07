@@ -159,7 +159,7 @@ export function AttendanceHeatmap() {
           .eq("attendance_date", todayDate);
 
         if (!fullErr && fullData) {
-          const enrichMap = new Map(fullData.map(r => [r.id, r]));
+          const enrichMap = new Map<string, any>(fullData.map((r: any) => [r.id, r]));
           enrichedData = baseData.map(r => ({
             ...r,
             clock_in: enrichMap.get(r.id)?.clock_in ?? null,
