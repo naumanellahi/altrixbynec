@@ -20,6 +20,25 @@ export default defineConfig(({ mode }) => ({
       includeAssets: ["favicon.ico", "robots.txt", "pwa-512.png"],
       workbox: {
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MiB
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
+        // Never let the service worker intercept Supabase API/auth/storage/realtime
+        // calls — that was the source of opaque "Failed to fetch" errors on sign-in.
+        navigateFallbackDenylist: [/^\/api/, /supabase\.co/, /functions\.supabase\.co/],
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.hostname.endsWith("supabase.co"),
+            handler: "NetworkOnly",
+            method: "GET",
+            options: { cacheName: "supabase-passthrough" },
+          },
+          {
+            urlPattern: ({ url }) => url.hostname.endsWith("supabase.co"),
+            handler: "NetworkOnly",
+            method: "POST",
+          },
+        ],
       },
       manifest: {
         name: "EDUVERSE",
