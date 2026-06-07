@@ -1,6 +1,6 @@
 // src/lib/realtime/attendance.ts
 import { supabase } from '@/integrations/supabase/client';
-import type { AttendanceRecord } from '@/integrations/supabase/types';
+type AttendanceRecord = any;
 
 // Subscribe to real‑time changes on the hr_staff_attendance table
 export const subscribeAttendance = (callback: (record: AttendanceRecord) => void) => {
