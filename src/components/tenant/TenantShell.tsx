@@ -478,8 +478,7 @@ const [voiceOpen, setVoiceOpen] = useState(false);
           <span className="text-[9px] font-medium leading-tight">More</span>
         </button>
       </nav>
+      {voiceOpen && <VoiceNavOverlay onClose={() => setVoiceOpen(false)} />}
     </div>
   );
 }
-
-{voiceOpen && <VoiceNavOverlay onClose={() => setVoiceOpen(false)} />}
