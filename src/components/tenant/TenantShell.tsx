@@ -10,7 +10,8 @@ import type { EduverseRole } from "@/lib/eduverse-roles";
 import { supabase } from "@/integrations/supabase/client";
 import { GlobalCommandPalette } from "@/components/global/GlobalCommandPalette";
 import { NotificationsBell } from "@/components/global/NotificationsBell";
-import { VoiceNavOverlay } from "@/components/common/VoiceNavOverlay";
+import { VoiceController } from "@/components/common/VoiceController";
+import { VOICE_COMMANDS } from "@/utils/voiceCommands";
 import { DashboardNotificationsBanner } from "@/components/global/DashboardNotificationsBanner";
 import { useUnreadMessagesOptimized } from "@/hooks/useUnreadMessagesOptimized";
 import { useTenantOptimized } from "@/hooks/useTenantOptimized";
@@ -64,6 +65,14 @@ const [voiceOpen, setVoiceOpen] = useState(false);
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate(`/${schoolSlug}/auth`);
+  };
+
+  const handleVoiceCommand = (cmd: string) => {
+    const cfg = VOICE_COMMANDS[cmd.toLowerCase().trim()];
+    if (!cfg) return;
+    if (cfg.roles && !cfg.roles.includes(role as any)) return;
+    if (cfg.action === 'logout') { handleLogout(); return; }
+    if (cfg.route) navigate(`/${schoolSlug}/${role}${cfg.route}`);
   };
 
   // Offline support
@@ -478,7 +487,12 @@ const [voiceOpen, setVoiceOpen] = useState(false);
           <span className="text-[9px] font-medium leading-tight">More</span>
         </button>
       </nav>
-      {voiceOpen && <VoiceNavOverlay onClose={() => setVoiceOpen(false)} />}
+      {voiceOpen && (
+        <VoiceController
+          onCommand={handleVoiceCommand}
+          onClose={() => setVoiceOpen(false)}
+        />
+      )}
     </div>
   );
 }
