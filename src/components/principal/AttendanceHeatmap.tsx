@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import subscribeAttendance from "@/lib/realtime/attendance";
-import type { AttendanceRecord } from "@/integrations/supabase/types";
+type AttendanceRecord = any;
 import { 
   MapPin, 
   Users, 
