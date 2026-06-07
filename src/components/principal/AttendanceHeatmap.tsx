@@ -563,7 +563,7 @@ export function AttendanceHeatmap() {
         <div className="lg:col-span-1 bg-card/65 backdrop-blur-md border border-border/80 rounded-3xl p-5 flex flex-col h-[560px] shadow-elevated">
           <div>
             <h3 className="font-display font-semibold text-sm flex items-center gap-2">
-              <Map className="h-4.5 w-4.5 text-primary" />
+              <MapIcon className="h-4.5 w-4.5 text-primary" />
               Recent Logs
             </h3>
             <p className="text-xs text-muted-foreground mt-1">Today's geo-referenced check-in trail</p>
