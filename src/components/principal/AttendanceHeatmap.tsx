@@ -8,7 +8,7 @@ import {
   MapPin, 
   Users, 
   Clock, 
-  Map, 
+  Map as MapIcon, 
   Activity, 
   Loader2, 
   RefreshCw, 
