@@ -65,6 +65,9 @@ import { RouteGuard } from "@/components/tenant/RouteGuard";
 import { createCatalogRouteElements } from "@/components/tenant/AutoCatalogRoutes";
 const AICounselorMode = lazy(() => import("@/components/ai/AICounselorMode").then(m => ({ default: m.AICounselorMode })));
 const CounselingModule = lazy(() => import("@/pages/tenant/modules/CounselingModule").then(m => ({ default: m.CounselingModule })));
+const AttendanceHeatmapPage = lazy(() => import("@/pages/tenant/principal/AttendanceHeatmapPage"));
+const CollaborationHubPage = lazy(() => import("@/components/principal/CollaborationHub").then(m => ({ default: m.CollaborationHub })));
+const BudgetSimulatorPage = lazy(() => import("@/pages/tenant/principal/BudgetSimulatorPage"));
 
 const DashboardLoader = () => (
   <div className="flex h-[50vh] items-center justify-center">
@@ -500,6 +503,10 @@ const TenantDashboard = () => {
                 <Route path="parent-notes" element={<PrincipalParentNotesModule />} />
                 <Route path="counseling" element={<CounselingModule schoolId={tenant.schoolId} />} />
                 <Route path="ai-counselor" element={<AICounselorMode schoolId={tenant.schoolId} />} />
+                {/* Principal-only extras */}
+                <Route path="attendance-heatmap" element={<AttendanceHeatmapPage />} />
+                <Route path="collaboration" element={<CollaborationHubPage />} />
+                <Route path="budget-simulator" element={<BudgetSimulatorPage />} />
                 {createCatalogRouteElements({
                   roles: role ? [role] : [],
                   ctx: { schoolId: tenant.schoolId, schoolSlug: tenant.slug, role },
@@ -510,6 +517,7 @@ const TenantDashboard = () => {
                     "expenses","payroll","ledger","vendors","tax","admissions","reports","leaves",
                     "staff-attendance","salaries","contracts","reviews","documents","notices","holidays","diary",
                     "exams","report-cards","support","complaints","parent-notes","counseling",
+                    "attendance-heatmap","collaboration","budget-simulator",
                   ],
                 })}
                 <Route path="*" element={<Navigate to={`/${tenant.slug}/${role}`} replace />} />
