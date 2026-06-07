@@ -70,6 +70,7 @@ const [voiceOpen, setVoiceOpen] = useState(false);
   const handleVoiceCommand = (cmd: string) => {
     const key = cmd.toLowerCase().trim();
     const cfg = VOICE_COMMANDS[key];
+
     if (!cfg) {
       import("sonner").then(({ toast }) => toast.error(`Unknown command: "${cmd}"`));
       return;
@@ -78,12 +79,30 @@ const [voiceOpen, setVoiceOpen] = useState(false);
       import("sonner").then(({ toast }) => toast.warning("Command not available for your role"));
       return;
     }
-    if (cfg.action === "logout") { handleLogout(); return; }
-    if (cfg.route) {
-      // cfg.route is a relative path like "/attendance-heatmap"
-      navigate(`/${schoolSlug}/${role}${cfg.route}`);
+
+    // Audible confirmation via Web Speech API
+    const speak = (text: string) => {
+      try {
+        const u = new SpeechSynthesisUtterance(text);
+        u.volume = 0.6; u.rate = 1.1;
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(u);
+      } catch { /* silently ignore if speechSynthesis unsupported */ }
+    };
+
+    if (cfg.action === "logout") { speak("Signing out"); handleLogout(); return; }
+    if (cfg.action === "open-search") {
+      speak("Opening search");
+      window.dispatchEvent(new Event("eduverse:open-search"));
+      return;
+    }
+    if (cfg.route !== undefined) {
+      const fullPath = `/${schoolSlug}/${role}${cfg.route}`;
+      speak(`Opening ${key}`);
+      navigate(fullPath);
     }
   };
+
 
   // Offline support
   const offline = useOfflineUniversal({
