@@ -133,6 +133,14 @@ export const NAV_CATALOG: NavItem[] = [
     roles: ["super_admin"] },
   { key: "schools", label: "Schools", icon: Briefcase, group: "admin", path: "schools",
     roles: ["super_admin"] },
+
+  // Principal-only extras
+  { key: "attendance-heatmap", label: "Attendance Heatmap", icon: BarChart3, group: "operations", path: "attendance-heatmap",
+    roles: ["super_admin","school_owner","principal","vice_principal"] },
+  { key: "collaboration", label: "Collaboration Hub", icon: MessageSquare, group: "communication", path: "collaboration",
+    roles: ["super_admin","school_owner","principal","vice_principal","school_admin"] },
+  { key: "budget-simulator", label: "Budget Simulator", icon: Coins, group: "finance", path: "budget-simulator",
+    roles: ["super_admin","school_owner","principal","vice_principal","accountant"] },
 ];
 
 export const GROUP_LABELS: Record<NavGroup, string> = {
