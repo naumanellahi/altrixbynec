@@ -20,6 +20,7 @@ import {
   Megaphone,
   Menu,
   MessageSquare,
+  Mic,
   NotebookPen,
   PartyPopper,
   ShieldAlert,
@@ -66,7 +67,6 @@ export function TeacherShell({ title, subtitle, schoolSlug, children }: Props) {
     userId: user?.id ?? null,
     role: "teacher",
   });
-        {voiceListening && <VoiceController onCommand={handleVoiceCommand} onClose={() => setVoiceListening(false)} />}
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -343,6 +343,14 @@ export function TeacherShell({ title, subtitle, schoolSlug, children }: Props) {
           variant="floating"
         />
       </div>
+
+      {/* Voice Controller */}
+      {voiceListening && (
+        <VoiceController
+          onCommand={handleVoiceCommand}
+          onClose={() => setVoiceListening(false)}
+        />
+      )}
     </div>
   );
 }
