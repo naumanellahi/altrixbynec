@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { GlobalCommandPalette } from "@/components/global/GlobalCommandPalette";
 
 type Item = { label: string; to: string; icon: any; badge?: string };
 
@@ -138,7 +139,7 @@ export function SuperAdminShell({ title, subtitle, actions, children }: Props) {
                   return (
                     <li key={item.to}>
                       <NavLink
-                        to={item.to}
+                         to={item.to}
                         className={`flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all ${
                           active
                             ? "bg-gradient-to-r from-amber-500/15 to-transparent text-amber-400 border-l-2 border-amber-500 font-semibold shadow-[inset_1px_0_0_0_rgba(245,158,11,0.2)]"
@@ -253,6 +254,7 @@ export function SuperAdminShell({ title, subtitle, actions, children }: Props) {
           <div className="w-full p-6 md:p-8">{children}</div>
         </main>
       </div>
+      <GlobalCommandPalette basePath="/super_admin" />
     </div>
   );
 }
