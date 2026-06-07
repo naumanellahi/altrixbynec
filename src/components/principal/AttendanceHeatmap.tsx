@@ -134,40 +134,82 @@ export function AttendanceHeatmap() {
       }
       setSchool(schoolData);
 
-      // 2. Fetch today's attendance records with coordinates
+      // 2. Fetch today's attendance records — Phase 1: base columns always present
       const todayDate = new Date().toLocaleDateString("sv-SE");
-      const { data: attData, error: attErr } = await supabase
+      const { data: baseData, error: baseErr } = await supabase
         .from("hr_staff_attendance")
-        .select("id, user_id, status, clock_in, clock_out, latitude, longitude, created_at")
+        .select("id, user_id, status, created_at, attendance_date")
         .eq("school_id", schoolData.id)
         .eq("attendance_date", todayDate);
 
-      if (attErr) throw attErr;
+      if (baseErr) throw baseErr;
+
+      if (!baseData || baseData.length === 0) {
+        setRecords([]);
+        return;
+      }
+
+      // Phase 2: Try to enrich with clock_in/clock_out & lat/lng (fail silently if columns missing)
+      let enrichedData: any[] = baseData;
+      try {
+        const { data: fullData, error: fullErr } = await supabase
+          .from("hr_staff_attendance")
+          .select("id, clock_in, clock_out, latitude, longitude")
+          .eq("school_id", schoolData.id)
+          .eq("attendance_date", todayDate);
+
+        if (!fullErr && fullData) {
+          const enrichMap = new Map(fullData.map(r => [r.id, r]));
+          enrichedData = baseData.map(r => ({
+            ...r,
+            clock_in: enrichMap.get(r.id)?.clock_in ?? null,
+            clock_out: enrichMap.get(r.id)?.clock_out ?? null,
+            latitude: enrichMap.get(r.id)?.latitude ?? null,
+            longitude: enrichMap.get(r.id)?.longitude ?? null,
+          }));
+        } else {
+          // Columns may not exist yet — try legacy column names (check_in_time / check_out_time)
+          const { data: legacyData } = await supabase
+            .from("hr_staff_attendance")
+            .select("id, check_in_time, check_out_time")
+            .eq("school_id", schoolData.id)
+            .eq("attendance_date", todayDate);
+
+          if (legacyData) {
+            const legacyMap = new Map(legacyData.map(r => [r.id, r]));
+            enrichedData = baseData.map(r => ({
+              ...r,
+              clock_in: legacyMap.get(r.id)?.check_in_time ?? null,
+              clock_out: legacyMap.get(r.id)?.check_out_time ?? null,
+              latitude: null,
+              longitude: null,
+            }));
+          }
+        }
+      } catch (enrichErr) {
+        console.warn("Could not enrich with coordinates — columns may not exist yet:", enrichErr);
+      }
 
       // 3. Fetch user display names
-      if (attData && attData.length > 0) {
-        const userIds = attData.map(r => r.user_id);
-        const { data: profiles, error: profErr } = await supabase
-          .from("profiles")
-          .select("id, display_name")
-          .in("id", userIds);
+      const userIds = enrichedData.map(r => r.user_id);
+      const { data: profiles, error: profErr } = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .in("id", userIds);
 
-        if (profErr) console.warn("Failed to fetch user profiles:", profErr.message);
+      if (profErr) console.warn("Failed to fetch user profiles:", profErr.message);
 
-        const profileMap = new Map(profiles?.map(p => [p.id, p.display_name]) || []);
-        
-        const mappedRecords = attData.map(rec => ({
-          ...rec,
-          userName: profileMap.get(rec.user_id) || `Staff Member (${rec.user_id.slice(0, 6)})`
-        }));
-        
-        setRecords(mappedRecords);
-      } else {
-        setRecords([]);
-      }
+      const profileMap = new Map(profiles?.map(p => [p.id, p.display_name]) || []);
+      
+      const mappedRecords = enrichedData.map(rec => ({
+        ...rec,
+        userName: profileMap.get(rec.user_id) || `Staff Member (${rec.user_id.slice(0, 6)})`
+      }));
+      
+      setRecords(mappedRecords);
     } catch (err: any) {
       console.error("Error loading heatmap data:", err);
-      toast.error("Failed to load attendance records.");
+      toast.error(`Failed to load attendance records: ${err?.message || "Unknown error"}`);
     } finally {
       setLoading(false);
     }
