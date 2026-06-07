@@ -68,11 +68,21 @@ const [voiceOpen, setVoiceOpen] = useState(false);
   };
 
   const handleVoiceCommand = (cmd: string) => {
-    const cfg = VOICE_COMMANDS[cmd.toLowerCase().trim()];
-    if (!cfg) return;
-    if (cfg.roles && !cfg.roles.includes(role as any)) return;
-    if (cfg.action === 'logout') { handleLogout(); return; }
-    if (cfg.route) navigate(`/${schoolSlug}/${role}${cfg.route}`);
+    const key = cmd.toLowerCase().trim();
+    const cfg = VOICE_COMMANDS[key];
+    if (!cfg) {
+      import("sonner").then(({ toast }) => toast.error(`Unknown command: "${cmd}"`));
+      return;
+    }
+    if (cfg.roles && cfg.roles.length > 0 && !cfg.roles.includes(role as any)) {
+      import("sonner").then(({ toast }) => toast.warning("Command not available for your role"));
+      return;
+    }
+    if (cfg.action === "logout") { handleLogout(); return; }
+    if (cfg.route) {
+      // cfg.route is a relative path like "/attendance-heatmap"
+      navigate(`/${schoolSlug}/${role}${cfg.route}`);
+    }
   };
 
   // Offline support
@@ -143,7 +153,7 @@ const [voiceOpen, setVoiceOpen] = useState(false);
             AltRix
           </p>
           <p className="text-[11px] text-muted-foreground truncate">
-            /{schoolSlug} ΓÇó {role}
+            {tenant.school?.name ?? schoolSlug} • {role}
           </p>
         </div>
         <div className="flex items-center gap-1.5">
