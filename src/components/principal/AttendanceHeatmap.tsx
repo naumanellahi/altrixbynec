@@ -176,7 +176,7 @@ export function AttendanceHeatmap() {
             .eq("attendance_date", todayDate);
 
           if (legacyData) {
-            const legacyMap = new Map(legacyData.map(r => [r.id, r]));
+            const legacyMap = new Map<string, any>(legacyData.map((r: any) => [r.id, r]));
             enrichedData = baseData.map(r => ({
               ...r,
               clock_in: legacyMap.get(r.id)?.check_in_time ?? null,
